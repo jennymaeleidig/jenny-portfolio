@@ -7,6 +7,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { POSTER, posterHash } from "../scripts/sky-poster.mjs";
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const buildScript = join(root, "scripts", "build.sh");
 
@@ -230,6 +232,20 @@ test("every page preloads the self-hosted font", () => {
     assert.match(html, /href="\/assets\/reset\.css"/);
     assert.match(html, /href="\/assets\/site\.css"/);
   }
+});
+
+test("the committed poster is a static frame of the current sky", () => {
+  const svg = readFileSync(join(root, "assets", "sky-poster.svg"), "utf8");
+
+  assert.match(svg, new RegExp(`sha256:${posterHash()} cell:${POSTER.cellPx}`));
+
+  const [, base64] = svg.match(/base64,([A-Za-z0-9+/=]+)/) ?? [];
+  assert.ok(base64, "the poster embeds its PNG frame");
+
+  const png = Buffer.from(base64, "base64");
+  assert.equal(png.subarray(1, 4).toString("ascii"), "PNG");
+  assert.equal(png.readUInt32BE(16), POSTER.cols, "the poster is the shipped width");
+  assert.equal(png.readUInt32BE(20), POSTER.rows, "the poster is the shipped height");
 });
 
 test("the reset is carried over verbatim", () => {

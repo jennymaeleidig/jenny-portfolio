@@ -18,7 +18,8 @@ const sky = document.querySelector(".sky");
 const canvas = document.querySelector(".sky-canvas");
 
 if (sky && canvas) {
-  const context = canvas.getContext("2d", { alpha: true });
+  const context =
+    typeof canvas.getContext === "function" ? canvas.getContext("2d", { alpha: true }) : null;
 
   if (!context) {
     // No 2D context: show the poster over the gradient. The page is otherwise
@@ -60,6 +61,7 @@ if (sky && canvas) {
       const width = window.innerWidth;
       const height = window.innerHeight;
       const dpr = window.devicePixelRatio || 1;
+      const previousCellPx = cellPx;
 
       // Snap one block to a whole number of device pixels, then give the
       // canvas an explicit CSS size that is an exact multiple of it. Without
@@ -75,10 +77,16 @@ if (sky && canvas) {
       canvas.style.width = `${cols * cellPx}px`;
       canvas.style.height = `${rows * cellPx}px`;
 
+      // Keep the drift continuous across a resize. A mobile URL bar collapsing
+      // only changes the height, so the field is unchanged; zeroing here would
+      // snap the whole sheet back to the start.
+      if (field && cellPx !== previousCellPx) {
+        offset *= previousCellPx / cellPx;
+      }
+
       field = createField({ cols, rows, cellPx, scale: config.scale, seed: config.seed });
       image = context.createImageData(cols, rows);
       pixels = image.data;
-      offset = 0;
       draw();
     }
 

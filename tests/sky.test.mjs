@@ -15,6 +15,12 @@ import {
   toneIndex,
 } from "../assets/sky-core.mjs";
 
+function rawToneIndex(value, bandThresholds, dither, bayer) {
+  let q = 0;
+  while (q < bandThresholds.length && value + dither * bayer >= bandThresholds[q]) q += 1;
+  return q;
+}
+
 const fieldOptions = {
   cols: 24,
   rows: 12,
@@ -133,6 +139,7 @@ test("ramp indices stay inside the ramp for every tone count", () => {
 
 test("dither never moves a sample by more than one band", () => {
   const bands = thresholds(SKY_DEFAULTS.tones, SKY_DEFAULTS.stark);
+  let clampEngaged = false;
 
   for (let step = 0; step <= 1000; step += 1) {
     const value = step / 1000;
@@ -140,7 +147,9 @@ test("dither never moves a sample by more than one band", () => {
 
     for (const bayer of BAYER4) {
       for (let dither = 0; dither <= 100; dither += 5) {
+        const raw = rawToneIndex(value, bands, dither / 100, bayer);
         const band = toneIndex(value, bands, dither / 100, bayer);
+        if (Math.abs(raw - base) > 1) clampEngaged = true;
         assert.ok(
           Math.abs(band - base) <= 1,
           `value=${value} dither=${dither} bayer=${bayer}: ${base} -> ${band}`,
@@ -148,6 +157,16 @@ test("dither never moves a sample by more than one band", () => {
       }
     }
   }
+
+  assert.ok(clampEngaged, "the test must exercise a case the clamp actually changes");
+});
+
+test("the clamp pulls an over-dithered sample back to one band", () => {
+  const bands = [0.4, 0.5, 0.6];
+  const value = 0.45;
+
+  assert.equal(rawToneIndex(value, bands, 1, 1), 3, "unclamped dither crosses every band");
+  assert.equal(toneIndex(value, bands, 1, 1), 2, "one band above the undithered result");
 });
 
 test("dither dissolves a boundary instead of snapping it", () => {
