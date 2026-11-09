@@ -6,7 +6,8 @@
  * out of view, or the reader asked for reduced motion.
  *
  * No content depends on this file. Without it the poster image still covers
- * the viewport, and without a 2D context the sky layer shows a CSS gradient.
+ * the viewport. Without a 2D context the layer shows the poster over its CSS
+ * gradient, so a canvas block still reads as sky.
  */
 
 import { SKY_DEFAULTS, createField, renderFrame } from "/assets/sky-core.mjs";
@@ -20,7 +21,8 @@ if (sky && canvas) {
   const context = canvas.getContext("2d", { alpha: true });
 
   if (!context) {
-    // No 2D context: reveal the gradient underneath and leave the page alone.
+    // No 2D context: show the poster over the gradient. The page is otherwise
+    // untouched.
     sky.classList.add("sky--fallback");
   } else {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");

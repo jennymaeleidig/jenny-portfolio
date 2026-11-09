@@ -133,7 +133,12 @@ body {
   image-rendering: pixelated;
 }
 
-.sky--fallback .sky-poster,
+.sky--fallback {
+  background:
+    url("/assets/sky-poster.svg") center / cover no-repeat,
+    linear-gradient(180deg, var(--sky-1) 0%, var(--paper) 55%);
+}
+
 .sky--fallback .sky-canvas {
   display: none;
 }
