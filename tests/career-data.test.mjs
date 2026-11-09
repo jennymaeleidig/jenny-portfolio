@@ -89,7 +89,7 @@ test("the profile candidate block carries the same identity and the live portfol
   assert.doesNotMatch(profile, /straw\.page/);
 });
 
-test("the CV carries every resume role, grouped under its employer", () => {
+test("the CV carries every career role, grouped under its employer", () => {
   const experience = section(cv, "Work Experience");
   for (const file of readdirSync(join(root, "content", "career", "experience")).filter((n) => n.endsWith(".md"))) {
     const path = join(root, "content", "career", "experience", file);

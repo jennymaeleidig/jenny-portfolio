@@ -34,7 +34,6 @@ shell_sheet_open() {
         <nav aria-label="Primary">
           <a href="/">Jenny Leidig</a>
           <a href="/work/">Work</a>
-          <a href="/resume/">Resume</a>
           <a href="/about/">About</a>
           <a href="/now/">Now</a>
         </nav>
@@ -67,25 +66,6 @@ page_close() {
   cat <<EOF
     <script type="module" src="/assets/sky.js"></script>
     <script type="module" src="/assets/nav.js"></script>
-  </body>
-</html>
-EOF
-}
-
-# The same shell with no sky and no scripts, for pages that must print and
-# scan cleanly. The resume carries everything in markup, so nothing here
-# depends on JavaScript.
-page_open_plain() {
-  shell_head "$1"
-  shell_sheet_open
-}
-
-page_close_plain() {
-  shell_main_close
-  if [[ -n ${PLAIN_SCRIPT:-} ]]; then
-    printf '    <script type="module" src="%s"></script>\n' "$PLAIN_SCRIPT"
-  fi
-  cat <<EOF
   </body>
 </html>
 EOF
