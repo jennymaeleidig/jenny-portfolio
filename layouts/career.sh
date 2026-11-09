@@ -6,9 +6,10 @@
 # behind the filter bar, the same shape as the project categories.
 #
 # Source (reference for the form, not the words):
-#   Andreas, "andreas.vision", https://andreas.vision/
+#   Andreas Kruszakin, "andreas.vision", https://andreas.vision/
 # Work notes paired with the reasoning behind them, specific and first person.
-# A living site, so no version to pin: the locator is the URL.
+# The site states no licence, so none is assumed: read it, paraphrase nothing
+# long, and quote no prose. A living site, so the locator is the URL.
 set -euo pipefail
 
 : "${SITE_ROOT:?SITE_ROOT is required}"

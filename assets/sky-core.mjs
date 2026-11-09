@@ -19,7 +19,9 @@
  *   Apache-2.0, https://shaders.paper.design/
  *   Code: https://github.com/paper-design/shaders
  * The dither, grain and gradient vocabulary here follows that library's look.
- * Nothing from it is vendored, so only the credit is owed, not the notice.
+ * Nothing from it is vendored, so only the credit is owed. Its NOTICE file
+ * ("Powered by Paper Shaders: https://shaders.paper.design") has to travel
+ * only if shader code is ever copied in.
  */
 
 /** The canonical sky ramp, lightest first. Matches the --sky-* tokens. */
