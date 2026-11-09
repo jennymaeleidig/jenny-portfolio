@@ -60,6 +60,7 @@ sed 's#/assets/#assets/#g' "$DIST/assets/site.css" > "$print_css"
 RESUME_DIR="$resume_dir" \
   RESUME_OMIT_ENTRIES="${PRINT_OMIT_ENTRIES[*]:-}" \
   RESUME_PHONE="${PHONE:?content/resume/contact.sh must define PHONE}" \
+  RESUME_SELECTOR=0 \
   ASSET_BASE=assets \
   STYLESHEET=resume-print.css \
   "$SITE_ROOT/layouts/resume.sh" > "$print_html"

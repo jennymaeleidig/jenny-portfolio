@@ -55,10 +55,22 @@ changing an address changes it everywhere it appears, including the footer.
 
 ### Resume
 
-`/resume` is the complete record: every role, every project marked `cv: true`
-and every publication, newest first within each section. It carries no phone
-number, photo, image or canvas, and it loads no scripts, so it reads and prints
-without JavaScript.
+`/resume` is the complete record in markup: every role, every project marked
+`cv: true` and every publication, newest first within each section. It carries
+no phone number, photo, image or canvas, and its one script is the same-origin
+selector, so the page reads and prints the canonical selection without
+JavaScript.
+
+A selector at the top of the page toggles whole sections and individual
+experience entries. The default selection is exactly the PDF's: entries named
+in `content/resume/print.sh` are still in the markup but start hidden. The
+choice lives in the query string (`?include=...`; `?include=none` for an empty
+selection), so it survives a reload and can be sent to someone else. An absent
+or empty query means the default, and unknown ids are ignored rather than
+blanking the page. Nothing is stored, no cookie is set and nothing is fetched;
+the browser module only applies the selection to markup that is already there
+and writes the query back with `history.replaceState`. Printing respects the
+current selection and hides the controls themselves.
 
 The career record lives under `content/resume/`: `summary.md` and `skills.md`
 are hand-written markdown, while `experience/`, `volunteering/`, `education/`
@@ -72,11 +84,11 @@ the site chrome and keep entries off page breaks.
 The build also writes `/resume.md`, the same complete record as plain markdown,
 and prints `/resume.pdf` from a print copy of the page. The PDF is the curated
 selection: `content/resume/print.sh` names the entries it omits by default, so
-the two-page ceiling holds. Headless Chrome prints it at Letter with JavaScript
-disabled and no header or footer. The phone number lives in
-`content/resume/contact.sh`, reaches the print copy only, and appears in no
-page's markup or in `resume.md`. The PDF is a build artifact and is never
-committed.
+the two-page ceiling holds and the page's default matches it. Headless Chrome
+prints it at Letter with JavaScript disabled and no header or footer. The
+phone number lives in `content/resume/contact.sh`, reaches the print copy only,
+and appears in no page's markup or in `resume.md`. The PDF is a build artifact
+and is never committed.
 
 ## How the build works
 
@@ -97,6 +109,8 @@ The build empties `dist/` before generating, sets `cmark-gfm` as the markdown pa
 - `assets/site.css` is the grid forked once from the same project, with its attribution and MIT notice intact. It is light only, uses the site tokens, and keeps the `round(down, ...)` rules behind `@supports` fallbacks.
 - `assets/sky-core.mjs` is the sky's pure core: hash, value noise, fBm, tone bands and the ordered-dither quantiser. It is imported by both the browser layer and the tests.
 - `assets/sky.js` is the browser half: it picks a fresh seed per visit, snaps a block to whole device pixels, re-quantises the cached field each frame, and stops on `visibilitychange`, when the canvas leaves the viewport, or under `prefers-reduced-motion`.
+- `assets/resume-selector-core.mjs` is the resume selector's pure core: it parses the `include` query against the page's ids and the PDF's default omissions, and serialises a selection back to a query. The browser module and the tests import it.
+- `assets/resume-selector.js` is the resume selector's browser half: it applies the query to the existing entries and section toggles, reflects changes through `history.replaceState`, and fetches nothing. It is the only script on `/resume`.
 - `assets/nav.js` is the progressive navigation enhancement: internal page links swap `<main>` and the title through `history.pushState` instead of reloading. The sky canvas lives outside `<main>`, so it keeps running across page changes. Without it, or when a fetch fails, links behave as ordinary links.
 - `assets/sky-poster.svg` is a static frame at the shipped 2px cell size, shown when JavaScript is off or no 2D context can be created. It is generated from the same core by `node scripts/sky-poster.mjs`; the frame is embedded as a base64 PNG so the committed file stays text inside the no-binaries rule. The SVG records a frame hash that the tests check against the core.
 - `assets/portrait.svg` is the square portrait on About, carried over from the previous straw.page site and embedded as a base64 JPEG for the same reason. It appears on About only, never on Now or the resume.

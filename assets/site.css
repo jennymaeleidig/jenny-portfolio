@@ -619,9 +619,83 @@ th {
 }
 
 /*
- * The resume is the complete record. It has no sky, no photo and no scripts,
- * and prints from the browser without the selector being present.
+ * The resume is the complete record in markup. It has no sky and no photo,
+ * and its one script is the progressive selector; without JavaScript it still
+ * reads and prints the canonical selection.
  */
+[hidden] {
+  display: none !important;
+}
+
+.resume-selector {
+  border: var(--border-thickness) solid var(--sky-2);
+  padding: calc(var(--line-height) / 2) 2ch var(--line-height);
+  margin: calc(var(--line-height) * 2) 0 0;
+  font-size: 0.875rem;
+}
+
+.resume-selector h2 {
+  margin-top: 0;
+}
+
+.resume-selector-note {
+  color: color-mix(in srgb, var(--ink) 75%, var(--paper));
+}
+
+.resume-selector-section {
+  border: 0;
+  border-top: var(--border-thickness) solid var(--sky-2);
+  margin: 0;
+  padding: calc(var(--line-height) / 2) 0 0;
+}
+
+.resume-selector-section legend {
+  padding: 0 1ch 0 0;
+  font-weight: var(--font-weight-bold);
+}
+
+.resume-selector-toggle,
+.resume-selector-entry {
+  display: flex;
+  gap: 1ch;
+  align-items: baseline;
+}
+
+.resume-selector-toggle {
+  font-weight: var(--font-weight-medium);
+}
+
+.resume-selector-entries {
+  display: grid;
+  gap: calc(var(--line-height) / 4);
+  padding: 0;
+  margin: calc(var(--line-height) / 2) 0 0;
+  list-style: none;
+}
+
+.resume-selector input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.resume-selector-apply {
+  margin-top: var(--line-height);
+  padding: calc(var(--line-height) / 4) 1ch;
+  border: var(--border-thickness) solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.resume-selector-apply:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .resume-header {
   border-bottom: var(--border-thickness) solid var(--sky-4);
   padding-bottom: var(--line-height);
@@ -707,6 +781,15 @@ th {
 }
 
 @media print {
+  .resume-selector {
+    display: none;
+  }
+
+  .resume-entry[hidden],
+  .resume-section[hidden] {
+    display: none;
+  }
+
   :root {
     --line-height: 1rem;
     --border-thickness: 1px;

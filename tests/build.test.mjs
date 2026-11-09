@@ -269,7 +269,7 @@ test("every page carries its content without JavaScript", () => {
       assert.match(tag, /type="module"/, `${relative(root, file)} must not use a classic script`);
       assert.match(
         tag,
-        /src="\/assets\/(sky|nav)\.js"/,
+        /src="\/assets\/(sky|nav|resume-selector)\.js"/,
         `${relative(root, file)} may only load the site's own modules`,
       );
     }
@@ -654,8 +654,19 @@ test("no phone number appears on any page", () => {
 function resumeSection(name, base = output) {
   const resume = readFileSync(join(base, "resume", "index.html"), "utf8");
   return resume.match(
-    new RegExp(`<section class="resume-section" aria-labelledby="resume-${name}">([\\s\\S]*?)</section>`),
+    new RegExp(`<section class="resume-section" aria-labelledby="resume-${name}"[^>]*>([\\s\\S]*?)</section>`),
   )?.[1] ?? "";
+}
+
+// The default selection's one source of truth is the print selection, not a
+// second hand-kept list in the test.
+function printOmittedIds() {
+  const print = readFileSync(join(root, "content", "resume", "print.sh"), "utf8");
+  const block = print.match(/PRINT_OMIT_ENTRIES=\(([\s\S]*?)\)/)?.[1] ?? "";
+  return block
+    .split("\n")
+    .map((line) => line.replace(/#.*$/, "").trim())
+    .filter(Boolean);
 }
 
 test("the resume carries every role, CV project and publication", () => {
@@ -725,15 +736,110 @@ test("the resume is chronological, newest first, within each section", () => {
   );
 });
 
-test("the resume has no phone, photo, image, canvas or script", () => {
+test("the resume has no phone, photo, image, canvas or sky, and one same-origin selector script", () => {
   const resume = readFileSync(join(output, "resume", "index.html"), "utf8");
 
   assert.doesNotMatch(resume, /276\)?[.\-\s]?356[.\-\s]?4765/);
   assert.doesNotMatch(resume, /\+1[.\-\s]?276/);
   assert.doesNotMatch(resume, /portrait/);
   assert.doesNotMatch(resume, /<(?:img|picture|svg|canvas)\b/i);
-  assert.doesNotMatch(resume, /<script\b/i);
   assert.doesNotMatch(resume, /class="sky"/);
+
+  // The markup is the complete record without JavaScript. The single script
+  // is the progressive selector, loaded from this site and nowhere else.
+  assert.equal((resume.match(/<section class="resume-section"/g) ?? []).length, 7);
+  assert.match(resume, /<h1>Resume<\/h1>/);
+  assert.match(resume, /id="experience-virginia-tech-swat"/);
+
+  const scripts = [...resume.matchAll(/<script\b[^>]*>/gi)].map(([tag]) => tag);
+  assert.equal(scripts.length, 1, "the resume loads exactly one script");
+  assert.match(scripts[0], /type="module"/);
+  assert.match(scripts[0], /src="\/assets\/resume-selector\.js"/);
+  assert.doesNotMatch(scripts[0], /https?:\/\//);
+});
+
+test("the resume defaults to exactly the selection the PDF prints", () => {
+  const omitted = printOmittedIds();
+  const resume = readFileSync(join(output, "resume", "index.html"), "utf8");
+  const printHtml = readFileSync(resumePrintHtml, "utf8");
+
+  const entryIds = [...resume.matchAll(/<div class="resume-entry" id="([^"]+)"/g)].map(([, id]) => id);
+  const hidden = [
+    ...resume.matchAll(/<div class="resume-entry" id="([^"]+)"[^>]*\bhidden\b/g),
+  ].map(([, id]) => id);
+
+  assert.deepEqual([...hidden].sort(), [...omitted].sort(), "only the PDF omissions start hidden");
+  for (const id of omitted) {
+    assert.ok(entryIds.includes(id), `${id} is still in the page markup without JavaScript`);
+    assert.doesNotMatch(printHtml, new RegExp(`id="${escapeRegExp(id)}"`), `${id} is not printed`);
+  }
+
+  const printed = entryIds.filter((id) => !omitted.includes(id));
+  assert.ok(printed.length > 0, "the print copy carries the selected entries");
+  assert.match(printHtml, new RegExp(`id="${escapeRegExp(printed[0])}"`));
+});
+
+test("the resume selector is accessible and its default matches the PDF", () => {
+  const resume = readFileSync(join(output, "resume", "index.html"), "utf8");
+  const omitted = printOmittedIds();
+
+  assert.match(
+    resume,
+    /<form class="resume-selector" method="get" action="\/resume\/" data-resume-selector data-default-omitted="[^"]*">/,
+  );
+  assert.equal((resume.match(/<h1\b/g) ?? []).length, 1, "the page keeps one heading");
+  assert.match(resume, /<legend>Experience<\/legend>/);
+
+  const sectionIds = [...resume.matchAll(/data-resume-section="([^"]+)"/g)].map(([, id]) => id);
+  assert.deepEqual(sectionIds, [
+    "resume-summary",
+    "resume-experience",
+    "resume-projects",
+    "resume-publications",
+    "resume-volunteering",
+    "resume-education",
+    "resume-skills",
+  ]);
+
+  const entryIds = [...resume.matchAll(/<div class="resume-entry" id="([^"]+)"/g)].map(([, id]) => id);
+  const experienceIds = [...resume.matchAll(/<div class="resume-entry" id="(experience-[^"]+)"/g)].map(
+    ([, id]) => id,
+  );
+  const inputs = [
+    ...resume.matchAll(/<input type="checkbox" name="include" value="([^"]+)"( checked)?>/g),
+  ].map(([, id, checked]) => ({ id, checked: Boolean(checked) }));
+
+  const known = new Set([...sectionIds, ...entryIds]);
+  for (const input of inputs) {
+    assert.ok(known.has(input.id), `${input.id} maps to a section or entry on the page`);
+  }
+
+  const expected = [...sectionIds, ...experienceIds].filter((id) => !omitted.includes(id));
+  const checked = inputs.filter((input) => input.checked).map((input) => input.id);
+  assert.deepEqual([...checked].sort(), [...expected].sort(), "the controls start at the PDF selection");
+
+  assert.equal(
+    (resume.match(/<label class="resume-selector-(?:toggle|entry)">/g) ?? []).length,
+    inputs.length,
+    "every control has a label wrapping its input",
+  );
+  assert.match(resume, /<button type="submit"[^>]*>Apply selection<\/button>/);
+});
+
+test("the resume selector is the site's own module and its core is emitted", () => {
+  assert.equal(statSync(join(output, "assets", "resume-selector.js")).isFile(), true);
+  assert.equal(statSync(join(output, "assets", "resume-selector-core.mjs")).isFile(), true);
+
+  const browser = readFileSync(join(output, "assets", "resume-selector.js"), "utf8");
+  assert.match(browser, /from "\/assets\/resume-selector-core\.mjs"/);
+  assert.match(browser, /history\.replaceState/);
+  assert.doesNotMatch(browser, /https?:\/\//, "the selector fetches nothing from another origin");
+});
+
+test("print styles hide the selector and whatever the selection hides", () => {
+  assert.match(siteCss, /\[hidden\]\s*\{[^}]*display:\s*none/s);
+  assert.match(siteCss, /@media print[\s\S]*\.resume-selector\s*\{[^}]*display:\s*none/s);
+  assert.match(siteCss, /@media print[\s\S]*\.resume-entry\[hidden\][^{]*\{[^}]*display:\s*none/s);
 });
 
 test("the resume's project section is exactly the CV-visible projects", () => {

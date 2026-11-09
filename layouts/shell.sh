@@ -81,6 +81,9 @@ page_open_plain() {
 
 page_close_plain() {
   shell_main_close
+  if [[ -n ${PLAIN_SCRIPT:-} ]]; then
+    printf '    <script type="module" src="%s"></script>\n' "$PLAIN_SCRIPT"
+  fi
   cat <<EOF
   </body>
 </html>
