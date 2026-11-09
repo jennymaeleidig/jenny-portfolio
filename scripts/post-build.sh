@@ -75,7 +75,7 @@ if [[ ! -s $DIST/work/career/index.html ]]; then
   exit 1
 fi
 
-for page in resume about now; do
+for page in about now; do
   mkdir -p "$DIST/$page"
   "$SITE_ROOT/layouts/$page.sh" > "$DIST/$page/index.html"
   if [[ ! -s $DIST/$page/index.html ]]; then
@@ -93,8 +93,6 @@ if [[ ! -s $DIST/404/index.html ]]; then
   exit 1
 fi
 cp "$DIST/404/index.html" "$DIST/404.html"
-
-"$SITE_ROOT/scripts/resume-exports.sh"
 
 # The sitemap walks what is now on disk, so it cannot drift from the build.
 "$SITE_ROOT/scripts/sitemap.sh"

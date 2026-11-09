@@ -63,8 +63,8 @@ date_span() {
 }
 
 # Render a section whose entries nest under one employer or organisation,
-# newest first. Grouping is by identity, exactly as /resume groups it, so two
-# roles at the same employer stay together.
+# newest first. Grouping is by identity, exactly as /work/career/ groups it, so
+# two roles at the same employer stay together.
 render_grouped() {
   local dir=$1 group_field=$2
   local -a groups=()

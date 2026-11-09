@@ -17,7 +17,6 @@ if [[ -z $dist || $dist == "/" || $dist == "$root" ]]; then
 fi
 
 content_dir=${CONTENT_DIR:-"$root/content/projects"}
-export RESUME_PDF=${RESUME_PDF:-1}
 
 if ! command -v cmark-gfm >/dev/null 2>&1; then
   echo "error: cmark-gfm is required, install it with 'brew install cmark-gfm' or 'apt install cmark-gfm'" >&2

@@ -15,7 +15,7 @@ cat <<'EOF'
         <ul class="links" aria-label="Routes back into the site">
           <li><a href="/">Home</a></li>
           <li><a href="/work/">Work</a></li>
-          <li><a href="/resume/">Resume</a></li>
+          <li><a href="/work/career/">Career</a></li>
           <li><a href="/about/">About</a></li>
           <li><a href="/now/">Now</a></li>
         </ul>

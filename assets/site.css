@@ -613,143 +613,6 @@ th {
 }
 
 /*
- * The resume is the complete record in markup. It has no sky and no photo,
- * and its one script is the progressive selector; without JavaScript it still
- * reads and prints the canonical selection.
- */
-[hidden] {
-  display: none !important;
-}
-
-.resume-selector-note {
-  color: color-mix(in srgb, var(--ink) 75%, var(--paper));
-  font-size: 0.875rem;
-}
-
-/* The toggle sits beside the thing it governs, in the same row. */
-.resume-toggle {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-}
-
-.resume-toggle input[type="checkbox"] {
-  width: 1rem;
-  height: 1rem;
-  margin: 0;
-  accent-color: var(--accent);
-}
-
-.resume-section-head {
-  display: flex;
-  align-items: baseline;
-  gap: 1ch;
-  border-bottom: var(--border-thickness) solid var(--sky-2);
-  padding-bottom: calc(var(--line-height) / 2);
-  margin-bottom: calc(var(--line-height) / 2);
-}
-
-.resume-section .resume-section-head h2 {
-  margin: 0;
-  padding: 0;
-  border-bottom: 0;
-}
-
-.resume-entry-head {
-  display: flex;
-  align-items: baseline;
-  gap: 1ch;
-}
-
-.resume-entry-head > * {
-  margin: 0;
-}
-
-.resume-header {
-  border-bottom: var(--border-thickness) solid var(--sky-4);
-  padding-bottom: var(--line-height);
-}
-
-.resume-header > * + * {
-  margin-top: calc(var(--line-height) / 2);
-}
-
-.resume-header h1 {
-  margin: 0;
-}
-
-.resume-name {
-  font-size: 1.25rem;
-  font-weight: var(--font-weight-bold);
-}
-
-.resume-tagline {
-  font-weight: var(--font-weight-medium);
-}
-
-.resume-header .links {
-  border-top: 0;
-  padding-top: 0;
-}
-
-.resume-section > * + * {
-  margin-top: var(--line-height);
-}
-
-.resume-section h2 {
-  border-bottom: var(--border-thickness) solid var(--sky-2);
-  padding-bottom: calc(var(--line-height) / 2);
-  margin-bottom: calc(var(--line-height) / 2);
-}
-
-.resume-group + .resume-group {
-  margin-top: calc(var(--line-height) * 1.5);
-}
-
-.resume-group > * + * {
-  margin-top: calc(var(--line-height) / 2);
-}
-
-.resume-group h3 {
-  margin: 0;
-}
-
-.resume-group .meta {
-  margin-top: 0;
-}
-
-.resume-entry + .resume-entry {
-  margin-top: var(--line-height);
-}
-
-.resume-entry > * + * {
-  margin-top: calc(var(--line-height) / 4);
-}
-
-.resume-entry-title {
-  font-weight: var(--font-weight-bold);
-}
-
-.resume-entry-dates,
-.resume-note {
-  font-size: 0.875rem;
-  color: color-mix(in srgb, var(--ink) 75%, var(--paper));
-}
-
-.resume-body {
-  margin-top: calc(var(--line-height) / 2);
-}
-
-.resume-body > * + * {
-  margin-top: calc(var(--line-height) / 2);
-}
-
-.resume-body p,
-.resume-body ul {
-  margin: 0;
-}
-
-/*
  * The Work tabs are ordinary links to real pages, and the career page is the
  * narrow record on the site's normal shell.
  */
@@ -838,16 +701,6 @@ th {
 }
 
 @media print {
-  .resume-toggle,
-  .resume-selector-note {
-    display: none;
-  }
-
-  .resume-entry[hidden],
-  .resume-section[hidden] {
-    display: none;
-  }
-
   :root {
     --line-height: 1rem;
     --border-thickness: 1px;
@@ -898,76 +751,12 @@ th {
     display: none;
   }
 
-  .resume a {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .resume-header {
-    padding-bottom: 0.25rem;
-  }
-
-  .resume-header > * + * {
-    margin-top: 0.1rem;
-  }
-
-  .resume-section > * + * {
-    margin-top: 0.2rem;
-  }
-
-  .resume-section h2 {
-    border-bottom-color: #000;
-  }
-
-  .resume-section-head {
-    border-bottom: 1px solid #000;
-    padding-bottom: 0.05rem;
-    margin: 0.6rem 0 0.15rem;
-  }
-
-  .resume-section .resume-section-head h2 {
-    font-size: 0.8rem;
-    margin: 0;
-    padding: 0;
-  }
-
-  .resume-group + .resume-group {
+  .career-group + .career-group {
     margin-top: 0.75rem;
   }
 
-  .resume-group > * + * {
-    margin-top: 0.1rem;
-  }
-
-  .resume-entry + .resume-entry {
+  .career-entry + .career-entry {
     margin-top: 0.5rem;
-  }
-
-  .resume-entry > * + * {
-    margin-top: 0.05rem;
-  }
-
-  .resume-body {
-    margin-top: 0.1rem;
-  }
-
-  .resume-body > * + * {
-    margin-top: 0.1rem;
-  }
-
-  .resume-body ul {
-    padding-left: 1.5ch;
-  }
-
-  .resume-entry-dates,
-  .resume-note,
-  .resume-phone {
-    font-size: 0.7rem;
-  }
-
-  .resume-entry,
-  .resume-group {
-    break-inside: avoid;
   }
 
   .career-entry,
