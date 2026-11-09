@@ -93,6 +93,49 @@ body {
 
 .sheet {
   width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--sky-2);
+}
+
+/*
+ * The sky: a poster image and a canvas, both fixed behind the sheet at
+ * z-index -1. The gradient underneath is the fallback when there is no 2D
+ * context; without JavaScript the poster covers it, and the canvas covers the
+ * poster once it has painted.
+ */
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--sky-1) 0%, var(--paper) 55%);
+}
+
+.sky-poster,
+.sky-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: block;
+  border: 0;
+}
+
+.sky-poster {
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sky-canvas {
+  z-index: -1;
+  image-rendering: pixelated;
+}
+
+.sky--fallback .sky-poster,
+.sky--fallback .sky-canvas {
+  display: none;
 }
 
 .site-header {

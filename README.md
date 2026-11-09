@@ -36,6 +36,9 @@ The build empties `dist/` before generating, sets `cmark-gfm` as the markdown pa
 
 - `assets/reset.css` is the reset from [The Monospace Web](https://github.com/owickstrom/the-monospace-web), carried over verbatim.
 - `assets/site.css` is the grid forked once from the same project, with its attribution and MIT notice intact. It is light only, uses the site tokens, and keeps the `round(down, ...)` rules behind `@supports` fallbacks.
+- `assets/sky-core.mjs` is the sky's pure core: hash, value noise, fBm, tone bands and the ordered-dither quantiser. It is imported by both the browser layer and the tests.
+- `assets/sky.js` is the browser half: it snaps a block to whole device pixels, re-quantises the cached field each frame, and stops on `visibilitychange`, when the canvas leaves the viewport, or under `prefers-reduced-motion`.
+- `assets/sky-poster.svg` is the still shown when JavaScript is off. It is generated from the same core by `node scripts/sky-poster.mjs`, so it stays text inside the no-binaries rule.
 - `assets/fonts/CommitMonoV143-VF.woff2` is Commit Mono v1.143, the `wght 200-700`, `ital 0-1` variable font, self-hosted and preloaded. Its SIL Open Font License sits beside it as `LICENSE-FONT`. It is the one binary file committed to the repo.
 
 ## Local development

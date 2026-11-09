@@ -75,11 +75,33 @@ test("markdown is rendered without its frontmatter", () => {
   assert.doesNotMatch(page, /^category:/m);
 });
 
-test("the page is readable without JavaScript", () => {
+test("every page carries its content without JavaScript", () => {
   for (const file of htmlFiles) {
     const html = readFileSync(file, "utf8");
-    assert.doesNotMatch(html, /<script\b/i, `${relative(root, file)} must not need JavaScript`);
     assert.match(html, /<main\b/i, `${relative(root, file)} must carry its content in markup`);
+
+    for (const [tag] of html.matchAll(/<script\b[^>]*>/gi)) {
+      assert.match(tag, /type="module"/, `${relative(root, file)} must not use a classic script`);
+      assert.match(tag, /src="\/assets\/sky\.js"/, `${relative(root, file)} may only load the sky`);
+    }
+  }
+});
+
+test("the sky sits behind the sheet with its poster and gradient fallbacks", () => {
+  const home = readFileSync(join(output, "index.html"), "utf8");
+
+  assert.match(home, /<div class="sky" aria-hidden="true">/);
+  assert.match(home, /<canvas class="sky-canvas"><\/canvas>/);
+  assert.match(home, /<noscript><img[^>]*class="sky-poster"[^>]*src="\/assets\/sky-poster\.svg"[^>]*><\/noscript>/);
+  assert.match(home, /<script type="module" src="\/assets\/sky\.js"><\/script>/);
+
+  assert.match(siteCss, /\.sky\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*-1;/s);
+  assert.match(siteCss, /\.sky\s*\{[^}]*linear-gradient\(180deg, var\(--sky-1\)/s);
+  assert.match(siteCss, /\.sky-canvas\s*\{[^}]*image-rendering:\s*pixelated/s);
+  assert.match(siteCss, /\.sky--fallback\s+\.sky-canvas[^{]*\{[^}]*display:\s*none/s);
+
+  for (const asset of ["sky.js", "sky-core.mjs", "sky-poster.svg"]) {
+    assert.equal(statSync(join(output, "assets", asset)).isFile(), true, `${asset} is emitted`);
   }
 });
 

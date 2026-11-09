@@ -17,6 +17,10 @@ page_open() {
     <link rel="stylesheet" href="/assets/site.css">
   </head>
   <body>
+    <div class="sky" aria-hidden="true">
+      <noscript><img class="sky-poster" src="/assets/sky-poster.svg" alt="" width="1600" height="1000"></noscript>
+      <canvas class="sky-canvas"></canvas>
+    </div>
     <div class="sheet">
       <header class="site-header">
         <nav aria-label="Primary">
@@ -32,6 +36,7 @@ page_close() {
   cat <<EOF
       <footer class="site-footer"><a href="/">Jenny Leidig</a></footer>
     </div>
+    <script type="module" src="/assets/sky.js"></script>
   </body>
 </html>
 EOF
