@@ -13,6 +13,13 @@
  *   4. the quantiser only ever emits indices into the canonical ramp.
  *
  * The browser layer (assets/sky.js) is the only part that touches the DOM.
+ *
+ * Source (visual reference only, no code copied):
+ *   Paper, "Paper Shaders: ultra-fast zero-dependency shaders",
+ *   Apache-2.0, https://shaders.paper.design/
+ *   Code: https://github.com/paper-design/shaders
+ * The dither, grain and gradient vocabulary here follows that library's look.
+ * Nothing from it is vendored, so only the credit is owed, not the notice.
  */
 
 /** The canonical sky ramp, lightest first. Matches the --sky-* tokens. */

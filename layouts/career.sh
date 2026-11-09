@@ -4,6 +4,11 @@
 # disclosures, so the summaries read as an index and the record opens without
 # JavaScript. The whole record is one page; each section also has its own route
 # behind the filter bar, the same shape as the project categories.
+#
+# Source (reference for the form, not the words):
+#   Andreas, "andreas.vision", https://andreas.vision/
+# Work notes paired with the reasoning behind them, specific and first person.
+# A living site, so no version to pin: the locator is the URL.
 set -euo pipefail
 
 : "${SITE_ROOT:?SITE_ROOT is required}"

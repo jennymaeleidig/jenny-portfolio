@@ -53,6 +53,14 @@ EOF
 
 shell_main_close() {
   printf '      </main>\n'
+  # Citations in this tree follow the Joint Declaration of Data Citation
+  # Principles (FORCE11): name every contributor, pin a version or commit, and
+  # give a stable locator, so a reader can check the claim and not just the
+  # credit. That is the yardstick for the source comments in this repo, not a
+  # source in its own right.
+  #
+  # Applied here: no page lists its sources yet, so a claim that rests on data
+  # has nowhere to point. When one is added, it names the data and its locator.
   cat <<EOF
       <footer class="site-footer"><a href="mailto:$(html_escape "$EMAIL")">$(html_escape "$EMAIL")</a></footer>
     </div>
