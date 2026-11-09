@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Resume: the complete record, in chronological order, from the project
-# sidecars and the hand-written resume records under content/resume/.
+# sidecars and the hand-written resume records under content/career/.
 set -euo pipefail
 
 : "${META_DIR:?META_DIR is required}"
@@ -11,7 +11,7 @@ source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 
-resume_dir=${RESUME_DIR:-"$SITE_ROOT/content/resume"}
+career_dir=${CAREER_DIR:-"$SITE_ROOT/content/career"}
 name=${FULL_NAME:?content/identity.sh must define FULL_NAME}
 tagline=${TAGLINE:?content/identity.sh must define TAGLINE}
 omit_entries=${RESUME_OMIT_ENTRIES:-}
@@ -21,9 +21,9 @@ selector=${RESUME_SELECTOR:-1}
 # the PDF's omissions hidden, so the no-query default is the same selection
 # without duplicating the list in a second place.
 default_omitted=${RESUME_DEFAULT_OMIT_ENTRIES-}
-if [[ -z ${RESUME_DEFAULT_OMIT_ENTRIES+x} && -f $resume_dir/print.sh ]]; then
+if [[ -z ${RESUME_DEFAULT_OMIT_ENTRIES+x} && -f $career_dir/print.sh ]]; then
   # shellcheck source=/dev/null
-  source "$resume_dir/print.sh"
+  source "$career_dir/print.sh"
   default_omitted="${PRINT_OMIT_ENTRIES[*]:-}"
 fi
 
@@ -104,7 +104,7 @@ render_grouped_entries() {
     else
       group_files[found]+=$'\n'"$file"
     fi
-  done < <(resume_files "$dir" start)
+  done < <(career_files "$dir" start)
 
   for ((i = 0; i < ${#groups[@]}; i++)); do
     group=${groups[i]}
@@ -186,7 +186,7 @@ cat <<EOF
           <section class="resume-section" aria-labelledby="resume-summary" data-resume-section="resume-summary"$(hidden_attr resume-summary)>
 $(section_heading resume-summary Summary)
             <div class="prose">
-$(markdown_body "$resume_dir/summary.md")
+$(markdown_body "$career_dir/summary.md")
             </div>
           </section>
 
@@ -194,7 +194,7 @@ $(markdown_body "$resume_dir/summary.md")
 $(section_heading resume-experience Experience)
 EOF
 
-render_grouped_entries "$resume_dir/experience" employer experience
+render_grouped_entries "$career_dir/experience" employer experience
 
 cat <<EOF
           </section>
@@ -253,7 +253,7 @@ while IFS= read -r file; do
               <p class="resume-entry-dates">$(html_escape "$meta")</p>
             </div>
 EOF
-done < <(resume_files "$resume_dir/publications" year)
+done < <(career_files "$career_dir/publications" year)
 
 cat <<EOF
           </section>
@@ -262,7 +262,7 @@ cat <<EOF
 $(section_heading resume-volunteering Volunteering)
 EOF
 
-render_grouped_entries "$resume_dir/volunteering" organization volunteering
+render_grouped_entries "$career_dir/volunteering" organization volunteering
 
 cat <<EOF
           </section>
@@ -293,7 +293,7 @@ EOF
     printf '              <p class="resume-note">%s</p>\n' "$(html_escape "$note")"
   fi
   printf '            </div>\n'
-done < <(resume_files "$resume_dir/education" start)
+done < <(career_files "$career_dir/education" start)
 
 cat <<EOF
           </section>
@@ -301,7 +301,7 @@ cat <<EOF
           <section class="resume-section" aria-labelledby="resume-skills" data-resume-section="resume-skills"$(hidden_attr resume-skills)>
 $(section_heading resume-skills Skills)
             <div class="prose">
-$(markdown_body "$resume_dir/skills.md")
+$(markdown_body "$career_dir/skills.md")
             </div>
           </section>
         </article>

@@ -6,7 +6,7 @@ set -euo pipefail
 : "${DIST:?DIST is required}"
 : "${SITE_ROOT:?SITE_ROOT is required}"
 
-resume_dir=${RESUME_DIR:-"$SITE_ROOT/content/resume"}
+career_dir=${CAREER_DIR:-"$SITE_ROOT/content/career"}
 print_html="$DIST/resume-print.html"
 print_css="$DIST/resume-print.css"
 pdf="$DIST/resume.pdf"
@@ -16,7 +16,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-RESUME_DIR="$resume_dir" "$SITE_ROOT/layouts/resume-md.sh" > "$DIST/resume.md"
+CAREER_DIR="$career_dir" "$SITE_ROOT/layouts/resume-md.sh" > "$DIST/resume.md"
 
 if [[ ! -s $DIST/resume.md ]]; then
   echo "error: resume.md was not emitted" >&2
@@ -30,9 +30,9 @@ if [[ ${RESUME_PDF:-1} == 0 ]]; then
 fi
 
 # shellcheck source=/dev/null
-source "$resume_dir/contact.sh"
+source "$career_dir/contact.sh"
 # shellcheck source=/dev/null
-source "$resume_dir/print.sh"
+source "$career_dir/print.sh"
 
 chrome=${CHROME:-}
 if [[ -z $chrome ]]; then
@@ -57,9 +57,9 @@ fi
 # The print copy lives at the root of dist, so its asset references are
 # relative and resolve under file://. The page itself keeps absolute /assets.
 sed 's#/assets/#assets/#g' "$DIST/assets/site.css" > "$print_css"
-RESUME_DIR="$resume_dir" \
+CAREER_DIR="$career_dir" \
   RESUME_OMIT_ENTRIES="${PRINT_OMIT_ENTRIES[*]:-}" \
-  RESUME_PHONE="${PHONE:?content/resume/contact.sh must define PHONE}" \
+  RESUME_PHONE="${PHONE:?content/career/contact.sh must define PHONE}" \
   RESUME_SELECTOR=0 \
   ASSET_BASE=assets \
   STYLESHEET=resume-print.css \

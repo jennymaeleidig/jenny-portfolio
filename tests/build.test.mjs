@@ -661,7 +661,7 @@ function resumeSection(name, base = output) {
 // The default selection's one source of truth is the print selection, not a
 // second hand-kept list in the test.
 function printOmittedIds() {
-  const print = readFileSync(join(root, "content", "resume", "print.sh"), "utf8");
+  const print = readFileSync(join(root, "content", "career", "print.sh"), "utf8");
   const block = print.match(/PRINT_OMIT_ENTRIES=\(([\s\S]*?)\)/)?.[1] ?? "";
   return block
     .split("\n")
@@ -963,7 +963,7 @@ test("resume.md carries the complete record and no phone number", () => {
 });
 
 test("the PDF source carries the phone number and only the selected entries", () => {
-  const contact = readFileSync(join(root, "content", "resume", "contact.sh"), "utf8");
+  const contact = readFileSync(join(root, "content", "career", "contact.sh"), "utf8");
   const phone = contact.match(/^PHONE=(.+)$/m)?.[1] ?? "";
   const printHtml = readFileSync(resumePrintHtml, "utf8");
 
@@ -985,7 +985,7 @@ test("the build fails when the resume PDF exceeds two pages", () => {
   const resume = mkdtempSync(join(tmpdir(), "portfolio-resume-long-"));
   mkdirSync(join(resume, "experience"));
   for (const file of ["summary.md", "skills.md", "contact.sh", "print.sh"]) {
-    copyFileSync(join(root, "content", "resume", file), join(resume, file));
+    copyFileSync(join(root, "content", "career", file), join(resume, file));
   }
   for (let i = 1; i <= 20; i += 1) {
     writeFileSync(
@@ -1006,7 +1006,7 @@ end: present
 
   const result = spawnSync(buildScript, [dist], {
     cwd: root,
-    env: { ...process.env, RESUME_DIR: resume, RESUME_PDF: "1" },
+    env: { ...process.env, CAREER_DIR: resume, RESUME_PDF: "1" },
     encoding: "utf8",
   });
 
