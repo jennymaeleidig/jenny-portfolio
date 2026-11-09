@@ -1166,6 +1166,106 @@ test("the build fails, naming the file, when a project cannot be staged", () => 
   assert.match(result.stderr, /broken\.md/);
 });
 
+const SITE_HOST = "https://portfolio.jenny-page.online";
+
+// The route set as a visitor could enumerate it: every index.html under the
+// dist tree, with the Pages 404 fallback and the /404 route itself excluded.
+// This walks the emitted filesystem rather than reading the sitemap, so a page
+// with no sitemap entry and a sitemap entry with no page both fail below.
+function emittedRoutes(base) {
+  const routes = [];
+  for (const file of walk(base)) {
+    if (!file.endsWith(".html")) {
+      continue;
+    }
+    const rel = relative(base, file);
+    if (rel === "404.html") {
+      continue;
+    }
+    if (rel === "index.html") {
+      routes.push("/");
+    } else if (rel.endsWith("/index.html")) {
+      const route = `/${rel.slice(0, -"index.html".length)}`;
+      if (route !== "/404/") {
+        routes.push(route);
+      }
+    }
+  }
+  return routes.sort();
+}
+
+function sitemapLocs(base) {
+  const xml = readFileSync(join(base, "sitemap.xml"), "utf8");
+  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => loc);
+}
+
+function articleSlugs() {
+  return readdirSync(join(root, "content", "projects"))
+    .filter((name) => name.endsWith(".md"))
+    .filter((name) =>
+      /^category:\s*articles\s*$/m.test(readFileSync(join(root, "content", "projects", name), "utf8")),
+    )
+    .map((name) => name.replace(/\.md$/, ""));
+}
+
+test("/404 renders, offers the way back, and does not link to itself", () => {
+  const page = readFileSync(join(output, "404", "index.html"), "utf8");
+
+  assert.equal((page.match(/<h1\b/g) ?? []).length, 1, "/404 has one heading");
+  assert.match(page, /does not exist/i);
+
+  for (const route of ["/", "/work/", "/resume/", "/about/", "/now/"]) {
+    assert.match(
+      page,
+      new RegExp(`<a href="${escapeRegExp(route)}"`),
+      `/404 links back to ${route}`,
+    );
+  }
+  assert.doesNotMatch(page, /href="\/404\/?(?:"|\/)/, "/404 must not link to itself");
+});
+
+test("the root 404.html is the same page as /404", () => {
+  const route = readFileSync(join(output, "404", "index.html"), "utf8");
+  const fallback = readFileSync(join(output, "404.html"), "utf8");
+
+  assert.equal(fallback, route, "GitHub Pages' fallback carries the same page");
+});
+
+test("sitemap.xml lists exactly the routes the build emitted", () => {
+  const locs = sitemapLocs(output);
+  const expected = emittedRoutes(output).map((route) => `${SITE_HOST}${route}`);
+
+  assert.deepEqual([...locs].sort(), [...expected].sort());
+  assert.equal(locs[0], `${SITE_HOST}/`, "the root route comes first");
+  assert.deepEqual(locs.slice(1), [...locs.slice(1)].sort(), "the rest are sorted");
+  assert.equal(new Set(locs).size, locs.length, "no loc is repeated");
+  assert.equal(locs.some((loc) => loc.endsWith("/404") || loc.endsWith("/404/")), false);
+});
+
+test("the sitemap uses absolute same-site URLs and omits articles and exports", () => {
+  const locs = sitemapLocs(output);
+
+  for (const loc of locs) {
+    assert.ok(loc.startsWith(`${SITE_HOST}/`), `${loc} is absolute on the site host`);
+  }
+  for (const slug of articleSlugs()) {
+    assert.equal(
+      locs.some((loc) => loc.startsWith(`${SITE_HOST}/projects/${slug}/`)),
+      false,
+      `${slug} is an article with no page and must not be in the sitemap`,
+    );
+  }
+  assert.equal(locs.some((loc) => loc.endsWith("/resume.md")), false);
+  assert.equal(locs.some((loc) => loc.endsWith("/resume.pdf")), false);
+});
+
+test("robots.txt points at the absolute sitemap", () => {
+  const robots = readFileSync(join(output, "robots.txt"), "utf8");
+
+  assert.match(robots, /^User-agent: \*$/m);
+  assert.match(robots, new RegExp(`^Sitemap: ${escapeRegExp(SITE_HOST)}/sitemap\\.xml$`, "m"));
+});
+
 function trackedFiles() {
   try {
     return execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" })

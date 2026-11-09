@@ -77,4 +77,17 @@ for page in resume about now; do
   fi
 done
 
+# /404 is a route like any other, and GitHub Pages also serves a root 404.html
+# for unknown paths, so the same page is emitted at both.
+mkdir -p "$DIST/404"
+"$SITE_ROOT/layouts/404.sh" > "$DIST/404/index.html"
+if [[ ! -s $DIST/404/index.html ]]; then
+  echo "error: the 404 page was not emitted" >&2
+  exit 1
+fi
+cp "$DIST/404/index.html" "$DIST/404.html"
+
 "$SITE_ROOT/scripts/resume-exports.sh"
+
+# The sitemap walks what is now on disk, so it cannot drift from the build.
+"$SITE_ROOT/scripts/sitemap.sh"

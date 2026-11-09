@@ -52,6 +52,7 @@ mkdir -p "$meta_dir"
 
 cat > "$staging/.blogrc" <<EOF
 export BLOG_HOST='https://portfolio.jenny-page.online'
+export SITE_HOST='https://portfolio.jenny-page.online'
 export BLOG_TITLE='Jenny Leidig'
 export POSTS_PER_PAGE=1000
 export SUPPRESS_UTILS_WARN=1
