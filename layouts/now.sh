@@ -15,7 +15,7 @@ updated=$(frontmatter_value "$now" updated)
 # line, then the section's markdown, separated by \x1e so a section body can
 # span any number of paragraphs.
 rows=$(
-  markdown_source "$now" | awk '
+  frontmatter_body "$now" | awk '
     /^## / { printf "\036%s\n", substr($0, 4); next }
     { print }
     END { printf "\036" }

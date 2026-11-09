@@ -18,22 +18,6 @@ fail() {
   exit 1
 }
 
-frontmatter_of() {
-  awk '
-    NR == 1 && $0 == "---" { capture = 1; next }
-    capture && $0 == "---" { exit }
-    capture { print }
-  ' "$1"
-}
-
-body_of() {
-  awk '
-    NR == 1 && $0 == "---" { in_frontmatter = 1; next }
-    in_frontmatter && $0 == "---" { in_frontmatter = 0; next }
-    !in_frontmatter { print }
-  ' "$1"
-}
-
 # The opening paragraph after the H1 is the project's blurb: enough to make a
 # catalogue row worth clicking, and the only prose an article carries.
 blurb_of() {
@@ -42,76 +26,6 @@ blurb_of() {
     heading && /^[[:space:]]*$/ { if (text != "") exit; next }
     heading { text = (text == "" ? $0 : text " " $0) }
     END { print text }
-  '
-}
-
-# Flatten the frontmatter into tab-separated records the shell can read:
-#   scalar <key> <value>
-#   item   <section> <value>
-#   pair   <section> <subkey> <value>
-# Anything else is reported as invalid rather than silently dropped.
-frontmatter_records() {
-  printf '%s\n' "$1" | awk '
-    function trim(s) {
-      sub(/^[[:space:]]+/, "", s)
-      sub(/[[:space:]]+$/, "", s)
-      return s
-    }
-    function unquote(s) {
-      s = trim(s)
-      if (s ~ /^".*"$/ || s ~ /^\047.*\047$/) {
-        s = substr(s, 2, length(s) - 2)
-      }
-      return s
-    }
-    {
-      line = $0
-      sub(/\r$/, "", line)
-      if (line ~ /^[[:space:]]*(#|$)/) next
-
-      if (line ~ /^[A-Za-z_][A-Za-z0-9_]*:[[:space:]]*$/) {
-        section = line
-        sub(/:.*/, "", section)
-        next
-      }
-
-      if (line ~ /^[A-Za-z_][A-Za-z0-9_]*:[[:space:]]/) {
-        key = line
-        sub(/:.*/, "", key)
-        value = line
-        sub(/^[^:]*:[[:space:]]*/, "", value)
-        if (key == "tags" && value ~ /^\[.*\]$/) {
-          count = split(substr(value, 2, length(value) - 2), parts, ",")
-          for (i = 1; i <= count; i++) {
-            tag = unquote(parts[i])
-            if (tag != "") print "item\ttags\t" tag
-          }
-        } else {
-          print "scalar\t" key "\t" unquote(value)
-        }
-        section = ""
-        next
-      }
-
-      if (section != "" && line ~ /^[[:space:]]+-[[:space:]]+/) {
-        value = line
-        sub(/^[[:space:]]+-[[:space:]]+/, "", value)
-        print "item\t" section "\t" unquote(value)
-        next
-      }
-
-      if (section != "" && line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*:[[:space:]]/) {
-        subkey = line
-        sub(/^[[:space:]]+/, "", subkey)
-        sub(/:.*/, "", subkey)
-        value = line
-        sub(/^[[:space:]]+[^:]*:[[:space:]]*/, "", value)
-        print "pair\t" section "\t" subkey "\t" unquote(value)
-        next
-      }
-
-      print "invalid\t" line
-    }
   '
 }
 
@@ -130,8 +44,7 @@ for file in "$content_dir"/*.md; do
     fail "$name" "missing frontmatter"
   fi
 
-  frontmatter=$(frontmatter_of "$file")
-  body=$(body_of "$file")
+  body=$(frontmatter_body "$file")
 
   year=
   status=
@@ -170,7 +83,7 @@ for file in "$content_dir"/*.md; do
         fail "$name" "cannot parse frontmatter line: $key"
         ;;
     esac
-  done < <(frontmatter_records "$frontmatter")
+  done < <(frontmatter_records "$file")
 
   if [[ ! $year =~ ^[0-9]{4}$ ]]; then
     fail "$name" "missing or invalid 'year'"
