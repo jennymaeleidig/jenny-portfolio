@@ -332,8 +332,10 @@ i {
   padding-top: calc(var(--line-height) / 2);
 }
 
+/* The card sets its own rhythm; a paragraph's default bottom margin would
+   otherwise open twice the gap under the meta line that the title has above it. */
 .card > * {
-  margin-top: 0;
+  margin: 0;
 }
 
 .card > * + * {
