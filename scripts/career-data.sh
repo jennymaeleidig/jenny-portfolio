@@ -63,53 +63,29 @@ date_span() {
 }
 
 # Render a section whose entries nest under one employer or organisation,
-# newest first. Grouping is by identity, exactly as /work/career/ groups it, so
-# two roles at the same employer stay together.
+# newest first, in the order the shared grouping helper emits them.
 render_grouped() {
   local dir=$1 group_field=$2
-  local -a groups=()
-  local -a group_files=()
-  local file group first location title start end
-  local i found
+  local kind group location file title start end
 
-  while IFS= read -r file; do
-    [[ -n $file ]] || continue
-    group=$(frontmatter_value "$file" "$group_field")
-    found=-1
-    for ((i = 0; i < ${#groups[@]}; i++)); do
-      if [[ ${groups[i]} == "$group" ]]; then
-        found=$i
-        break
-      fi
-    done
-    if ((found < 0)); then
-      groups+=("$group")
-      group_files+=("$file")
-    else
-      group_files[found]+=$'\n'"$file"
-    fi
-  done < <(career_files "$dir" start)
-
-  for ((i = 0; i < ${#groups[@]}; i++)); do
-    group=${groups[i]}
-    first=${group_files[i]%%$'\n'*}
-    location=$(frontmatter_value "$first" location)
-
-    if [[ -n $location ]]; then
-      printf '### %s -- %s\n\n' "$group" "$location"
-    else
-      printf '### %s\n\n' "$group"
-    fi
-
-    while IFS= read -r file; do
-      [[ -n $file ]] || continue
-      title=$(frontmatter_value "$file" title)
-      start=$(frontmatter_value "$file" start)
-      end=$(frontmatter_value "$file" end)
-
-      printf '**%s**\n%s\n\n%s\n\n' "$title" "$(date_span "$start" "$end")" "$(markdown_source "$file")"
-    done <<< "${group_files[i]}"
-  done
+  while IFS=$'\t' read -r kind group location; do
+    case $kind in
+      group)
+        if [[ -n $location ]]; then
+          printf '### %s -- %s\n\n' "$group" "$location"
+        else
+          printf '### %s\n\n' "$group"
+        fi
+        ;;
+      file)
+        file=$group
+        title=$(frontmatter_value "$file" title)
+        start=$(frontmatter_value "$file" start)
+        end=$(frontmatter_value "$file" end)
+        printf '**%s**\n%s\n\n%s\n\n' "$title" "$(date_span "$start" "$end")" "$(markdown_source "$file")"
+        ;;
+    esac
+  done < <(career_group_records "$dir" "$group_field")
 }
 
 render_cv() {
@@ -191,15 +167,7 @@ EOF
 
 EOF
 
-  while IFS= read -r file; do
-    [[ -n $file ]] || continue
-    institution=$(frontmatter_value "$file" institution)
-    school_location=$(frontmatter_value "$file" location)
-    degree=$(frontmatter_value "$file" degree)
-    start=$(frontmatter_value "$file" start)
-    end=$(frontmatter_value "$file" end)
-    note=$(frontmatter_value "$file" note)
-
+  while IFS=$'\t' read -r institution school_location degree start end note; do
     if [[ -n $school_location ]]; then
       printf '### %s -- %s\n\n' "$institution" "$school_location"
     else
@@ -209,7 +177,7 @@ EOF
     if [[ -n $note ]]; then
       printf '%s\n\n' "$note"
     fi
-  done < <(career_files "$career_dir/education" start)
+  done < <(career_education_records "$career_dir/education")
 
   cat <<EOF
 ## Skills

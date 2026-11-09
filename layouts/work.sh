@@ -50,11 +50,11 @@ $(tab_bar projects)
 EOF
 
 printf '            <li><a href="/work/"%s>All</a></li>\n' \
-  "$([[ -z $category ]] && printf ' aria-current="page"')"
+  "$(current_page_attr "" "$category")"
 for name in "${CATEGORIES[@]}"; do
   printf '            <li><a href="/work/%s/"%s>%s</a></li>\n' \
     "$name" \
-    "$([[ $name == "$category" ]] && printf ' aria-current="page"')" \
+    "$(current_page_attr "$name" "$category")" \
     "$(category_label "$name")"
 done
 

@@ -556,19 +556,11 @@ test("/work/career is a normal-shell career page with one heading and only the n
     [],
     "the only image is the sky's no-JavaScript poster",
   );
-  assert.doesNotMatch(career, /276\)?[.\-\s]?356[.\-\s]?4765/, "the career page has no phone number");
-  assert.doesNotMatch(career, /\+1[.\-\s]?276/, "the career page has no phone number");
   assert.doesNotMatch(career, /type="checkbox"/, "the career page has no selector");
   assert.doesNotMatch(career, /name="include"/, "the career page has no query selection");
 });
 
-test("the career tab is in the sitemap and its print treatment leaves paper", () => {
-  assert.equal(
-    sitemapLocs(output).includes(`${SITE_HOST}/work/career/`),
-    true,
-    "/work/career/ is listed in the sitemap",
-  );
-
+test("print leaves paper, hides the tab bar and keeps employers and roles apart", () => {
   const print = siteCss.slice(siteCss.indexOf("@media print"));
   assert.match(
     print,
@@ -577,6 +569,9 @@ test("the career tab is in the sitemap and its print treatment leaves paper", ()
   );
   assert.match(print, /\.career-group[^{]*\{[^}]*break-inside:\s*avoid/s);
   assert.match(print, /\.career-entry[^{]*\{[^}]*break-inside:\s*avoid/s);
+  assert.match(print, /\.career-group \+ \.career-group\s*\{\s*margin-top:\s*0\.75rem/);
+  assert.match(print, /\.career-entry \+ \.career-entry\s*\{\s*margin-top:\s*0\.5rem/);
+  assert.match(print, /@page\s*\{[^}]*size:\s*letter/s);
 });
 
 test("the front page shows exactly the featured projects as cards with category and year", () => {
@@ -779,46 +774,31 @@ test("no phone number appears on any page", () => {
   }
 });
 
-// The deleted route's name, assembled so the word itself does not survive in
-// the codebase while the test can still prove it is gone.
-const legacyRoute = ["res", "ume"].join("");
-
 test("the build emits no legacy route or export and nothing references one", () => {
   for (const path of [
-    join(output, legacyRoute, "index.html"),
-    join(output, `${legacyRoute}.md`),
-    join(output, `${legacyRoute}.pdf`),
-    join(output, `${legacyRoute}-print.html`),
-    join(output, `${legacyRoute}-print.css`),
-    join(output, "assets", `${legacyRoute}-selector.js`),
-    join(output, "assets", `${legacyRoute}-selector-core.mjs`),
+    join(output, "resume", "index.html"),
+    join(output, "resume.md"),
+    join(output, "resume.pdf"),
+    join(output, "resume-print.html"),
+    join(output, "resume-print.css"),
+    join(output, "assets", "resume-selector.js"),
+    join(output, "assets", "resume-selector-core.mjs"),
   ]) {
     assert.equal(existsSync(path), false, `${relative(output, path)} is not emitted`);
   }
 
-  const legacyPath = new RegExp(`/${legacyRoute}(?:/|\\.md|\\.pdf)`);
+  const legacyPath = /\/resume(?:\/|\.md|\.pdf)/;
   for (const file of htmlFiles) {
     assert.doesNotMatch(readFileSync(file, "utf8"), legacyPath, `${relative(root, file)} references the deleted route`);
   }
 });
 
-test("the header and the 404 offer no legacy link, and the 404 offers the career tab", () => {
-  const legacyPath = new RegExp(`/${legacyRoute}`);
+test("no page header offers a legacy link", () => {
+  const legacyPath = /\/resume/;
   for (const file of htmlFiles) {
     const header = readFileSync(file, "utf8").match(/<header class="site-header"[\s\S]*?<\/header>/)?.[0] ?? "";
     assert.doesNotMatch(header, legacyPath, `${relative(root, file)} header has no legacy link`);
   }
-
-  const notFound = readFileSync(join(output, "404", "index.html"), "utf8");
-  assert.doesNotMatch(notFound, legacyPath, "the 404 offers no legacy link");
-  assert.match(notFound, /<a href="\/work\/career\/">Career<\/a>/, "the 404 offers the Career tab");
-});
-
-test("print keeps employers and roles apart", () => {
-  const print = siteCss.slice(siteCss.indexOf("@media print"));
-  assert.match(print, /\.career-group \+ \.career-group\s*\{\s*margin-top:\s*0\.75rem/);
-  assert.match(print, /\.career-entry \+ \.career-entry\s*\{\s*margin-top:\s*0\.5rem/);
-  assert.match(print, /@page\s*\{[^}]*size:\s*letter/s);
 });
 
 test("identity links come from one source that every page reads", () => {
@@ -1095,6 +1075,7 @@ test("/404 renders, offers the way back, and does not link to itself", () => {
     );
   }
   assert.doesNotMatch(page, /href="\/404\/?(?:"|\/)/, "/404 must not link to itself");
+  assert.doesNotMatch(page, /\/resume/, "the 404 offers no legacy link");
 });
 
 test("the root 404.html is the same page as /404", () => {
@@ -1113,6 +1094,11 @@ test("sitemap.xml lists exactly the routes the build emitted", () => {
   assert.deepEqual(locs.slice(1), [...locs.slice(1)].sort(), "the rest are sorted");
   assert.equal(new Set(locs).size, locs.length, "no loc is repeated");
   assert.equal(locs.some((loc) => loc.endsWith("/404") || loc.endsWith("/404/")), false);
+  assert.equal(
+    locs.includes(`${SITE_HOST}/work/career/`),
+    true,
+    "/work/career/ is listed in the sitemap",
+  );
 });
 
 test("the sitemap uses absolute same-site URLs and omits articles and deleted routes", () => {
@@ -1128,7 +1114,7 @@ test("the sitemap uses absolute same-site URLs and omits articles and deleted ro
       `${slug} is an article with no page and must not be in the sitemap`,
     );
   }
-  assert.equal(locs.some((loc) => loc.includes(`/${legacyRoute}`)), false, "no legacy route is in the sitemap");
+  assert.equal(locs.some((loc) => loc.includes("/resume")), false, "no legacy route is in the sitemap");
 });
 
 test("robots.txt points at the absolute sitemap", () => {

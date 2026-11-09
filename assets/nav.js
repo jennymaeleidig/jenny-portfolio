@@ -28,8 +28,8 @@ function isPageLink(link, event) {
   if (url.origin !== location.origin) return false;
   if (url.pathname.startsWith("/assets/")) return false;
   if (url.pathname === location.pathname && url.search === location.search) return false;
-  // Exports and other non-page files keep their ordinary download/open
-  // behaviour. Routes are either "/" or end in a slash.
+  // A path that is not a page keeps its ordinary download/open behaviour.
+  // Routes are either "/" or end in a slash.
   if (url.pathname !== "/" && !url.pathname.endsWith("/")) return false;
 
   return true;
