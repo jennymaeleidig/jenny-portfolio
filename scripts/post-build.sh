@@ -17,6 +17,28 @@ fi
 # shellcheck source=/dev/null
 source "$SITE_ROOT/scripts/lib.sh"
 
+# Emit one route through its layout. A route is a directory with an
+# index.html; the front page is the site root. An empty page fails the build
+# rather than shipping.
+emit_route() {
+  local route=$1 layout=$2 argument=${3:-} page
+  if [[ $route == / ]]; then
+    page="$DIST/index.html"
+  else
+    page="$DIST${route%/}/index.html"
+  fi
+  mkdir -p "$(dirname "$page")"
+  if [[ -n $argument ]]; then
+    "$SITE_ROOT/layouts/$layout.sh" "$argument" > "$page"
+  else
+    "$SITE_ROOT/layouts/$layout.sh" > "$page"
+  fi
+  if [[ ! -s $page ]]; then
+    echo "error: the $route route was not emitted" >&2
+    exit 1
+  fi
+}
+
 for meta in "${metas[@]}"; do
   # shellcheck source=/dev/null
   source "$meta"
@@ -50,63 +72,26 @@ if [[ ${SKY_LEVERS:-} != 1 ]]; then
   rm -f "$DIST/assets/sky-levers.mjs"
 fi
 
-"$SITE_ROOT/layouts/home.sh" > "$DIST/index.html"
-
-if [[ ! -s $DIST/index.html ]]; then
-  echo "error: the front page was not emitted" >&2
-  exit 1
-fi
-
-mkdir -p "$DIST/work"
-"$SITE_ROOT/layouts/work.sh" > "$DIST/work/index.html"
-
-if [[ ! -s $DIST/work/index.html ]]; then
-  echo "error: the catalogue was not emitted" >&2
-  exit 1
-fi
+emit_route / home
+emit_route /work/ work
 
 while IFS= read -r category; do
-  mkdir -p "$DIST/work/$category"
-  "$SITE_ROOT/layouts/work.sh" "$category" > "$DIST/work/$category/index.html"
-  if [[ ! -s $DIST/work/$category/index.html ]]; then
-    echo "error: the $category catalogue was not emitted" >&2
-    exit 1
-  fi
+  emit_route "/work/$category/" work "$category"
 done < <(vocabulary_words "${CATEGORIES[@]}")
 
-mkdir -p "$DIST/work/career"
-"$SITE_ROOT/layouts/career.sh" > "$DIST/work/career/index.html"
-if [[ ! -s $DIST/work/career/index.html ]]; then
-  echo "error: the career tab was not emitted" >&2
-  exit 1
-fi
+emit_route /work/career/ career
 
 while IFS= read -r section; do
-  mkdir -p "$DIST/work/career/$section"
-  "$SITE_ROOT/layouts/career.sh" "$section" > "$DIST/work/career/$section/index.html"
-  if [[ ! -s $DIST/work/career/$section/index.html ]]; then
-    echo "error: the career $section page was not emitted" >&2
-    exit 1
-  fi
+  emit_route "/work/career/$section/" career "$section"
 done < <(vocabulary_words "${CAREER_SECTIONS[@]}")
 
 for page in about now; do
-  mkdir -p "$DIST/$page"
-  "$SITE_ROOT/layouts/$page.sh" > "$DIST/$page/index.html"
-  if [[ ! -s $DIST/$page/index.html ]]; then
-    echo "error: the $page page was not emitted" >&2
-    exit 1
-  fi
+  emit_route "/$page/" "$page"
 done
 
 # /404 is a route like any other, and GitHub Pages also serves a root 404.html
 # for unknown paths, so the same page is emitted at both.
-mkdir -p "$DIST/404"
-"$SITE_ROOT/layouts/404.sh" > "$DIST/404/index.html"
-if [[ ! -s $DIST/404/index.html ]]; then
-  echo "error: the 404 page was not emitted" >&2
-  exit 1
-fi
+emit_route /404/ 404
 cp "$DIST/404/index.html" "$DIST/404.html"
 
 # The sitemap walks what is now on disk, so it cannot drift from the build.
