@@ -29,6 +29,21 @@ function build(dist, env = {}) {
   });
 }
 
+function buildFixture(content, dist) {
+  return spawnSync(buildScript, [dist], {
+    cwd: root,
+    env: { ...process.env, CONTENT_DIR: content },
+    encoding: "utf8",
+  });
+}
+
+function writeProject(content, slug, frontmatter, body) {
+  writeFileSync(
+    join(content, `${slug}.md`),
+    `---\n${frontmatter.trim()}\n---\n${body ?? `# ${slug}\n\nProse for ${slug}.\n`}`,
+  );
+}
+
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -77,6 +92,156 @@ test("markdown is rendered without its frontmatter", () => {
   assert.doesNotMatch(page, /^category:/m);
 });
 
+test("a project page renders its title, year, status, links and prose from one file", () => {
+  const page = readFileSync(join(output, "projects", "broadcast", "index.html"), "utf8");
+
+  assert.match(page, /<h1>Broadcast<\/h1>/);
+  assert.match(page, /<p class="meta">games &middot; 2025 &middot; <span class="status">shipped<\/span><\/p>/);
+  assert.match(page, /2025/);
+  assert.match(page, /shipped/);
+  assert.match(page, /href="https:\/\/jennyleidig\.itch\.io\/broadcast"/);
+  assert.match(page, /a transmission you have to keep alive/i);
+});
+
+test("a project marked wip says so on its page", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-wip-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-wip-dist-"));
+  writeProject(
+    content,
+    "half-built",
+    `year: 2026
+status: wip
+category: games`,
+  );
+
+  buildFixture(content, dist);
+
+  const page = readFileSync(join(dist, "projects", "half-built", "index.html"), "utf8");
+  assert.match(page, /work in progress/i);
+  assert.doesNotMatch(page, />wip</i);
+});
+
+test("tags render on the project page", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-tags-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-tags-dist-"));
+  writeProject(
+    content,
+    "tagged",
+    `year: 2026
+status: shipped
+category: web
+tags: [agents, terminal]`,
+  );
+
+  buildFixture(content, dist);
+
+  const page = readFileSync(join(dist, "projects", "tagged", "index.html"), "utf8");
+  const tags = page.match(/<ul class="tags"[^>]*>([\s\S]*?)<\/ul>/);
+  assert.ok(tags, "the project page carries a tag list");
+  assert.match(tags[1], /<li>agents<\/li>/);
+  assert.match(tags[1], /<li>terminal<\/li>/);
+});
+
+test("a cover renders when declared, and absent covers leave no image", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-cover-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-cover-dist-"));
+  writeProject(
+    content,
+    "covered",
+    `year: 2026
+status: shipped
+category: web
+cover: /assets/sky-poster.svg`,
+  );
+  writeProject(
+    content,
+    "uncovered",
+    `year: 2026
+status: shipped
+category: web`,
+  );
+
+  buildFixture(content, dist);
+
+  const covered = readFileSync(join(dist, "projects", "covered", "index.html"), "utf8");
+  const uncovered = readFileSync(join(dist, "projects", "uncovered", "index.html"), "utf8");
+  const article = (page) => page.match(/<article[^>]*>([\s\S]*?)<\/article>/)?.[1] ?? "";
+
+  assert.match(article(covered), /<img[^>]+src="\/assets\/sky-poster\.svg"/);
+  assert.doesNotMatch(article(uncovered), /<img\b/);
+});
+
+test("the build fails, naming the file, when a declared cover is missing", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-cover-missing-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-cover-missing-dist-"));
+  writeProject(
+    content,
+    "broken-cover",
+    `year: 2026
+status: shipped
+category: web
+cover: /assets/covers/does-not-exist.png`,
+  );
+
+  const result = buildFixture(content, dist);
+
+  assert.notEqual(result.status, 0, "the build must fail");
+  assert.match(result.stderr, /broken-cover\.md/);
+  assert.match(result.stderr, /does-not-exist\.png/);
+});
+
+test("the build fails, naming the file, when a required field is missing", () => {
+  for (const missing of ["year", "status", "category"]) {
+    const content = mkdtempSync(join(tmpdir(), "portfolio-missing-"));
+    const dist = mkdtempSync(join(tmpdir(), "portfolio-missing-dist-"));
+    const fields = { year: "2026", status: "shipped", category: "web" };
+    delete fields[missing];
+    writeProject(
+      content,
+      `missing-${missing}`,
+      Object.entries(fields)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join("\n"),
+    );
+
+    const result = buildFixture(content, dist);
+    assert.notEqual(result.status, 0, `the build must fail without ${missing}`);
+    assert.match(result.stderr, new RegExp(`missing-${missing}\\.md`));
+  }
+});
+
+test("the build fails when a project is CV-visible without a blurb", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-cv-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-cv-dist-"));
+  writeProject(
+    content,
+    "cv-no-blurb",
+    `year: 2026
+status: shipped
+category: web
+cv: true`,
+  );
+
+  const result = buildFixture(content, dist);
+
+  assert.notEqual(result.status, 0, "the build must fail");
+  assert.match(result.stderr, /cv-no-blurb\.md/);
+  assert.match(result.stderr, /cv_blurb/);
+});
+
+test("the build fails on a filename jenny would eval unsafely", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-filename-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-filename-dist-"));
+  writeProject(content, "Broadcast Live", `year: 2026
+status: shipped
+category: games`);
+
+  const result = buildFixture(content, dist);
+
+  assert.notEqual(result.status, 0, "the build must fail");
+  assert.match(result.stderr, /Broadcast Live\.md/);
+});
+
 test("every page carries its content without JavaScript", () => {
   for (const file of htmlFiles) {
     const html = readFileSync(file, "utf8");
@@ -112,7 +277,8 @@ test("every internal reference is absolute from /", () => {
   for (const file of htmlFiles) {
     const html = readFileSync(file, "utf8");
     for (const [, attribute, value] of html.matchAll(/\s(href|src)="([^"]*)"/g)) {
-      if (value.startsWith("/") || value.startsWith("#") || value.startsWith("mailto:")) {
+      const external = attribute === "href" && (value.startsWith("https://") || value.startsWith("http://"));
+      if (value.startsWith("/") || value.startsWith("#") || value.startsWith("mailto:") || external) {
         continue;
       }
       assert.fail(`${relative(root, file)} has a non-absolute ${attribute}: ${value}`);

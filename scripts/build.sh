@@ -47,7 +47,7 @@ trap cleanup EXIT
 meta_dir="$staging/.meta"
 mkdir -p "$meta_dir"
 
-"$root/scripts/stage.sh" "$content_dir" "$staging" "$meta_dir"
+"$root/scripts/stage.sh" "$content_dir" "$staging" "$meta_dir" "$root"
 
 cat > "$staging/.blogrc" <<EOF
 export BLOG_HOST='https://portfolio.jenny-page.online'

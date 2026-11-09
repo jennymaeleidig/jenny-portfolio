@@ -24,7 +24,7 @@ Read the map to understand *why*, the spec to understand *what*.
 
 `make build` produces `dist/`, a deployable tree:
 
-1. `scripts/stage.sh` reads `content/projects/*.md`, strips the frontmatter, writes a dated CommonMark file and a shell-sourceable metadata sidecar.
+1. `scripts/stage.sh` reads `content/projects/*.md`, validates its frontmatter, strips it, writes a dated CommonMark file and a shell-sourceable metadata sidecar. A missing required field, a `cv: true` entry without a `cv_blurb`, a declared cover that does not exist, or a filename outside `^[a-z0-9-]+$` fails the build with the file named.
 2. `vendor/jenny/bin/jenny` renders each staged file at `/post/<slug>.html` using `layouts/post.sh`.
 3. `scripts/post-build.sh` relocates each page to `/projects/<slug>/index.html`, writes `/`, copies `/assets`, and discards jenny's unused index and feed.
 
