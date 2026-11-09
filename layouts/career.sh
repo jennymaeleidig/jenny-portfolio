@@ -23,10 +23,37 @@ if [[ -n $section ]] && ! is_career_section "$section"; then
   exit 1
 fi
 
-# One disclosure per role. The summary is the index line the reader scans:
-# title, then employer. The employer and its location come from the group
-# record, so the three CapTech roles each carry the employer name.
-render_experience() {
+# One entry in the career record: the index line the reader scans, then
+# location, dates and an optional note, then the entry's prose when it has a
+# body. Education has no body, so it passes an empty file.
+career_disclosure() {
+  local summary=$1 location=$2 dates=$3 note=$4 file=$5
+  printf '          <details class="career-disclosure">\n'
+  printf '            <summary>%s</summary>\n' "$(html_escape "$summary")"
+  printf '            <p class="career-meta">'
+  if [[ -n $location ]]; then
+    printf '<span class="meta">%s</span> ' "$(html_escape "$location")"
+    printf '<span class="career-sep" aria-hidden="true">&middot;</span> '
+  fi
+  printf '<span class="career-dates">%s</span>' "$(html_escape "$dates")"
+  if [[ -n $note ]]; then
+    printf ' <span class="career-sep" aria-hidden="true">&middot;</span> '
+    printf '<span class="career-note">%s</span>' "$(html_escape "$note")"
+  fi
+  printf '</p>\n'
+  if [[ -n $file ]]; then
+    printf '            <div class="prose career-body">\n'
+    markdown_body "$file"
+    printf '            </div>\n'
+  fi
+  printf '          </details>\n'
+}
+
+# One disclosure per role in a grouped section. The summary is title, then
+# the employer or organisation whose group the role belongs to; the identity
+# field is the only word experience and volunteering do not share.
+render_roles() {
+  local dir=$1 field=$2
   local kind group location file title start end employer employer_location
   while IFS=$'\t' read -r kind group location; do
     case $kind in
@@ -39,77 +66,19 @@ render_experience() {
         title=$(frontmatter_value "$file" title)
         start=$(frontmatter_value "$file" start)
         end=$(frontmatter_value "$file" end)
-        printf '          <details class="career-disclosure">\n'
-        printf '            <summary>%s - %s</summary>\n' \
-          "$(html_escape "$title")" "$(html_escape "$employer")"
-        printf '            <p class="career-meta">'
-        if [[ -n $employer_location ]]; then
-          printf '<span class="meta">%s</span> ' "$(html_escape "$employer_location")"
-          printf '<span class="career-sep" aria-hidden="true">&middot;</span> '
-        fi
-        printf '<span class="career-dates">%s</span></p>\n' "$(date_range "$start" "$end")"
-        printf '            <div class="prose career-body">\n'
-        markdown_body "$file"
-        printf '            </div>\n'
-        printf '          </details>\n'
+        career_disclosure "$title - $employer" "$employer_location" \
+          "$(date_range "$start" "$end")" '' "$file"
         ;;
     esac
-  done < <(career_group_records "$career_dir/experience" employer)
-}
-
-# One disclosure per volunteering role, grouped and summarised the way the
-# experience roles are: title, then organisation.
-render_volunteering() {
-  local kind group location file title start end
-  local organization organization_location
-  while IFS=$'\t' read -r kind group location; do
-    case $kind in
-      group)
-        organization=$group
-        organization_location=$location
-        ;;
-      file)
-        file=$group
-        title=$(frontmatter_value "$file" title)
-        start=$(frontmatter_value "$file" start)
-        end=$(frontmatter_value "$file" end)
-        printf '          <details class="career-disclosure">\n'
-        printf '            <summary>%s - %s</summary>\n' \
-          "$(html_escape "$title")" "$(html_escape "$organization")"
-        printf '            <p class="career-meta">'
-        if [[ -n $organization_location ]]; then
-          printf '<span class="meta">%s</span> ' "$(html_escape "$organization_location")"
-          printf '<span class="career-sep" aria-hidden="true">&middot;</span> '
-        fi
-        printf '<span class="career-dates">%s</span></p>\n' "$(date_range "$start" "$end")"
-        printf '            <div class="prose career-body">\n'
-        markdown_body "$file"
-        printf '            </div>\n'
-        printf '          </details>\n'
-        ;;
-    esac
-  done < <(career_group_records "$career_dir/volunteering" organization)
+  done < <(career_group_records "$dir" "$field")
 }
 
 # One disclosure per qualification, summarised as degree - school.
 render_education() {
   local institution location degree start end note
   while IFS=$'\t' read -r institution location degree start end note; do
-    printf '          <details class="career-disclosure">\n'
-    printf '            <summary>%s - %s</summary>\n' \
-      "$(html_escape "$degree")" "$(html_escape "$institution")"
-    printf '            <p class="career-meta">'
-    if [[ -n $location ]]; then
-      printf '<span class="meta">%s</span> ' "$(html_escape "$location")"
-      printf '<span class="career-sep" aria-hidden="true">&middot;</span> '
-    fi
-    printf '<span class="career-dates">%s</span>' "$(date_range "$start" "$end")"
-    if [[ -n $note ]]; then
-      printf ' <span class="career-sep" aria-hidden="true">&middot;</span> '
-      printf '<span class="career-note">%s</span>' "$(html_escape "$note")"
-    fi
-    printf '</p>\n'
-    printf '          </details>\n'
+    career_disclosure "$degree - $institution" "$location" \
+      "$(date_range "$start" "$end")" "$note" ''
   done < <(career_education_records "$career_dir/education")
 }
 
@@ -154,7 +123,12 @@ EOF
           <h2 id="career-$name">$label</h2>
 EOF
   fi
-  "render_$name"
+  case $name in
+    experience) render_roles "$career_dir/experience" employer ;;
+    volunteering) render_roles "$career_dir/volunteering" organization ;;
+    education) render_education ;;
+    skills) render_skills ;;
+  esac
   cat <<EOF
         </section>
 EOF
