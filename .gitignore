@@ -1,6 +1,7 @@
 # Build output
 dist/
 .dist/
+build/
 .bloglock
 
 # Harness and browser scratch

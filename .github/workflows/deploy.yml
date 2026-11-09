@@ -32,6 +32,14 @@ jobs:
       - name: Build
         run: make build
 
+      - name: Generate the career-data mirror
+        run: make mirror
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: career-data-mirror
+          path: build/career-data
+
       - name: Test
         run: make test
 

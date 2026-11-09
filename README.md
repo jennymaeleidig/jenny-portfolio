@@ -50,8 +50,9 @@ is a newer photo. Now carries a visible last-updated date and five sections:
 making, reading, listening, watching and not doing.
 
 `content/identity.sh` is the one identity block. It holds the full name, the
-tagline, the email and the profile links, and every page sources it, so
-changing an address changes it everywhere it appears, including the footer.
+tagline, the location, the email, the portfolio URL and the profile links, and
+every page sources it, so changing an address changes it everywhere it appears,
+including the footer and the career-data mirror.
 
 ### Resume
 
@@ -89,6 +90,68 @@ prints it at Letter with JavaScript disabled and no header or footer. The
 phone number lives in `content/resume/contact.sh`, reaches the print copy only,
 and appears in no page's markup or in `resume.md`. The PDF is a build artifact
 and is never committed.
+
+## The career-data mirror
+
+`content/` is the source of truth for Jenny's career data. The private
+`career-data` repository is a generated, one-way mirror of it: nothing in the
+mirror is edited by hand and copied back. `make mirror` writes the mirror into
+`build/career-data/` (gitignored, `MIRROR_DIR=...` overrides it):
+
+```sh
+make mirror
+make mirror MIRROR_DIR=/path/to/career-data
+```
+
+It generates two things from the same records the site builds from:
+
+- `cv.md`, in the shape the career-ops checkers parse: the identity block and
+  tagline, then the professional summary, every work-experience role grouped
+  under its employer, every `cv: true` project described by its `cv_blurb`,
+  every publication, volunteering entry and education entry, and the skills
+  list, newest first within each section.
+- `config/profile.yml`'s `candidate:` mapping: full name, title, email, phone,
+  location, LinkedIn, portfolio URL, GitHub and photo.
+
+The phone number comes from `content/resume/contact.sh` and appears in the
+mirror only, never on the built site. The portfolio URL is
+`https://portfolio.jenny-page.online`.
+
+The generator is a faithful projection, not a copy of the old hand-edited CV.
+The site's project record is still being filled in by #32-#36, so until those
+land the mirror is complete for the roles, publications, volunteering and
+education it has, but not for every project the CV once advertised. It never
+invents an entry that is not in `content/`.
+
+Generation is deterministic: it reads no clock, hostname or locale beyond the
+build's existing `LC_ALL=C` sorts, so running it twice produces byte-identical
+files. It stages projects through `scripts/stage.sh`, so the same validation
+the site build uses applies here: a project marked `cv: true` without a
+`cv_blurb` fails the generation rather than producing a blank CV entry.
+
+`config/profile.yml` is merged, not replaced. career-ops' `target_roles`,
+`narrative`, `compensation` and every other key are career-data's own editorial
+content, and the generator rewrites only the `candidate:` mapping and preserves
+the rest byte-for-byte. If no profile exists it writes the identity block alone;
+if a profile has no `candidate:` mapping it appends one. Re-running the merge is
+idempotent.
+
+To check the mirror with career-ops' own tooling, point it at a checkout:
+
+```sh
+make check-mirror CAREER_OPS_DIR=/path/to/career-ops
+```
+
+That generates the mirror and runs `node cv-sync-check.mjs` with
+`CAREER_OPS_ROOT` set to it, then `node validate-profile.mjs --profile
+<mirror>/config/profile.yml`. It is opt-in and not part of `make test`, because
+it needs a separate checkout.
+
+`verify-cv-facts.mjs` is deliberately not run. Its job is to hold a generated
+document against `cv.md` and `article-digest.md`, and here `cv.md` is the
+generated document itself, so the comparison would be the file against itself.
+Checkers that need a tailored-CV payload or a live tracker are not applicable
+to this pair of files either.
 
 ## How the build works
 

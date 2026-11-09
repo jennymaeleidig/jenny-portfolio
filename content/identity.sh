@@ -2,6 +2,8 @@
 # changes it everywhere it appears.
 FULL_NAME="Jenny Mae Leidig"
 TAGLINE="Software Engineer & Digital Experience Creator"
+LOCATION="Richmond, VA"
+PORTFOLIO=https://portfolio.jenny-page.online
 EMAIL=jennymaeleidig@gmail.com
 GITHUB=https://github.com/jennymaeleidig
 LINKEDIN=https://www.linkedin.com/in/jleidig/
