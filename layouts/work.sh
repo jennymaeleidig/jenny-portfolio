@@ -25,21 +25,25 @@ else
 fi
 
 rows=$(
-  project_records | while IFS=$'\t' read -r _group _order year _slug item_category item_title blurb href _featured; do
-    if [[ -n $category && $item_category != "$category" ]]; then
-      continue
-    fi
-    printf '            <tr>\n'
-    printf '              <td class="catalogue-title"><a href="%s">%s</a></td>\n' \
-      "$(html_escape "$href")" "$(html_escape "$item_title")"
-    printf '              <td class="catalogue-blurb">%s</td>\n' "$blurb"
-    if [[ -z $category ]]; then
-      printf '              <td class="catalogue-category">%s</td>\n' \
-        "$(html_escape "$(category_label "$item_category")")"
-    fi
-    printf '              <td class="meta">%s</td>\n' "$(html_escape "$year")"
-    printf '            </tr>\n'
-  done
+  while IFS= read -r slug; do
+    (
+      # shellcheck source=/dev/null
+      source "$META_DIR/$slug.sh"
+      if [[ -n $category && $META_CATEGORY != "$category" ]]; then
+        exit 0
+      fi
+      printf '            <tr>\n'
+      printf '              <td class="catalogue-title"><a href="%s">%s</a></td>\n' \
+        "$(html_escape "$META_HREF")" "$(html_escape "$META_TITLE")"
+      printf '              <td class="catalogue-blurb">%s</td>\n' "${META_BLURB:-}"
+      if [[ -z $category ]]; then
+        printf '              <td class="catalogue-category">%s</td>\n' \
+          "$(html_escape "$(category_label "$META_CATEGORY")")"
+      fi
+      printf '              <td class="meta">%s</td>\n' "$(html_escape "$META_YEAR")"
+      printf '            </tr>\n'
+    )
+  done < <(project_records)
 )
 
 page_open "$title" work

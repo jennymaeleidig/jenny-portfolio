@@ -52,6 +52,8 @@ for file in "$content_dir"/*.md; do
   cover=
   order=
   featured=
+  paper=
+  live=
   tags=()
   links=()
 
@@ -78,6 +80,10 @@ for file in "$content_dir"/*.md; do
         is_link_kind "$value" || fail "$name" "unknown link kind '$value'"
         [[ $extra =~ ^https?://[^[:space:]]+$ ]] || fail "$name" "link '$value' must be an http(s) URL"
         links+=("$value=$extra")
+        case $value in
+          paper) paper=$extra ;;
+          live) live=$extra ;;
+        esac
         ;;
       invalid)
         fail "$name" "cannot parse frontmatter line: $key"
@@ -109,15 +115,16 @@ for file in "$content_dir"/*.md; do
   fi
 
   # An article has no page of its own, so its publication link is the only
-  # route to it.
+  # route to it. A paper wins over a live link, and the chosen href is what
+  # the catalogue row and the featured card use.
+  href="/projects/$slug/"
   if [[ $category == articles ]]; then
-    publication=
-    for entry in "${links[@]}"; do
-      case ${entry%%=*} in
-        paper | live) publication=1 ;;
-      esac
-    done
-    [[ -n $publication ]] || fail "$name" "articles need a 'paper' or 'live' link"
+    [[ -n $paper$live ]] || fail "$name" "articles need a 'paper' or 'live' link"
+    if [[ -n $paper ]]; then
+      href=$paper
+    else
+      href=$live
+    fi
   fi
 
   title=
@@ -144,6 +151,7 @@ for file in "$content_dir"/*.md; do
     printf 'META_CATEGORY=%q\n' "$category"
     printf 'META_COVER=%q\n' "$cover"
     printf 'META_ORDER=%q\n' "$order"
+    printf 'META_HREF=%q\n' "$href"
     printf 'META_FEATURED=%q\n' "$featured"
     printf 'META_TAGS=('
     if ((${#tags[@]})); then
