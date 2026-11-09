@@ -1,0 +1,14 @@
+# Build output
+.dist/
+.bloglock
+
+# Harness and browser scratch
+.pi/
+.playwright-mcp/
+
+# Node, for tests only
+node_modules/
+
+# OS and editor
+.DS_Store
+*.swp
