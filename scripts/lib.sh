@@ -58,13 +58,18 @@ frontmatter_value() {
   ' "$1"
 }
 
-# Render a hand-written markdown page, dropping its frontmatter.
-markdown_body() {
+# A hand-written markdown page's body, dropping its frontmatter.
+markdown_source() {
   awk '
     NR == 1 && $0 == "---" { frontmatter = 1; next }
     frontmatter && $0 == "---" { frontmatter = 0; next }
     !frontmatter { print }
-  ' "$1" | cmark-gfm --extension table --extension autolink
+  ' "$1"
+}
+
+# Render a hand-written markdown page, dropping its frontmatter.
+markdown_body() {
+  markdown_source "$1" | cmark-gfm --extension table --extension autolink
 }
 
 status_label() {
@@ -158,8 +163,8 @@ cv_project_records() {
       if [[ $META_CATEGORY == articles ]]; then
         href=$(article_href ${META_LINKS[@]+"${META_LINKS[@]}"})
       fi
-      printf '%s\t%s\t%s\t%s\t%s\n' \
-        "$META_YEAR" "$META_TITLE" "${META_CV_BLURB:-}" "$href" "$META_CATEGORY"
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$META_YEAR" "$META_TITLE" "${META_CV_BLURB:-}" "$href" "$META_CATEGORY" "$META_SLUG"
     )
   done | LC_ALL=C sort -t $'\t' -k1,1nr -k2,2
 }

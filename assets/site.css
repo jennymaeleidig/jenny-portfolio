@@ -708,7 +708,8 @@ th {
 
 @media print {
   :root {
-    --line-height: 1.25rem;
+    --line-height: 1rem;
+    --border-thickness: 1px;
   }
 
   html,
@@ -720,7 +721,28 @@ th {
   body {
     max-width: none;
     padding: 0;
-    font-size: 10pt;
+    font-size: 8pt;
+  }
+
+  * + * {
+    margin-top: 0.2rem;
+  }
+
+  h1 {
+    font-size: 1.25rem;
+    line-height: 1.35rem;
+    margin: 0 0 0.25rem;
+  }
+
+  h2 {
+    font-size: 0.8rem;
+    margin: 0.6rem 0 0.15rem;
+    padding-bottom: 0.05rem;
+  }
+
+  h3 {
+    font-size: 0.85rem;
+    margin: 0.25rem 0 0.05rem;
   }
 
   .sheet {
@@ -737,8 +759,54 @@ th {
     text-decoration: none;
   }
 
+  .resume-header {
+    padding-bottom: 0.25rem;
+  }
+
+  .resume-header > * + * {
+    margin-top: 0.1rem;
+  }
+
+  .resume-section > * + * {
+    margin-top: 0.2rem;
+  }
+
   .resume-section h2 {
     border-bottom-color: #000;
+  }
+
+  .resume-group + .resume-group {
+    margin-top: 0.35rem;
+  }
+
+  .resume-group > * + * {
+    margin-top: 0.1rem;
+  }
+
+  .resume-entry + .resume-entry {
+    margin-top: 0.25rem;
+  }
+
+  .resume-entry > * + * {
+    margin-top: 0.05rem;
+  }
+
+  .resume-body {
+    margin-top: 0.1rem;
+  }
+
+  .resume-body > * + * {
+    margin-top: 0.1rem;
+  }
+
+  .resume-body ul {
+    padding-left: 1.5ch;
+  }
+
+  .resume-entry-dates,
+  .resume-note,
+  .resume-phone {
+    font-size: 0.7rem;
   }
 
   .resume-entry,
@@ -754,6 +822,6 @@ th {
 
   @page {
     size: letter;
-    margin: 0.6in;
+    margin: 0.45in;
   }
 }

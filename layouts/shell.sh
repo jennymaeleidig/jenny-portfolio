@@ -2,6 +2,8 @@
 # The shared HTML shell. Sourced by the page layouts.
 
 identity_file=${IDENTITY_FILE:-"$SITE_ROOT/content/identity.sh"}
+asset_base=${ASSET_BASE:-/assets}
+stylesheet=${STYLESHEET:-$asset_base/site.css}
 # shellcheck source=/dev/null
 source "$identity_file"
 
@@ -16,9 +18,9 @@ shell_head() {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
     <title>$title</title>
-    <link rel="preload" href="/assets/fonts/CommitMonoV143-VF.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/assets/reset.css">
-    <link rel="stylesheet" href="/assets/site.css">
+    <link rel="preload" href="$asset_base/fonts/CommitMonoV143-VF.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="$asset_base/reset.css">
+    <link rel="stylesheet" href="$stylesheet">
   </head>
   <body>
 EOF
@@ -52,7 +54,7 @@ page_open() {
   shell_head "$1"
   cat <<EOF
     <div class="sky" aria-hidden="true">
-      <noscript><img class="sky-poster" src="/assets/sky-poster.svg" alt="" width="1600" height="1000"></noscript>
+      <noscript><img class="sky-poster" src="$asset_base/sky-poster.svg" alt="" width="1600" height="1000"></noscript>
       <canvas class="sky-canvas"></canvas>
     </div>
 EOF

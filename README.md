@@ -69,6 +69,15 @@ described by `cv_blurb`; the catalogue's `order` pinning does not apply here.
 The page is built by `layouts/resume.sh`, and print styles in `site.css` hide
 the site chrome and keep entries off page breaks.
 
+The build also writes `/resume.md`, the same complete record as plain markdown,
+and prints `/resume.pdf` from a print copy of the page. The PDF is the curated
+selection: `content/resume/print.sh` names the entries it omits by default, so
+the two-page ceiling holds. Headless Chrome prints it at Letter with JavaScript
+disabled and no header or footer. The phone number lives in
+`content/resume/contact.sh`, reaches the print copy only, and appears in no
+page's markup or in `resume.md`. The PDF is a build artifact and is never
+committed.
+
 ## How the build works
 
 `make build` produces `dist/`, a deployable tree:
@@ -76,6 +85,7 @@ the site chrome and keep entries off page breaks.
 1. `scripts/stage.sh` reads `content/projects/*.md`, validates its frontmatter, strips it, writes a dated CommonMark file and a shell-sourceable metadata sidecar. A missing required field, a `cv: true` entry without a `cv_blurb`, an article without a `paper` or `live` link, a declared cover that does not exist, or a filename outside `^[a-z0-9-]+$` fails the build with the file named. Articles get a sidecar but no staged markdown, because they have no page.
 2. `vendor/jenny/bin/jenny` renders each staged file at `/post/<slug>.html` using `layouts/post.sh`.
 3. `scripts/post-build.sh` relocates each page to `/projects/<slug>/index.html`, writes `/`, `/work/`, the five `/work/<category>/` pages, `/resume/`, `/about/` and `/now/`, copies `/assets`, and discards jenny's unused index and feed.
+4. `scripts/resume-exports.sh` writes `/resume.md` and prints `/resume.pdf` with headless Chrome. The build fails if the PDF is longer than two pages, and removes an overflowing PDF rather than publishing it.
 
 The build empties `dist/` before generating, sets `cmark-gfm` as the markdown parser, and fails if a project cannot be staged or a page is not emitted.
 
@@ -104,10 +114,15 @@ brew install cmark-gfm gawk gnu-sed grep coreutils
 sudo apt-get install cmark-gfm
 ```
 
-Node is only needed to run the tests.
+Headless Chrome (or Chromium) is needed for the resume PDF. The build looks for
+`google-chrome`, `google-chrome-stable`, `chromium`, `chromium-browser`, or the
+macOS Google Chrome application, and `CHROME=/path/to/chrome` overrides that.
+
+Node is only needed to run the tests. The test suite builds the full site, so
+it needs headless Chrome as well.
 
 ```sh
-make build   # writes dist/, the same tree CI deploys
+make build   # writes dist/, the same tree CI deploys, including resume.pdf
 make test    # builds into a temporary directory and checks the emitted files
 make clean
 ```

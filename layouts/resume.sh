@@ -3,14 +3,28 @@
 # sidecars and the hand-written resume records under content/resume/.
 set -euo pipefail
 
+: "${META_DIR:?META_DIR is required}"
+: "${SITE_ROOT:?SITE_ROOT is required}"
+
 # shellcheck source=/dev/null
 source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 
-resume_dir="$SITE_ROOT/content/resume"
+resume_dir=${RESUME_DIR:-"$SITE_ROOT/content/resume"}
 name=${FULL_NAME:?content/identity.sh must define FULL_NAME}
 tagline=${TAGLINE:?content/identity.sh must define TAGLINE}
+omit_entries=${RESUME_OMIT_ENTRIES:-}
+
+# The page carries everything. The PDF selection passes the entries it leaves
+# out here, by the same stable id the page gives each one.
+entry_wanted() {
+  local omitted
+  for omitted in $omit_entries; do
+    [[ $omitted == "$1" ]] && return 1
+  done
+  return 0
+}
 
 # Render a section whose entries nest under one employer or organisation,
 # newest first. Grouping is by identity rather than adjacency, so two roles at
@@ -24,6 +38,8 @@ render_grouped_entries() {
 
   while IFS= read -r file; do
     [[ -n $file ]] || continue
+    slug=$(basename "$file" .md)
+    entry_wanted "$id_prefix-$slug" || continue
     group=$(frontmatter_value "$file" "$group_field")
     found=-1
     for ((i = 0; i < ${#groups[@]}; i++)); do
@@ -80,6 +96,13 @@ cat <<EOF
             <h1>Resume</h1>
             <p class="resume-name">$(html_escape "$name")</p>
             <p class="resume-tagline">$(html_escape "$tagline")</p>
+EOF
+
+if [[ -n ${RESUME_PHONE:-} ]]; then
+  printf '            <p class="resume-phone">%s</p>\n' "$(html_escape "$RESUME_PHONE")"
+fi
+
+cat <<EOF
             <ul class="links primary-links" aria-label="Contact">
 EOF
 
@@ -113,11 +136,12 @@ cat <<EOF
             <h2 id="resume-projects">Projects</h2>
 EOF
 
-while IFS=$'\t' read -r year title blurb href category; do
+while IFS=$'\t' read -r year title blurb href category project_slug; do
   [[ -n $title ]] || continue
+  entry_wanted "project-$project_slug" || continue
   body=$(printf '%s\n' "$blurb" | cmark-gfm --extension table --extension autolink)
   cat <<EOF
-            <div class="resume-entry">
+            <div class="resume-entry" id="project-$project_slug">
               <p class="resume-entry-title"><a href="$(html_escape "$href")">$(html_escape "$title")</a></p>
               <p class="resume-entry-dates">$(html_escape "$category") &middot; $(html_escape "$year")</p>
               <div class="prose resume-body">$body</div>
@@ -139,6 +163,8 @@ while IFS= read -r file; do
   detail=$(frontmatter_value "$file" detail)
   year=$(frontmatter_value "$file" year)
   url=$(frontmatter_value "$file" url)
+  slug=$(basename "$file" .md)
+  entry_wanted "publication-$slug" || continue
 
   if [[ -n $url ]]; then
     title_html="<a href=\"$(html_escape "$url")\">$(html_escape "$title")</a>"
@@ -155,7 +181,7 @@ while IFS= read -r file; do
   fi
 
   cat <<EOF
-            <div class="resume-entry">
+            <div class="resume-entry" id="publication-$slug">
               <p class="resume-entry-title">$title_html</p>
               <p class="resume-entry-dates">$(html_escape "$meta")</p>
             </div>
@@ -186,9 +212,11 @@ while IFS= read -r file; do
   start=$(frontmatter_value "$file" start)
   end=$(frontmatter_value "$file" end)
   note=$(frontmatter_value "$file" note)
+  slug=$(basename "$file" .md)
+  entry_wanted "education-$slug" || continue
 
   cat <<EOF
-            <div class="resume-entry">
+            <div class="resume-entry" id="education-$slug">
               <h3>$(html_escape "$institution")</h3>
               <p class="meta">$(html_escape "$location")</p>
               <p class="resume-entry-title">$(html_escape "$degree")</p>

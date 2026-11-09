@@ -2,7 +2,7 @@ import { test, before } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,6 +19,7 @@ const TOKENS = ["paper", "ink", "accent", "accent-bright", ...SKY_TOKENS];
 let output;
 let htmlFiles;
 let siteCss;
+let resumePrintHtml;
 
 function build(dist, env = {}) {
   return execFileSync(buildScript, [dist], {
@@ -32,7 +33,7 @@ function build(dist, env = {}) {
 function buildFixture(content, dist) {
   return spawnSync(buildScript, [dist], {
     cwd: root,
-    env: { ...process.env, CONTENT_DIR: content },
+    env: { ...process.env, CONTENT_DIR: content, RESUME_PDF: "0" },
     encoding: "utf8",
   });
 }
@@ -77,9 +78,15 @@ function contrast(foreground, background) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function pdfPageCount(bytes) {
+  const counts = [...bytes.toString("latin1").matchAll(/\/Count\s+(\d+)/g)].map(([, count]) => Number(count));
+  return Math.max(...counts);
+}
+
 before(() => {
   output = mkdtempSync(join(tmpdir(), "portfolio-build-"));
-  build(output);
+  resumePrintHtml = join(mkdtempSync(join(tmpdir(), "portfolio-print-")), "resume-print.html");
+  build(output, { RESUME_PRINT_COPY: resumePrintHtml });
   htmlFiles = walk(output).filter((path) => path.endsWith(".html"));
   siteCss = readFileSync(join(output, "assets", "site.css"), "utf8");
 });
@@ -330,7 +337,7 @@ https://example.com
 `,
   );
 
-  build(dist, { CONTENT_DIR: content });
+  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
 
   const page = readFileSync(join(dist, "projects", "parser-fixture", "index.html"), "utf8");
   assert.match(page, /<table>/);
@@ -367,7 +374,7 @@ Not on the front page.
 `,
   );
 
-  build(dist, { CONTENT_DIR: content });
+  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
 
   const home = readFileSync(join(dist, "index.html"), "utf8");
   assert.match(home, /href="\/projects\/featured-project\/"/);
@@ -389,7 +396,7 @@ status: shipped
 category: sound
 order: 1`);
 
-  build(dist, { CONTENT_DIR: content });
+  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
 
   const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
   assert.deepEqual(catalogueRows(catalogue), [
@@ -424,7 +431,7 @@ links:
   paper: https://example.com/article-one`,
   );
 
-  build(dist, { CONTENT_DIR: content });
+  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
 
   const all = readFileSync(join(dist, "work", "index.html"), "utf8");
   assert.equal(catalogueRows(all).length, 5, "the catalogue lists every project once");
@@ -459,7 +466,7 @@ featured: true`);
 status: shipped
 category: web`);
 
-  build(dist, { CONTENT_DIR: content });
+  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
 
   const home = readFileSync(join(dist, "index.html"), "utf8");
   assert.match(home, /<ul class="grid featured">/);
@@ -501,7 +508,7 @@ links:
 status: shipped
 category: web`);
 
-  build(dist, { CONTENT_DIR: content });
+  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
 
   assert.equal(statSync(join(dist, "projects", "a-paper"), { throwIfNoEntry: false }), undefined);
   assert.equal(statSync(join(dist, "projects", "a-live-piece"), { throwIfNoEntry: false }), undefined);
@@ -539,7 +546,7 @@ test("the catalogue is a three-column table with a header for each column", () =
 status: shipped
 category: games`);
 
-  build(dist, { CONTENT_DIR: content });
+  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
 
   const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
   const headers = [...catalogue.matchAll(/<th scope="col">([^<]+)<\/th>/g)].map(([, text]) => text);
@@ -566,7 +573,7 @@ featured: true`,
     "# Styled\n\nA *quiet* game with a [link](https://example.com).\n",
   );
 
-  build(dist, { CONTENT_DIR: content });
+  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
 
   const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
   assert.match(catalogue, /<td class="catalogue-blurb"><p>A <em>quiet<\/em> game with a <a href="https:\/\/example\.com">link<\/a>\.<\/p><\/td>/);
@@ -639,7 +646,7 @@ test("Now carries a visible update date and its five sections, without an archiv
 test("no phone number appears on any page", () => {
   for (const file of htmlFiles) {
     const html = readFileSync(file, "utf8");
-    assert.doesNotMatch(html, /276[.\-\s]?356[.\-\s]?4765/, `${relative(root, file)} must not carry the phone number`);
+    assert.doesNotMatch(html, /276\)?[.\-\s]?356[.\-\s]?4765/, `${relative(root, file)} must not carry the phone number`);
     assert.doesNotMatch(html, /\+1[.\-\s]?276/, `${relative(root, file)} must not carry the phone number`);
   }
 });
@@ -678,7 +685,7 @@ test("the resume carries every role, CV project and publication", () => {
     .filter((name) => /^cv:\s*true$/m.test(readFileSync(join(root, "content", "projects", name), "utf8")))
     .map((name) => name.replace(/\.md$/, ""));
   assert.equal(
-    (projects.match(/<div class="resume-entry">/g) ?? []).length,
+    (projects.match(/<div class="resume-entry"/g) ?? []).length,
     cvProjects.length,
     "the project section carries every CV-visible project and no others",
   );
@@ -721,7 +728,7 @@ test("the resume is chronological, newest first, within each section", () => {
 test("the resume has no phone, photo, image, canvas or script", () => {
   const resume = readFileSync(join(output, "resume", "index.html"), "utf8");
 
-  assert.doesNotMatch(resume, /276[.\-\s]?356[.\-\s]?4765/);
+  assert.doesNotMatch(resume, /276\)?[.\-\s]?356[.\-\s]?4765/);
   assert.doesNotMatch(resume, /\+1[.\-\s]?276/);
   assert.doesNotMatch(resume, /portrait/);
   assert.doesNotMatch(resume, /<(?:img|picture|svg|canvas)\b/i);
@@ -762,7 +769,7 @@ featured: true
 cv: false`,
   );
 
-  build(dist, { CONTENT_DIR: content });
+  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
 
   const projects = resumeSection("projects", dist);
 
@@ -784,6 +791,99 @@ test("the resume has print styles for a clean browser print", () => {
   assert.match(siteCss, /@page\s*\{[^}]*size:\s*letter/s);
 });
 
+test("the build emits the resume markdown and a two-page PDF export", () => {
+  const markdown = join(output, "resume.md");
+  const pdf = join(output, "resume.pdf");
+
+  assert.equal(statSync(markdown).isFile(), true, "resume.md is emitted");
+  assert.equal(statSync(pdf).isFile(), true, "resume.pdf is emitted");
+
+  const bytes = readFileSync(pdf);
+  assert.equal(bytes.subarray(0, 4).toString("ascii"), "%PDF");
+  const pages = pdfPageCount(bytes);
+  assert.ok(pages >= 1, "the PDF has a page count");
+  assert.ok(pages <= 2, `resume.pdf is ${pages} pages, not more than two`);
+
+  assert.equal(tracked.includes("dist/resume.pdf"), false, "the PDF is not committed");
+  assert.equal(tracked.includes("dist/resume.md"), false, "the markdown is not committed");
+});
+
+test("resume.md carries the complete record and no phone number", () => {
+  const markdown = readFileSync(join(output, "resume.md"), "utf8");
+
+  assert.match(markdown, /^# Jenny Mae Leidig$/m);
+  for (const text of [
+    "Chadwick & Son Orchids",
+    "CapTech Consulting",
+    "Virginia Tech College of Engineering",
+    "Software Assistance Triage (SWAT) Technician",
+    "April 2025 – July 2025",
+    "Dreamcast Repair: A Journey of a Thousand Parts",
+    "WRIR-LP 97.3FM",
+    "University of Oklahoma",
+    "## Skills",
+  ]) {
+    assert.match(markdown, new RegExp(escapeRegExp(text)), `${text} is in resume.md`);
+  }
+
+  assert.doesNotMatch(markdown, /276\)?[.\-\s]?356[.\-\s]?4765/);
+  assert.doesNotMatch(markdown, /\+1[.\-\s]?276/);
+});
+
+test("the PDF source carries the phone number and only the selected entries", () => {
+  const contact = readFileSync(join(root, "content", "resume", "contact.sh"), "utf8");
+  const phone = contact.match(/^PHONE=(.+)$/m)?.[1] ?? "";
+  const printHtml = readFileSync(resumePrintHtml, "utf8");
+
+  assert.match(phone, /276\)?[.\-\s]?356[.\-\s]?4765/);
+  assert.match(printHtml, /276\)?[.\-\s]?356[.\-\s]?4765/, "the print copy carries the phone");
+  assert.doesNotMatch(printHtml, /<script\b/i, "the print copy carries no script");
+  assert.match(printHtml, /id="experience-captech-2025-09"/);
+  assert.doesNotMatch(printHtml, /id="experience-virginia-tech-swat"/);
+  assert.doesNotMatch(printHtml, /id="experience-captech-2025-04"/);
+
+  for (const file of htmlFiles) {
+    const html = readFileSync(file, "utf8");
+    assert.doesNotMatch(html, /276\)?[.\-\s]?356[.\-\s]?4765/, `${relative(root, file)} must not carry the phone`);
+  }
+  assert.doesNotMatch(readFileSync(join(output, "resume.md"), "utf8"), /276\)?[.\-\s]?356[.\-\s]?4765/);
+});
+
+test("the build fails when the resume PDF exceeds two pages", () => {
+  const resume = mkdtempSync(join(tmpdir(), "portfolio-resume-long-"));
+  mkdirSync(join(resume, "experience"));
+  for (const file of ["summary.md", "skills.md", "contact.sh", "print.sh"]) {
+    copyFileSync(join(root, "content", "resume", file), join(resume, file));
+  }
+  for (let i = 1; i <= 20; i += 1) {
+    writeFileSync(
+      join(resume, "experience", `role-${String(i).padStart(2, "0")}.md`),
+      `---
+employer: Employer ${i}
+location: Richmond, VA
+title: Software Engineer ${i}
+start: 20${String(i).padStart(2, "0")}-01
+end: present
+---
+- Shipped a system with a long enough description to take real space on the printed page
+- Led another project with a second line of detail for the PDF page count
+`,
+    );
+  }
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-resume-long-dist-"));
+
+  const result = spawnSync(buildScript, [dist], {
+    cwd: root,
+    env: { ...process.env, RESUME_DIR: resume, RESUME_PDF: "1" },
+    encoding: "utf8",
+  });
+
+  assert.notEqual(result.status, 0, "the build must fail when the PDF overflows");
+  assert.match(result.stderr, /resume\.pdf is \d+ pages/);
+  assert.equal(existsSync(join(dist, "resume.pdf")), false, "the overflowing PDF is not published");
+  assert.equal(existsSync(join(dist, "resume-print.html")), false, "the print copy is cleaned up");
+});
+
 test("identity links come from one source that every page reads", () => {
   const identity = join(mkdtempSync(join(tmpdir(), "portfolio-identity-")), "identity.sh");
   writeFileSync(
@@ -801,7 +901,7 @@ ELSEWHERE_LINKS=("lazy sundays=https://example.com/lazy" "56 kbit/s=https://exam
   );
   const dist = mkdtempSync(join(tmpdir(), "portfolio-identity-dist-"));
 
-  build(dist, { IDENTITY_FILE: identity });
+  build(dist, { IDENTITY_FILE: identity, RESUME_PDF: "0" });
 
   const about = readFileSync(join(dist, "about", "index.html"), "utf8");
   const home = readFileSync(join(dist, "index.html"), "utf8");
@@ -830,7 +930,7 @@ This page is scheduled, so jenny skips it.
 
   const result = spawnSync(buildScript, [dist], {
     cwd: root,
-    env: { ...process.env, CONTENT_DIR: content },
+    env: { ...process.env, CONTENT_DIR: content, RESUME_PDF: "0" },
     encoding: "utf8",
   });
 
@@ -936,10 +1036,10 @@ test("the font and its licence sit beside each other", () => {
 
 test("the build cleans its output directory before generating", () => {
   const dist = mkdtempSync(join(tmpdir(), "portfolio-clean-"));
-  build(dist);
+  build(dist, { RESUME_PDF: "0" });
   writeFileSync(join(dist, "stale.html"), "left over from an earlier build");
 
-  build(dist);
+  build(dist, { RESUME_PDF: "0" });
 
   assert.equal(readdirSync(dist).includes("stale.html"), false);
   assert.equal(statSync(join(dist, "index.html")).isFile(), true);
@@ -952,7 +1052,7 @@ test("the build fails, naming the file, when a project cannot be staged", () => 
 
   const result = spawnSync(buildScript, [dist], {
     cwd: root,
-    env: { ...process.env, CONTENT_DIR: content },
+    env: { ...process.env, CONTENT_DIR: content, RESUME_PDF: "0" },
     encoding: "utf8",
   });
 

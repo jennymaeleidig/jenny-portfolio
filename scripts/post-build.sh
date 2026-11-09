@@ -76,3 +76,5 @@ for page in resume about now; do
     exit 1
   fi
 done
+
+"$SITE_ROOT/scripts/resume-exports.sh"
