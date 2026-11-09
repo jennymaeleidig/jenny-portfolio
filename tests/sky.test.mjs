@@ -3,9 +3,12 @@ import assert from "node:assert/strict";
 
 import {
   BAYER4,
+  OFFSET_Y_LIMIT,
   RAMP,
   SKY_DEFAULTS,
   createField,
+  createScene,
+  frameLayout,
   fbm,
   hash,
   rampIndex,
@@ -317,4 +320,33 @@ test("the flow drifts with its own speed, independent of the sky's", () => {
 
   assert.deepEqual([...still], [...holding], "with no evolve speed the flow holds still");
   assert.notDeepEqual([...still], [...drifted], "evolveSpeed alone moves the flow");
+});
+
+test("frameLayout snaps a block to whole device pixels and covers the frame", () => {
+  for (const dpr of [1, 2, 3]) {
+    for (const cell of [2, 3, 5, 7]) {
+      const layout = frameLayout({ width: 390, height: 844, dpr, cell });
+      assert.ok(layout.cellPx >= 1, `cell ${cell} at dpr ${dpr} keeps a block`);
+      assert.ok(
+        Number.isInteger(layout.cellPx * dpr),
+        `cell ${cell} at dpr ${dpr} lands on a device pixel`,
+      );
+      assert.ok(layout.cols * layout.cellPx >= 390, "the columns cover the width");
+      assert.ok((layout.cols - 1) * layout.cellPx < 390, "and no column is wasted");
+      assert.ok(layout.rows * layout.cellPx >= 844, "the rows cover the height");
+      assert.ok((layout.rows - 1) * layout.cellPx < 844, "and no row is wasted");
+    }
+  }
+});
+
+test("createScene lifts by the config and carries the pannable margin", () => {
+  const config = { ...SKY_DEFAULTS, offsetY: -220 };
+  const { field, offsetY } = createScene({ config, cols: 20, rows: 10, cellPx: 2 });
+
+  assert.equal(offsetY, -110);
+  assert.equal(field.margin, Math.ceil(OFFSET_Y_LIMIT / 2));
+  assert.equal(field.height - field.rows, field.margin * 2, "the margin sits above and below");
+  assert.equal(field.scale, config.scale);
+  assert.equal(field.seed, config.seed);
+  assert.equal(field.evolveScale, config.evolveScale);
 });
