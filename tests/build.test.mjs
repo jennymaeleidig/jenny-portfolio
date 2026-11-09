@@ -2,7 +2,7 @@ import { test, before } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,12 +19,24 @@ const TOKENS = ["paper", "ink", "accent", "accent-bright", ...SKY_TOKENS];
 let output;
 let htmlFiles;
 let siteCss;
-let resumePrintHtml;
+
+// The build reads one site, and the tests read a fixture site rather than the
+// real content: what a test asserts never depends on what Jenny has written
+// this week. Each test that cares writes its own projects into a temp
+// directory and passes them as CONTENT_DIR.
+const fixtureSite = join(root, "tests", "fixtures", "site");
+const FIXTURE_ENV = {
+  CONTENT_DIR: join(fixtureSite, "projects"),
+  CAREER_DIR: join(fixtureSite, "career"),
+  IDENTITY_FILE: join(fixtureSite, "identity.sh"),
+  ABOUT_FILE: join(fixtureSite, "about.md"),
+  NOW_FILE: join(fixtureSite, "now.md"),
+};
 
 function build(dist, env = {}) {
   return execFileSync(buildScript, [dist], {
     cwd: root,
-    env: { ...process.env, ...env },
+    env: { ...process.env, ...FIXTURE_ENV, ...env },
     encoding: "utf8",
     stdio: "pipe",
   });
@@ -33,7 +45,7 @@ function build(dist, env = {}) {
 function buildFixture(content, dist) {
   return spawnSync(buildScript, [dist], {
     cwd: root,
-    env: { ...process.env, CONTENT_DIR: content, RESUME_PDF: "0" },
+    env: { ...process.env, ...FIXTURE_ENV, CONTENT_DIR: content },
     encoding: "utf8",
   });
 }
@@ -54,6 +66,44 @@ function catalogueRows(html) {
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function tabBar(html) {
+  return html.match(/<nav class="tab-bar" aria-label="Work sections">([\s\S]*?)<\/nav>/)?.[1] ?? "";
+}
+
+function currentTabs(html) {
+  return [...tabBar(html).matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map(([, href]) => href);
+}
+
+function currentNavLinks(html) {
+  const nav = html.match(/<nav aria-label="Primary">([\s\S]*?)<\/nav>/)?.[1] ?? "";
+  return [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map(([, href]) => href);
+}
+
+const CAREER_SECTIONS = ["experience", "volunteering", "education", "skills"];
+
+function filters(html) {
+  return html.match(/<nav aria-label="(?:Categories|Career sections)">([\s\S]*?)<\/nav>/)?.[1] ?? "";
+}
+
+function filterLabels(html) {
+  return [...filters(html).matchAll(/<a href="[^"]+"[^>]*>([^<]+)<\/a>/g)].map(([, label]) => label);
+}
+
+function currentFilters(html) {
+  return [...filters(html).matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map(([, href]) => href);
+}
+
+function careerHeadings(html) {
+  return [...html.matchAll(/<h2 id="career-[^"]+">([^<]+)<\/h2>/g)].map(([, text]) => text);
+}
+
+function careerSection(html, name) {
+  const start = html.indexOf(`<h2 id="career-${name}">`);
+  if (start < 0) return "";
+  const next = html.indexOf('<h2 id="career-', start + 1);
+  return html.slice(start, next < 0 ? undefined : next);
 }
 
 function walk(dir) {
@@ -78,47 +128,42 @@ function contrast(foreground, background) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-function pdfPageCount(bytes) {
-  const counts = [...bytes.toString("latin1").matchAll(/\/Count\s+(\d+)/g)].map(([, count]) => Number(count));
-  return Math.max(...counts);
-}
-
 before(() => {
   output = mkdtempSync(join(tmpdir(), "portfolio-build-"));
-  resumePrintHtml = join(mkdtempSync(join(tmpdir(), "portfolio-print-")), "resume-print.html");
-  build(output, { RESUME_PRINT_COPY: resumePrintHtml });
+  build(output);
   htmlFiles = walk(output).filter((path) => path.endsWith(".html"));
   siteCss = readFileSync(join(output, "assets", "site.css"), "utf8");
 });
 
 test("the build emits the hand-written page at its route", () => {
   const home = join(output, "index.html");
-  const project = join(output, "projects", "pi-agent-harness", "index.html");
+  const project = join(output, "projects", "example-project", "index.html");
 
   assert.equal(statSync(home).isFile(), true, "the front page is emitted");
   assert.equal(statSync(project).isFile(), true, "the project page is emitted");
 
-  assert.match(readFileSync(home, "utf8"), /pi-agent-harness/);
-  assert.match(readFileSync(project, "utf8"), /<h1>pi-agent-harness<\/h1>/);
+  assert.match(readFileSync(home, "utf8"), /example-project/);
+  assert.match(readFileSync(project, "utf8"), /<h1>Example Project<\/h1>/);
 });
 
 test("markdown is rendered without its frontmatter", () => {
-  const page = readFileSync(join(output, "projects", "pi-agent-harness", "index.html"), "utf8");
+  const page = readFileSync(join(output, "projects", "example-project", "index.html"), "utf8");
 
-  assert.match(page, /<p>An agent harness for running coding agents in isolated terminal panes\.<\/p>/);
+  assert.match(page, /<p>An example project, staged by the tests rather than read from the real content\.<\/p>/);
   assert.doesNotMatch(page, /^---$/m);
   assert.doesNotMatch(page, /^category:/m);
 });
 
 test("a project page renders its title, year, status, links and prose from one file", () => {
-  const page = readFileSync(join(output, "projects", "broadcast", "index.html"), "utf8");
+  const page = readFileSync(join(output, "projects", "example-project", "index.html"), "utf8");
 
-  assert.match(page, /<h1>Broadcast<\/h1>/);
-  assert.match(page, /<p class="meta">games &middot; 2025 &middot; <span class="status">shipped<\/span><\/p>/);
-  assert.match(page, /2025/);
-  assert.match(page, /shipped/);
-  assert.match(page, /href="https:\/\/jennyleidig\.itch\.io\/broadcast"/);
-  assert.match(page, /a transmission you have to keep alive/i);
+  assert.match(page, /<h1>Example Project<\/h1>/);
+  assert.match(page, /<p class="meta">games &middot; 2026 &middot; <span class="status">study<\/span><\/p>/);
+  assert.match(page, /2026/);
+  assert.match(page, /study/);
+  assert.match(page, /href="https:\/\/example\.com\/itch"/);
+  assert.match(page, /href="https:\/\/example\.com\/repo"/);
+  assert.match(page, /a cover, two tags, two links/i);
 });
 
 test("a project marked wip says so on its page", () => {
@@ -147,7 +192,7 @@ test("tags render on the project page", () => {
     "tagged",
     `year: 2026
 status: shipped
-category: web
+category: software
 tags: [agents, terminal]`,
   );
 
@@ -168,7 +213,7 @@ test("a cover renders when declared, and absent covers leave no image", () => {
     "covered",
     `year: 2026
 status: shipped
-category: web
+category: software
 cover: /assets/sky-poster.svg`,
   );
   writeProject(
@@ -176,7 +221,7 @@ cover: /assets/sky-poster.svg`,
     "uncovered",
     `year: 2026
 status: shipped
-category: web`,
+category: software`,
   );
 
   buildFixture(content, dist);
@@ -197,7 +242,7 @@ test("the build fails, naming the file, when a declared cover is missing", () =>
     "broken-cover",
     `year: 2026
 status: shipped
-category: web
+category: software
 cover: /assets/covers/does-not-exist.png`,
   );
 
@@ -212,7 +257,7 @@ test("the build fails, naming the file, when a required field is missing", () =>
   for (const missing of ["year", "status", "category"]) {
     const content = mkdtempSync(join(tmpdir(), "portfolio-missing-"));
     const dist = mkdtempSync(join(tmpdir(), "portfolio-missing-dist-"));
-    const fields = { year: "2026", status: "shipped", category: "web" };
+    const fields = { year: "2026", status: "shipped", category: "software" };
     delete fields[missing];
     writeProject(
       content,
@@ -226,25 +271,6 @@ test("the build fails, naming the file, when a required field is missing", () =>
     assert.notEqual(result.status, 0, `the build must fail without ${missing}`);
     assert.match(result.stderr, new RegExp(`missing-${missing}\\.md`));
   }
-});
-
-test("the build fails when a project is CV-visible without a blurb", () => {
-  const content = mkdtempSync(join(tmpdir(), "portfolio-cv-"));
-  const dist = mkdtempSync(join(tmpdir(), "portfolio-cv-dist-"));
-  writeProject(
-    content,
-    "cv-no-blurb",
-    `year: 2026
-status: shipped
-category: web
-cv: true`,
-  );
-
-  const result = buildFixture(content, dist);
-
-  assert.notEqual(result.status, 0, "the build must fail");
-  assert.match(result.stderr, /cv-no-blurb\.md/);
-  assert.match(result.stderr, /cv_blurb/);
 });
 
 test("the build fails on a filename jenny would eval unsafely", () => {
@@ -269,7 +295,7 @@ test("every page carries its content without JavaScript", () => {
       assert.match(tag, /type="module"/, `${relative(root, file)} must not use a classic script`);
       assert.match(
         tag,
-        /src="\/assets\/(sky|nav|resume-selector)\.js"/,
+        /src="\/assets\/(sky|sky-levers|nav)\.js"/,
         `${relative(root, file)} may only load the site's own modules`,
       );
     }
@@ -283,6 +309,20 @@ test("client-side navigation is a progressive enhancement", () => {
   assert.match(home, /<script type="module" src="\/assets\/nav\.js"><\/script>/);
   assert.match(nav, /history\.pushState/);
   assert.match(nav, /location\.href = url/);
+});
+
+test("the link to the page already on screen is a no-op, not a reload", () => {
+  const nav = readFileSync(join(output, "assets", "nav.js"), "utf8");
+
+  assert.match(
+    nav,
+    /url\.pathname === location\.pathname && url\.search === location\.search\) return;/,
+    "the click handler stops before navigating to the current URL",
+  );
+});
+
+test("visited links carry no treatment of their own", () => {
+  assert.doesNotMatch(siteCss, /(^|\n)\s*a:visited\s*\{/m, "no rule paints over the component colours");
 });
 
 test("the sky sits behind the sheet with its poster and gradient fallbacks", () => {
@@ -301,6 +341,60 @@ test("the sky sits behind the sheet with its poster and gradient fallbacks", () 
 
   for (const asset of ["sky.js", "sky-core.mjs", "sky-poster.svg", "nav.js"]) {
     assert.equal(statSync(join(output, "assets", asset)).isFile(), true, `${asset} is emitted`);
+  }
+});
+
+test("the sky's levers are a development tool, not a shipped one", () => {
+  const home = readFileSync(join(output, "index.html"), "utf8");
+  const sky = readFileSync(join(output, "assets", "sky.js"), "utf8");
+
+  assert.doesNotMatch(home, /sky-levers/, "no production page points at the panel");
+  assert.equal(
+    existsSync(join(output, "assets", "sky-levers.mjs")),
+    false,
+    "the panel is not emitted without the flag",
+  );
+  assert.match(
+    sky,
+    /document\.body\.hasAttribute\("data-sky-levers"\)/,
+    "the live config is published only when the build marks the body",
+  );
+});
+
+test("a SKY_LEVERS=1 build carries the levers on every page", () => {
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-levers-"));
+  build(dist, { SKY_LEVERS: "1" });
+
+  const pages = walk(dist).filter((path) => path.endsWith(".html"));
+  assert.ok(pages.length > 0, "the development build emits pages");
+
+  for (const file of pages) {
+    const html = readFileSync(file, "utf8");
+    assert.match(html, /<body data-sky-levers>/, `${relative(root, file)} marks the body`);
+    assert.match(
+      html,
+      /<script type="module" src="\/assets\/sky-levers\.mjs"><\/script>/,
+      `${relative(root, file)} loads the panel after the sky`,
+    );
+  }
+
+  const levers = readFileSync(join(dist, "assets", "sky-levers.mjs"), "utf8");
+  for (const key of [
+    "cell",
+    "scale",
+    "tones",
+    "gain",
+    "speed",
+    "falloff",
+    "dither",
+    "sky",
+    "stark",
+    "evolve",
+    "evolveSpeed",
+    "warp",
+    "warpSpeed",
+  ]) {
+    assert.match(levers, new RegExp(`key: "${key}"`), `${key} has a lever`);
   }
 });
 
@@ -325,7 +419,7 @@ test("the pinned markdown parser renders CommonMark plus GFM tables and autolink
     `---
 year: 2026
 status: shipped
-category: web
+category: software
 ---
 # Parser fixture
 
@@ -337,7 +431,7 @@ https://example.com
 `,
   );
 
-  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
+  build(dist, { CONTENT_DIR: content });
 
   const page = readFileSync(join(dist, "projects", "parser-fixture", "index.html"), "utf8");
   assert.match(page, /<table>/);
@@ -352,7 +446,7 @@ test("the front page lists the featured projects and links to every page", () =>
     `---
 year: 2026
 status: shipped
-category: web
+category: software
 featured: true
 ---
 # featured-project
@@ -374,7 +468,7 @@ Not on the front page.
 `,
   );
 
-  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
+  build(dist, { CONTENT_DIR: content });
 
   const home = readFileSync(join(dist, "index.html"), "utf8");
   assert.match(home, /href="\/projects\/featured-project\/"/);
@@ -390,13 +484,13 @@ status: shipped
 category: games`);
   writeProject(content, "beta", `year: 2026
 status: shipped
-category: web`);
+category: software`);
   writeProject(content, "pinned", `year: 2020
 status: shipped
 category: sound
 order: 1`);
 
-  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
+  build(dist, { CONTENT_DIR: content });
 
   const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
   assert.deepEqual(catalogueRows(catalogue), [
@@ -420,7 +514,7 @@ status: shipped
 category: sound`);
   writeProject(content, "web-one", `year: 2023
 status: shipped
-category: web`);
+category: software`);
   writeProject(
     content,
     "article-one",
@@ -431,7 +525,7 @@ links:
   paper: https://example.com/article-one`,
   );
 
-  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
+  build(dist, { CONTENT_DIR: content });
 
   const all = readFileSync(join(dist, "work", "index.html"), "utf8");
   assert.equal(catalogueRows(all).length, 5, "the catalogue lists every project once");
@@ -440,7 +534,7 @@ links:
     games: ["game-two", "game-one"],
     sound: ["sound-one"],
     hardware: [],
-    web: ["web-one"],
+    software: ["web-one"],
     articles: ["https://example.com/article-one"],
   };
 
@@ -449,6 +543,215 @@ links:
     const hrefs = catalogueRows(page).map((href) => href.replace(/^\/projects\/|\/$/g, ""));
     assert.deepEqual(hrefs, slugs, `/work/${category}/ carries exactly ${category}`);
   }
+});
+
+test("the work pages carry Projects and Career tabs, marking only the current page", () => {
+  const routes = [
+    [join(output, "work", "index.html"), "/work/"],
+    [join(output, "work", "career", "index.html"), "/work/career/"],
+    ...CAREER_SECTIONS.map((section) => [join(output, "work", "career", section, "index.html"), "/work/career/"]),
+    ...["games", "sound", "hardware", "software", "articles"].map((category) => [
+      join(output, "work", category, "index.html"),
+      "/work/",
+    ]),
+  ];
+
+  for (const [file, current] of routes) {
+    const html = readFileSync(file, "utf8");
+    const bar = tabBar(html);
+    assert.match(bar, /<a href="\/work\/"[^>]*>Projects<\/a>/, `${relative(root, file)} links to Projects`);
+    assert.match(bar, /<a href="\/work\/career\/"[^>]*>Career<\/a>/, `${relative(root, file)} links to Career`);
+    assert.deepEqual(currentTabs(html), [current], `${relative(root, file)} marks only ${current} as current`);
+  }
+
+  // The filters are each side's own: projects filter by category, the career
+  // record filters by section, and neither borrows the other's.
+  const career = readFileSync(join(output, "work", "career", "index.html"), "utf8");
+  assert.doesNotMatch(career, /<nav aria-label="Categories"/, "category filters stay on the Projects side");
+  assert.deepEqual(filterLabels(career), ["All", "Experience", "Volunteering", "Education", "Skills"]);
+
+  const projects = readFileSync(join(output, "work", "index.html"), "utf8");
+  assert.deepEqual(filterLabels(projects), ["All", "Games", "Sound", "Hardware", "Software", "Articles"]);
+});
+
+test("each career filter lists exactly its own section, and All lists every one", () => {
+  const all = readFileSync(join(output, "work", "career", "index.html"), "utf8");
+  assert.deepEqual(careerHeadings(all), ["Experience", "Volunteering", "Education", "Skills"]);
+  assert.doesNotMatch(all, /career-section-ruled/, "the whole record rules each section off under its heading");
+
+  for (const section of CAREER_SECTIONS) {
+    const page = readFileSync(join(output, "work", "career", section, "index.html"), "utf8");
+    const label = section[0].toUpperCase() + section.slice(1);
+    assert.match(page, new RegExp(`<h1>${label}</h1>`), `/work/career/${section}/ is titled ${label}`);
+    assert.deepEqual(
+      careerHeadings(page),
+      [],
+      `/work/career/${section}/ does not repeat its own name above the disclosures`,
+    );
+    assert.match(
+      page,
+      /<section class="career-section career-section-ruled"/,
+      `/work/career/${section}/ opens on the rule its heading would have carried`,
+    );
+    assert.deepEqual(
+      currentFilters(page),
+      [`/work/career/${section}/`],
+      `/work/career/${section}/ marks only its own filter`,
+    );
+  }
+
+  assert.deepEqual(currentFilters(all), ["/work/career/"], "the whole record marks All as current");
+});
+
+test("the page header marks the current section, and current links stay ink", () => {
+  const routes = [
+    [join(output, "index.html"), ["/"]],
+    [join(output, "404.html"), []],
+    [join(output, "work", "index.html"), ["/work/"]],
+    [join(output, "work", "career", "index.html"), ["/work/"]],
+    ...CAREER_SECTIONS.map((section) => [join(output, "work", "career", section, "index.html"), ["/work/"]]),
+    ...["games", "sound", "hardware", "software", "articles"].map((category) => [
+      join(output, "work", category, "index.html"),
+      ["/work/"],
+    ]),
+    [join(output, "projects", "example-project", "index.html"), ["/work/"]],
+    [join(output, "about", "index.html"), ["/about/"]],
+    [join(output, "now", "index.html"), ["/now/"]],
+  ];
+
+  for (const [file, current] of routes) {
+    const html = readFileSync(file, "utf8");
+    assert.deepEqual(currentNavLinks(html), current, `${relative(root, file)} marks only its section as current`);
+  }
+
+  const rules = [
+    /\.site-header a\[aria-current="page"\][^{]*\{[^}]*color:\s*var\(--ink\)/s,
+    /\.tab-bar a\[aria-current="page"\]\s*\{[^}]*color:\s*var\(--ink\)/s,
+  ];
+  for (const rule of rules) {
+    assert.match(siteCss, rule, "selected links are the plain ink colour, not a bright accent");
+  }
+
+  // The header rests in the accent and answers hover in ink, so the one ink
+  // link is the section the reader is on.
+  assert.match(
+    siteCss,
+    /\.site-header a,[^{]*\{[^}]*color:\s*var\(--accent\)/s,
+    "header links rest in the accent colour",
+  );
+  assert.match(
+    siteCss,
+    /\.site-header a:hover,[^{]*\{[^}]*color:\s*var\(--ink\)/s,
+    "header links answer hover in ink",
+  );
+});
+
+test("/work/career is a normal-shell career page with one heading and only the narrow record", () => {
+  const career = readFileSync(join(output, "work", "career", "index.html"), "utf8");
+
+  assert.equal((career.match(/<h1\b/g) ?? []).length, 1, "the career page has one heading");
+  assert.match(career, /<h1>Career<\/h1>/);
+  assert.match(career, /<canvas class="sky-canvas"><\/canvas>/);
+  assert.match(career, /<script type="module" src="\/assets\/sky\.js"><\/script>/);
+  assert.match(career, /<script type="module" src="\/assets\/nav\.js"><\/script>/);
+
+  const headings = [...career.matchAll(/<h2 id="career-[^"]+">([^<]+)<\/h2>/g)].map(([, text]) => text);
+  assert.deepEqual(headings, ["Experience", "Volunteering", "Education", "Skills"]);
+
+  const experience = careerSection(career, "experience");
+  const summaries = [...experience.matchAll(/<summary>([^<]+)<\/summary>/g)].map(([, text]) => text);
+  assert.deepEqual(summaries, [
+    "Software Engineer - Consultant - Example Employer",
+    "Associate Consultant - Example Employer",
+    "Web Designer - Other Workshop",
+  ]);
+
+  const roleDates = ["2018", "2016"].map((date) => experience.indexOf(date));
+  for (const position of roleDates) {
+    assert.notEqual(position, -1, "every role carries its dates");
+  }
+  assert.deepEqual([...roleDates].sort((a, b) => a - b), roleDates, "roles run newest first");
+  assert.ok(
+    experience.indexOf("Software Engineer - Consultant") < experience.indexOf("Web Designer"),
+    "roles run newest first",
+  );
+  assert.equal(
+    (experience.match(/<details class="career-disclosure">/g) ?? []).length,
+    summaries.length,
+    "each role is its own disclosure",
+  );
+  assert.doesNotMatch(experience, /<details[^>]*\bopen\b/, "roles start closed");
+
+  const volunteering = careerSection(career, "volunteering");
+  assert.match(
+    volunteering,
+    /<summary>Volunteer Coordinator - Example Nonprofit<\/summary>/,
+    "volunteering is summarised like the roles: title, then organization",
+  );
+  assert.doesNotMatch(volunteering, /<details[^>]*\bopen\b/, "volunteering starts closed");
+
+  const education = careerSection(career, "education");
+  assert.ok(
+    education.indexOf("Master of Fine Arts") < education.indexOf("Bachelor of Science"),
+    "education runs newest first",
+  );
+  assert.match(
+    education,
+    /<summary>Master of Fine Arts \(MFA\), Art and Technology - Example University<\/summary>/,
+  );
+  assert.match(education, /<summary>Bachelor of Science \(BS\), Computer Science - Second College<\/summary>/);
+
+  const skills = careerSection(career, "skills");
+  for (const group of ["Languages", "Data and cloud", "Tools"]) {
+    assert.match(
+      skills,
+      new RegExp(`<summary>${escapeRegExp(group)}</summary>`),
+      `${group} is a skill group summary`,
+    );
+  }
+  assert.match(skills, /<li>Apache Spark<\/li>/, "each skill is its own list item");
+  assert.match(
+    skills,
+    /<li>AWS \(S3, EMR, DynamoDB\)<\/li>/,
+    "a comma inside parentheses does not split one skill in two",
+  );
+  assert.equal(
+    (skills.match(/<ul class="skill-list">/g) ?? []).length,
+    3,
+    "every skill group carries its own list",
+  );
+
+  assert.doesNotMatch(career, /example-project/, "projects stay on the Projects tab");
+  assert.doesNotMatch(career, /Example Project/, "projects stay on the Projects tab");
+
+  assert.doesNotMatch(career, /portrait/, "the career page has no photo");
+  assert.doesNotMatch(career, /<(?:picture|svg)\b/i, "the career page has no image");
+  const images = [...career.matchAll(/<img\b[^>]*>/g)].map(([tag]) => tag);
+  assert.deepEqual(
+    images.filter((tag) => !/class="sky-poster"/.test(tag)),
+    [],
+    "the only image is the sky's no-JavaScript poster",
+  );
+  assert.doesNotMatch(career, /type="checkbox"/, "the career page has no selector");
+  assert.doesNotMatch(career, /name="include"/, "the career page has no query selection");
+});
+
+test("print leaves paper, hides the tab bar and keeps roles apart", () => {
+  const print = siteCss.slice(siteCss.indexOf("@media print"));
+  assert.match(
+    print,
+    /\.sky,\s*\.tab-bar,\s*\.site-header,\s*\.site-footer\s*\{[^}]*display:\s*none/s,
+    "print hides the sky, the site chrome and the tab bar",
+  );
+  assert.match(print, /\.career-disclosure[^{]*\{[^}]*break-inside:\s*avoid/s);
+  assert.match(print, /\.career-disclosure \+ \.career-disclosure\s*\{\s*margin-top:\s*0\.5rem/);
+  assert.match(
+    print,
+    /details::details-content\s*\{\s*content-visibility:\s*visible/,
+    "print opens closed disclosures",
+  );
+  assert.match(print, /details > \*:not\(summary\)\s*\{\s*display:\s*block/);
+  assert.match(print, /@page\s*\{[^}]*size:\s*letter/s);
 });
 
 test("the front page shows exactly the featured projects as cards with category and year", () => {
@@ -464,15 +767,16 @@ category: sound
 featured: true`);
   writeProject(content, "quiet-web", `year: 2025
 status: shipped
-category: web`);
+category: software`);
 
-  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
+  build(dist, { CONTENT_DIR: content });
 
   const home = readFileSync(join(dist, "index.html"), "utf8");
   assert.match(home, /<ul class="grid featured">/);
 
   const cards = [...home.matchAll(/<li class="card">([\s\S]*?)<\/li>/g)].map(([, card]) => card);
   assert.equal(cards.length, 2, "only the featured projects are cards");
+  assert.doesNotMatch(home, /card-last/, "no card carries a closing rule of its own");
   assert.match(cards[0], /href="\/projects\/featured-game\/"/);
   assert.match(cards[0], /games/);
   assert.match(cards[0], /2026/);
@@ -506,9 +810,9 @@ links:
   );
   writeProject(content, "a-project", `year: 2024
 status: shipped
-category: web`);
+category: software`);
 
-  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
+  build(dist, { CONTENT_DIR: content });
 
   assert.equal(statSync(join(dist, "projects", "a-paper"), { throwIfNoEntry: false }), undefined);
   assert.equal(statSync(join(dist, "projects", "a-live-piece"), { throwIfNoEntry: false }), undefined);
@@ -546,18 +850,27 @@ test("the catalogue is a three-column table with a header for each column", () =
 status: shipped
 category: games`);
 
-  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
+  build(dist, { CONTENT_DIR: content });
 
   const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
   const headers = [...catalogue.matchAll(/<th scope="col">([^<]+)<\/th>/g)].map(([, text]) => text);
-  assert.equal(headers.length, 3, "the catalogue has one header per column");
-  assert.match(headers[0], /categor/i);
-  assert.match(headers[1], /project/i);
+  assert.deepEqual(headers, ["Project", "Blurb", "Category", "Year"], "the whole catalogue names each row's category");
 
   const row = catalogue.match(/<tbody>[\s\S]*?<tr>([\s\S]*?)<\/tr>/)?.[1] ?? "";
-  assert.match(row, /<td class="meta">games<br>2026<\/td>/);
   assert.match(row, /<td class="catalogue-title"><a href="\/projects\/headered\/">headered<\/a><\/td>/);
   assert.match(row, /<td class="catalogue-blurb"><p>Prose for headered\.<\/p><\/td>/);
+  assert.match(row, /<td class="catalogue-category">Games<\/td>/);
+  assert.match(row, /<td class="meta">2026<\/td>/);
+
+  // A category page already says it in its heading and its filter, so it does
+  // not repeat it on every row.
+  const games = readFileSync(join(dist, "work", "games", "index.html"), "utf8");
+  assert.deepEqual(
+    [...games.matchAll(/<th scope="col">([^<]+)<\/th>/g)].map(([, text]) => text),
+    ["Project", "Blurb", "Year"],
+    "a category page carries no category column",
+  );
+  assert.doesNotMatch(games, /catalogue-category/);
 });
 
 test("catalogue blurbs render inline markdown instead of showing its syntax", () => {
@@ -573,7 +886,7 @@ featured: true`,
     "# Styled\n\nA *quiet* game with a [link](https://example.com).\n",
   );
 
-  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
+  build(dist, { CONTENT_DIR: content });
 
   const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
   assert.match(catalogue, /<td class="catalogue-blurb"><p>A <em>quiet<\/em> game with a <a href="https:\/\/example\.com">link<\/a>\.<\/p><\/td>/);
@@ -583,7 +896,7 @@ featured: true`,
   assert.match(home, /<div class="card-blurb"><p>A <em>quiet<\/em> game/);
 });
 
-test("About renders three paragraphs, a photo, primary links, elsewhere and the contribution line", () => {
+test("About renders three paragraphs, a photo and the primary links", () => {
   const about = readFileSync(join(output, "about", "index.html"), "utf8");
 
   assert.match(about, /<h1>About<\/h1>/);
@@ -591,29 +904,26 @@ test("About renders three paragraphs, a photo, primary links, elsewhere and the 
   const prose = about.match(/<div class="prose">([\s\S]*?)<\/div>/)?.[1] ?? "";
   assert.equal((prose.match(/<p>/g) ?? []).length, 3, "About carries three paragraphs");
 
-  assert.match(about, /<img class="portrait" src="\/assets\/portrait\.svg" alt="Jenny Leidig"/);
+  assert.match(about, /<img class="portrait" src="\/assets\/portrait\.svg" alt="Example Name"/);
 
   const primary = about.match(/<ul class="links primary-links"[^>]*>([\s\S]*?)<\/ul>/)?.[1] ?? "";
-  assert.match(primary, /<a href="mailto:jennymaeleidig@gmail\.com">Email<\/a>/);
+  assert.match(primary, /<a href="mailto:hello@example\.com">Email<\/a>/);
   assert.ok(
-    primary.indexOf("mailto:") < primary.indexOf("https://github.com/"),
+    primary.indexOf("mailto:") < primary.indexOf("https://example.com/github"),
     "email is the first primary link",
   );
   for (const href of [
-    "https://github.com/jennymaeleidig",
-    "https://www.linkedin.com/in/jleidig/",
-    "https://jennyleidig.itch.io/",
+    "https://example.com/github",
+    "https://example.com/linkedin",
+    "https://example.com/itch",
   ]) {
     assert.match(primary, new RegExp(`href="${escapeRegExp(href)}"`));
   }
 
-  const elsewhere = about.match(/<ul class="links elsewhere"[^>]*>([\s\S]*?)<\/ul>/)?.[1] ?? "";
-  for (const name of ["lazy sundays", "56 kbit/s", "x86 Soundscape", "WRIR", "PagedOut!"]) {
-    assert.match(elsewhere, new RegExp(escapeRegExp(name)), `${name} is in the elsewhere list`);
-  }
+  assert.doesNotMatch(about, /class="links elsewhere"/, "the elsewhere list is gone");
 
-  assert.match(about, /Unofficial Homestuck Collection/i);
-  assert.match(about, /href="https:\/\/github\.com\/jennymaeleidig\/unofficial-homestuck-collection-web"/);
+  assert.doesNotMatch(about, /Unofficial Homestuck Collection/i, "the contribution line is gone");
+  assert.doesNotMatch(about, /class="contribution"/);
 });
 
 test("the photo appears only on About", () => {
@@ -632,12 +942,21 @@ test("Now carries a visible update date and its five sections, without an archiv
   assert.match(now, /<h1>Now<\/h1>/);
   assert.match(now, /Last updated/);
 
-  const updated = readFileSync(join(root, "content", "now.md"), "utf8").match(/^updated:\s*(.+)$/m)?.[1]?.trim();
+  const updated = readFileSync(join(fixtureSite, "now.md"), "utf8").match(/^updated:\s*(.+)$/m)?.[1]?.trim();
   assert.ok(updated, "Now declares when it was last updated");
   assert.match(now, new RegExp(escapeRegExp(updated)));
 
-  const headings = [...now.matchAll(/<h2>([^<]+)<\/h2>/g)].map(([, text]) => text.toLowerCase());
-  assert.deepEqual(headings, ["making", "reading", "listening", "watching", "not doing"]);
+  const headers = [...now.matchAll(/<th scope="col">([^<]+)<\/th>/g)].map(([, text]) => text);
+  assert.deepEqual(headers, ["Doing", "Blurb"], "Now is a two-column table");
+
+  const doing = [...now.matchAll(/<td class="now-doing">([^<]+)<\/td>/g)].map(([, text]) => text);
+  assert.deepEqual(doing, ["Making", "Reading", "Listening", "Watching", "Not doing"]);
+
+  assert.match(
+    now,
+    /<td class="catalogue-blurb">\s*<p>I'm rebuilding this site/,
+    "each section's prose sits in the Blurb column",
+  );
 
   assert.doesNotMatch(now, /archive/i);
   assert.doesNotMatch(now, /weekly|monthly|every week|every month|cadence/i);
@@ -651,369 +970,31 @@ test("no phone number appears on any page", () => {
   }
 });
 
-function resumeSection(name, base = output) {
-  const resume = readFileSync(join(base, "resume", "index.html"), "utf8");
-  return resume.match(
-    new RegExp(`<section class="resume-section" aria-labelledby="resume-${name}"[^>]*>([\\s\\S]*?)</section>`),
-  )?.[1] ?? "";
-}
-
-// The default selection's one source of truth is the print selection, not a
-// second hand-kept list in the test.
-function printOmittedIds() {
-  const print = readFileSync(join(root, "content", "resume", "print.sh"), "utf8");
-  const block = print.match(/PRINT_OMIT_ENTRIES=\(([\s\S]*?)\)/)?.[1] ?? "";
-  return block
-    .split("\n")
-    .map((line) => line.replace(/#.*$/, "").trim())
-    .filter(Boolean);
-}
-
-test("the resume carries every role, CV project and publication", () => {
-  const resume = readFileSync(join(output, "resume", "index.html"), "utf8");
-
-  for (const heading of ["Summary", "Experience", "Projects", "Publications", "Volunteering", "Education", "Skills"]) {
-    assert.match(resume, new RegExp(`<h2[^>]*>${heading}</h2>`), `${heading} is a resume section`);
-  }
-
-  for (const role of [
-    "Sales Associate &amp; Website Designer",
-    "Software Engineer - Consultant",
-    "Software Engineer - Associate Consultant",
-    "Software Assistance Triage (SWAT) Technician",
-    "Co-Chair, Music Programming Committee",
+test("the build emits no legacy route or export and nothing references one", () => {
+  for (const path of [
+    join(output, "resume", "index.html"),
+    join(output, "resume.md"),
+    join(output, "resume.pdf"),
+    join(output, "resume-print.html"),
+    join(output, "resume-print.css"),
+    join(output, "assets", "resume-selector.js"),
+    join(output, "assets", "resume-selector-core.mjs"),
   ]) {
-    assert.match(resume, new RegExp(escapeRegExp(role)), `${role} is on the resume`);
+    assert.equal(existsSync(path), false, `${relative(output, path)} is not emitted`);
   }
 
-  for (const institution of ["CapTech Consulting", "Chadwick &amp; Son Orchids", "WRIR-LP 97.3FM", "University of Oklahoma", "Virginia Tech"]) {
-    assert.match(resume, new RegExp(escapeRegExp(institution)), `${institution} is on the resume`);
-  }
-
-  const projects = resumeSection("projects");
-  const cvProjects = readdirSync(join(root, "content", "projects"))
-    .filter((name) => name.endsWith(".md"))
-    .filter((name) => /^cv:\s*true$/m.test(readFileSync(join(root, "content", "projects", name), "utf8")))
-    .map((name) => name.replace(/\.md$/, ""));
-  assert.equal(
-    (projects.match(/<div class="resume-entry"/g) ?? []).length,
-    cvProjects.length,
-    "the project section carries every CV-visible project and no others",
-  );
-  for (const slug of cvProjects) {
-    assert.match(projects, new RegExp(`href="/projects/${escapeRegExp(slug)}/"`), `${slug} is on the resume`);
-  }
-
-  const publications = resumeSection("publications");
-  assert.match(publications, /Dreamcast Repair: A Journey of a Thousand Parts/);
-  assert.match(publications, /PagedOut!/);
-  assert.match(publications, /Issue 008, p\. 67/);
-});
-
-test("the resume is chronological, newest first, within each section", () => {
-  const experience = resumeSection("experience");
-
-  const order = [
-    "Chadwick &amp; Son Orchids",
-    "September 2025",
-    "April 2025",
-    "September 2023",
-    "August 2019",
-  ];
-  const positions = order.map((text) => experience.indexOf(text));
-  for (const position of positions) {
-    assert.notEqual(position, -1, "every dated role is present");
-  }
-  assert.deepEqual([...positions].sort((a, b) => a - b), positions, "experience runs newest first");
-
-  const projects = resumeSection("projects");
-  assert.ok(projects.indexOf("2026") < projects.indexOf("2025"), "projects run newest first");
-
-  const education = resumeSection("education");
-  assert.ok(
-    education.indexOf("University of Oklahoma") < education.indexOf("Virginia Tech"),
-    "education runs newest first",
-  );
-});
-
-test("the resume has no phone, photo, image, canvas or sky, and one same-origin selector script", () => {
-  const resume = readFileSync(join(output, "resume", "index.html"), "utf8");
-
-  assert.doesNotMatch(resume, /276\)?[.\-\s]?356[.\-\s]?4765/);
-  assert.doesNotMatch(resume, /\+1[.\-\s]?276/);
-  assert.doesNotMatch(resume, /portrait/);
-  assert.doesNotMatch(resume, /<(?:img|picture|svg|canvas)\b/i);
-  assert.doesNotMatch(resume, /class="sky"/);
-
-  // The markup is the complete record without JavaScript. The single script
-  // is the progressive selector, loaded from this site and nowhere else.
-  assert.equal((resume.match(/<section class="resume-section"/g) ?? []).length, 7);
-  assert.match(resume, /<h1>Resume<\/h1>/);
-  assert.match(resume, /id="experience-virginia-tech-swat"/);
-
-  const scripts = [...resume.matchAll(/<script\b[^>]*>/gi)].map(([tag]) => tag);
-  assert.equal(scripts.length, 1, "the resume loads exactly one script");
-  assert.match(scripts[0], /type="module"/);
-  assert.match(scripts[0], /src="\/assets\/resume-selector\.js"/);
-  assert.doesNotMatch(scripts[0], /https?:\/\//);
-});
-
-test("the resume defaults to exactly the selection the PDF prints", () => {
-  const omitted = printOmittedIds();
-  const resume = readFileSync(join(output, "resume", "index.html"), "utf8");
-  const printHtml = readFileSync(resumePrintHtml, "utf8");
-
-  const entryIds = [...resume.matchAll(/<div class="resume-entry" id="([^"]+)"/g)].map(([, id]) => id);
-  const hidden = [
-    ...resume.matchAll(/<div class="resume-entry" id="([^"]+)"[^>]*\bhidden\b/g),
-  ].map(([, id]) => id);
-
-  assert.deepEqual([...hidden].sort(), [...omitted].sort(), "only the PDF omissions start hidden");
-  for (const id of omitted) {
-    assert.ok(entryIds.includes(id), `${id} is still in the page markup without JavaScript`);
-    assert.doesNotMatch(printHtml, new RegExp(`id="${escapeRegExp(id)}"`), `${id} is not printed`);
-  }
-
-  const printed = entryIds.filter((id) => !omitted.includes(id));
-  assert.ok(printed.length > 0, "the print copy carries the selected entries");
-  assert.match(printHtml, new RegExp(`id="${escapeRegExp(printed[0])}"`));
-});
-
-test("the resume selector sits beside the section or entry it controls", () => {
-  const resume = readFileSync(join(output, "resume", "index.html"), "utf8");
-  const omitted = printOmittedIds();
-
-  assert.doesNotMatch(resume, /<form class="resume-selector"/, "there is no separate overview block");
-  assert.doesNotMatch(resume, /Choose what appears/, "there is no overview heading");
-  assert.equal((resume.match(/<h1\b/g) ?? []).length, 1, "the page keeps one heading");
-  assert.match(
-    resume,
-    /<p class="resume-selector-note" data-resume-selector data-default-omitted="[^"]*">/,
-  );
-
-  const sectionIds = [...resume.matchAll(/data-resume-section="([^"]+)"/g)].map(([, id]) => id);
-  assert.deepEqual(sectionIds, [
-    "resume-summary",
-    "resume-experience",
-    "resume-projects",
-    "resume-publications",
-    "resume-volunteering",
-    "resume-education",
-    "resume-skills",
-  ]);
-
-  const entryIds = [...resume.matchAll(/<div class="resume-entry" id="([^"]+)"/g)].map(([, id]) => id);
-  const experienceIds = [...resume.matchAll(/<div class="resume-entry" id="(experience-[^"]+)"/g)].map(
-    ([, id]) => id,
-  );
-  const inputs = [
-    ...resume.matchAll(/<input type="checkbox" name="include" value="([^"]+)"([^>]*)>/g),
-  ].map(([, id, attrs]) => ({ id, checked: /\schecked(?:\s|=|$)/.test(attrs) }));
-
-  const known = new Set([...sectionIds, ...entryIds]);
-  for (const input of inputs) {
-    assert.ok(known.has(input.id), `${input.id} maps to a section or entry on the page`);
-  }
-
-  const expected = [...sectionIds, ...experienceIds].filter((id) => !omitted.includes(id));
-  const checked = inputs.filter((input) => input.checked).map((input) => input.id);
-  assert.deepEqual([...checked].sort(), [...expected].sort(), "the controls start at the PDF selection");
-
-  assert.equal(
-    (resume.match(/<label class="resume-toggle"><input[^>]*aria-label="[^"]+"><\/label>/g) ?? []).length,
-    inputs.length,
-    "every control is a labelled toggle wrapping its input",
-  );
-
-  for (const id of sectionIds) {
-    const section =
-      resume.match(
-        new RegExp(`<section class="resume-section" aria-labelledby="${id}"[\\s\\S]*?</section>`),
-      )?.[0] ?? "";
-    assert.match(
-      section,
-      new RegExp(
-        `<div class="resume-section-head">\\s*<label class="resume-toggle"><input[^>]*value="${id}"[^>]*></label>\\s*<h2 id="${id}">`,
-      ),
-      `${id} has its toggle beside its heading, inside that section`,
-    );
-  }
-
-  for (const id of experienceIds) {
-    const entry =
-      resume.match(new RegExp(`<div class="resume-entry" id="${id}"[^>]*>[\\s\\S]*?</div>`))?.[0] ?? "";
-    assert.match(
-      entry,
-      new RegExp(
-        `<div class="resume-entry-head">\\s*<label class="resume-toggle"><input[^>]*value="${id}"[^>]*></label>\\s*<p class="resume-entry-title">`,
-      ),
-      `${id} has its toggle beside its title, inside that entry`,
-    );
-  }
-});
-
-test("the resume selector is the site's own module and its core is emitted", () => {
-  assert.equal(statSync(join(output, "assets", "resume-selector.js")).isFile(), true);
-  assert.equal(statSync(join(output, "assets", "resume-selector-core.mjs")).isFile(), true);
-
-  const browser = readFileSync(join(output, "assets", "resume-selector.js"), "utf8");
-  assert.match(browser, /from "\/assets\/resume-selector-core\.mjs"/);
-  assert.match(browser, /history\.replaceState/);
-  assert.doesNotMatch(browser, /https?:\/\//, "the selector fetches nothing from another origin");
-});
-
-test("print styles hide the toggles and whatever the selection hides", () => {
-  assert.match(siteCss, /\[hidden\]\s*\{[^}]*display:\s*none/s);
-  assert.match(siteCss, /@media print[\s\S]*\.resume-toggle,[\s\S]*?\.resume-selector-note\s*\{[^}]*display:\s*none/s);
-  assert.match(siteCss, /@media print[\s\S]*\.resume-entry\[hidden\][^{]*\{[^}]*display:\s*none/s);
-});
-
-test("the resume's project section is exactly the CV-visible projects", () => {
-  const content = mkdtempSync(join(tmpdir(), "portfolio-resume-projects-"));
-  const dist = mkdtempSync(join(tmpdir(), "portfolio-resume-projects-dist-"));
-  writeProject(
-    content,
-    "cv-visible-older",
-    `year: 2024
-status: shipped
-category: web
-cv: true
-cv_blurb: An older project the CV still carries.
-order: 1`,
-  );
-  writeProject(
-    content,
-    "cv-visible-newer",
-    `year: 2026
-status: shipped
-category: games
-cv: true
-cv_blurb: A newer project the CV carries.
-`,
-  );
-  writeProject(
-    content,
-    "not-on-the-cv",
-    `year: 2025
-status: shipped
-category: sound
-featured: true
-cv: false`,
-  );
-
-  build(dist, { CONTENT_DIR: content, RESUME_PDF: "0" });
-
-  const projects = resumeSection("projects", dist);
-
-  assert.match(projects, /cv-visible-newer/);
-  assert.match(projects, /A newer project the CV carries\./);
-  assert.match(projects, /cv-visible-older/);
-  assert.match(projects, /An older project the CV still carries\./);
-  assert.doesNotMatch(projects, /not-on-the-cv/);
-  assert.ok(
-    projects.indexOf("cv-visible-newer") < projects.indexOf("cv-visible-older"),
-    "the resume ignores catalogue pinning and stays chronological",
-  );
-});
-
-test("the resume has print styles for a clean browser print", () => {
-  assert.match(siteCss, /@media print\s*\{/);
-  assert.match(siteCss, /\.site-header,\s*\.site-footer\s*\{[^}]*display:\s*none/s);
-  assert.match(siteCss, /\.resume-entry,\s*\.resume-group\s*\{[^}]*break-inside:\s*avoid/s);
-  assert.match(siteCss, /@page\s*\{[^}]*size:\s*letter/s);
-});
-
-test("the build emits the resume markdown and a two-page PDF export", () => {
-  const markdown = join(output, "resume.md");
-  const pdf = join(output, "resume.pdf");
-
-  assert.equal(statSync(markdown).isFile(), true, "resume.md is emitted");
-  assert.equal(statSync(pdf).isFile(), true, "resume.pdf is emitted");
-
-  const bytes = readFileSync(pdf);
-  assert.equal(bytes.subarray(0, 4).toString("ascii"), "%PDF");
-  const pages = pdfPageCount(bytes);
-  assert.ok(pages >= 1, "the PDF has a page count");
-  assert.ok(pages <= 2, `resume.pdf is ${pages} pages, not more than two`);
-
-  assert.equal(tracked.includes("dist/resume.pdf"), false, "the PDF is not committed");
-  assert.equal(tracked.includes("dist/resume.md"), false, "the markdown is not committed");
-});
-
-test("resume.md carries the complete record and no phone number", () => {
-  const markdown = readFileSync(join(output, "resume.md"), "utf8");
-
-  assert.match(markdown, /^# Jenny Mae Leidig$/m);
-  for (const text of [
-    "Chadwick & Son Orchids",
-    "CapTech Consulting",
-    "Virginia Tech College of Engineering",
-    "Software Assistance Triage (SWAT) Technician",
-    "April 2025 – July 2025",
-    "Dreamcast Repair: A Journey of a Thousand Parts",
-    "WRIR-LP 97.3FM",
-    "University of Oklahoma",
-    "## Skills",
-  ]) {
-    assert.match(markdown, new RegExp(escapeRegExp(text)), `${text} is in resume.md`);
-  }
-
-  assert.doesNotMatch(markdown, /276\)?[.\-\s]?356[.\-\s]?4765/);
-  assert.doesNotMatch(markdown, /\+1[.\-\s]?276/);
-});
-
-test("the PDF source carries the phone number and only the selected entries", () => {
-  const contact = readFileSync(join(root, "content", "resume", "contact.sh"), "utf8");
-  const phone = contact.match(/^PHONE=(.+)$/m)?.[1] ?? "";
-  const printHtml = readFileSync(resumePrintHtml, "utf8");
-
-  assert.match(phone, /276\)?[.\-\s]?356[.\-\s]?4765/);
-  assert.match(printHtml, /276\)?[.\-\s]?356[.\-\s]?4765/, "the print copy carries the phone");
-  assert.doesNotMatch(printHtml, /<script\b/i, "the print copy carries no script");
-  assert.match(printHtml, /id="experience-captech-2025-09"/);
-  assert.doesNotMatch(printHtml, /id="experience-virginia-tech-swat"/);
-  assert.doesNotMatch(printHtml, /id="experience-captech-2025-04"/);
-
+  const legacyPath = /\/resume(?:\/|\.md|\.pdf)/;
   for (const file of htmlFiles) {
-    const html = readFileSync(file, "utf8");
-    assert.doesNotMatch(html, /276\)?[.\-\s]?356[.\-\s]?4765/, `${relative(root, file)} must not carry the phone`);
+    assert.doesNotMatch(readFileSync(file, "utf8"), legacyPath, `${relative(root, file)} references the deleted route`);
   }
-  assert.doesNotMatch(readFileSync(join(output, "resume.md"), "utf8"), /276\)?[.\-\s]?356[.\-\s]?4765/);
 });
 
-test("the build fails when the resume PDF exceeds two pages", () => {
-  const resume = mkdtempSync(join(tmpdir(), "portfolio-resume-long-"));
-  mkdirSync(join(resume, "experience"));
-  for (const file of ["summary.md", "skills.md", "contact.sh", "print.sh"]) {
-    copyFileSync(join(root, "content", "resume", file), join(resume, file));
+test("no page header offers a legacy link", () => {
+  const legacyPath = /\/resume/;
+  for (const file of htmlFiles) {
+    const header = readFileSync(file, "utf8").match(/<header class="site-header"[\s\S]*?<\/header>/)?.[0] ?? "";
+    assert.doesNotMatch(header, legacyPath, `${relative(root, file)} header has no legacy link`);
   }
-  for (let i = 1; i <= 20; i += 1) {
-    writeFileSync(
-      join(resume, "experience", `role-${String(i).padStart(2, "0")}.md`),
-      `---
-employer: Employer ${i}
-location: Richmond, VA
-title: Software Engineer ${i}
-start: 20${String(i).padStart(2, "0")}-01
-end: present
----
-- Shipped a system with a long enough description to take real space on the printed page
-- Led another project with a second line of detail for the PDF page count
-`,
-    );
-  }
-  const dist = mkdtempSync(join(tmpdir(), "portfolio-resume-long-dist-"));
-
-  const result = spawnSync(buildScript, [dist], {
-    cwd: root,
-    env: { ...process.env, RESUME_DIR: resume, RESUME_PDF: "1" },
-    encoding: "utf8",
-  });
-
-  assert.notEqual(result.status, 0, "the build must fail when the PDF overflows");
-  assert.match(result.stderr, /resume\.pdf is \d+ pages/);
-  assert.equal(existsSync(join(dist, "resume.pdf")), false, "the overflowing PDF is not published");
-  assert.equal(existsSync(join(dist, "resume-print.html")), false, "the print copy is cleaned up");
 });
 
 test("identity links come from one source that every page reads", () => {
@@ -1021,19 +1002,19 @@ test("identity links come from one source that every page reads", () => {
   writeFileSync(
     identity,
     `FULL_NAME="Hello Example"
+SITE_NAME="Hello Example"
+PORTFOLIO=https://example.com
 TAGLINE="Test Tagline"
 EMAIL=hello@example.com
 GITHUB=https://example.com/github
 LINKEDIN=https://example.com/linkedin
 ITCH=https://example.com/itch
-HOMESTUCK=https://example.com/homestuck
 PRIMARY_LINKS=("Email=mailto:hello@example.com" "GitHub=https://example.com/github" "LinkedIn=https://example.com/linkedin" "itch.io=https://example.com/itch")
-ELSEWHERE_LINKS=("lazy sundays=https://example.com/lazy" "56 kbit/s=https://example.com/56" "x86 Soundscape=https://example.com/x86" "WRIR=https://example.com/wrir" "PagedOut!=https://example.com/pagedout")
 `,
   );
   const dist = mkdtempSync(join(tmpdir(), "portfolio-identity-dist-"));
 
-  build(dist, { IDENTITY_FILE: identity, RESUME_PDF: "0" });
+  build(dist, { IDENTITY_FILE: identity });
 
   const about = readFileSync(join(dist, "about", "index.html"), "utf8");
   const home = readFileSync(join(dist, "index.html"), "utf8");
@@ -1042,6 +1023,7 @@ ELSEWHERE_LINKS=("lazy sundays=https://example.com/lazy" "56 kbit/s=https://exam
   assert.doesNotMatch(about, /jennymaeleidig@gmail\.com/);
   assert.match(home, /mailto:hello@example\.com/);
   assert.doesNotMatch(home, /jennymaeleidig@gmail\.com/);
+  assert.match(home, /<p class="lede">Test Tagline<\/p>/, "the front page lede is the tagline");
 });
 
 test("the build fails when a project page is not emitted", () => {
@@ -1052,7 +1034,7 @@ test("the build fails when a project page is not emitted", () => {
     `---
 year: 9999
 status: shipped
-category: web
+category: software
 ---
 # future-page
 
@@ -1060,11 +1042,7 @@ This page is scheduled, so jenny skips it.
 `,
   );
 
-  const result = spawnSync(buildScript, [dist], {
-    cwd: root,
-    env: { ...process.env, CONTENT_DIR: content, RESUME_PDF: "0" },
-    encoding: "utf8",
-  });
+  const result = buildFixture(content, dist);
 
   assert.notEqual(result.status, 0, "the build must fail when a page is missing");
   assert.match(result.stderr, /future-page/);
@@ -1140,6 +1118,22 @@ test("the sheet insets its content from its own border", () => {
 
 test("the featured grid caps at three columns and collapses on a narrow viewport", () => {
   assert.match(siteCss, /\.grid\s*\{[^}]*--grid-cells:\s*1/s);
+  assert.match(
+    siteCss,
+    /\.featured\s*\{[^}]*align-items:\s*stretch/s,
+    "cards in a row share one height so the closing rules sit square",
+  );
+  assert.match(siteCss, /\.card\s*\{[^}]*border-top:/s, "each card opens on the light rule");
+  assert.doesNotMatch(
+    siteCss,
+    /\.card\s*\{[^}]*border-bottom:/s,
+    "a card does not rule off its own bottom",
+  );
+  assert.match(
+    siteCss,
+    /\.primary-links:last-child,\s*\n\.career-section > :last-child,\s*\n\.catalogue tbody tr:last-child > \*/,
+    "a ruled run never closes on a rule of its own",
+  );
   assert.match(siteCss, /\.grid:has\(> :nth-child\(3\)\)\s*\{\s*--grid-cells:\s*3/);
   assert.doesNotMatch(siteCss, /:nth-child\([4-9]\)\)\s*\{\s*--grid-cells/);
   assert.match(
@@ -1161,12 +1155,6 @@ test("the catalogue and the header stay readable on a narrow viewport", () => {
     siteCss,
     /@media screen and \(max-width: 640px\)\s*\{[\s\S]*?\.catalogue td\s*\{[^}]*display:\s*block/s,
   );
-});
-
-test("print keeps employers and roles apart", () => {
-  const print = siteCss.slice(siteCss.indexOf("@media print"));
-  assert.match(print, /\.resume-group \+ \.resume-group\s*\{\s*margin-top:\s*0\.75rem/);
-  assert.match(print, /\.resume-entry \+ \.resume-entry\s*\{\s*margin-top:\s*0\.5rem/);
 });
 
 test("every page declares the favicon the build ships", () => {
@@ -1216,10 +1204,10 @@ test("the font and its licence sit beside each other", () => {
 
 test("the build cleans its output directory before generating", () => {
   const dist = mkdtempSync(join(tmpdir(), "portfolio-clean-"));
-  build(dist, { RESUME_PDF: "0" });
+  build(dist);
   writeFileSync(join(dist, "stale.html"), "left over from an earlier build");
 
-  build(dist, { RESUME_PDF: "0" });
+  build(dist);
 
   assert.equal(readdirSync(dist).includes("stale.html"), false);
   assert.equal(statSync(join(dist, "index.html")).isFile(), true);
@@ -1230,17 +1218,17 @@ test("the build fails, naming the file, when a project cannot be staged", () => 
   writeFileSync(join(content, "broken.md"), "# No frontmatter\n\nThis project cannot be dated.\n");
   const dist = mkdtempSync(join(tmpdir(), "portfolio-broken-"));
 
-  const result = spawnSync(buildScript, [dist], {
-    cwd: root,
-    env: { ...process.env, CONTENT_DIR: content, RESUME_PDF: "0" },
-    encoding: "utf8",
-  });
+  const result = buildFixture(content, dist);
 
   assert.notEqual(result.status, 0, "the build must fail");
   assert.match(result.stderr, /broken\.md/);
 });
 
-const SITE_HOST = "https://portfolio.jenny-page.online";
+// The fixture site's identity owns the host the build writes into the sitemap,
+// so the expectation is read from the same file the build reads.
+const SITE_HOST = readFileSync(join(fixtureSite, "identity.sh"), "utf8")
+  .match(/^PORTFOLIO=(.*)$/m)[1]
+  .trim();
 
 // The route set as a visitor could enumerate it: every index.html under the
 // dist tree, with the Pages 404 fallback and the /404 route itself excluded.
@@ -1274,28 +1262,32 @@ function sitemapLocs(base) {
 }
 
 function articleSlugs() {
-  return readdirSync(join(root, "content", "projects"))
+  const projects = FIXTURE_ENV.CONTENT_DIR;
+  return readdirSync(projects)
     .filter((name) => name.endsWith(".md"))
-    .filter((name) =>
-      /^category:\s*articles\s*$/m.test(readFileSync(join(root, "content", "projects", name), "utf8")),
-    )
+    .filter((name) => /^category:\s*articles\s*$/m.test(readFileSync(join(projects, name), "utf8")))
     .map((name) => name.replace(/\.md$/, ""));
 }
 
-test("/404 renders, offers the way back, and does not link to itself", () => {
+test("/404 says what happened, and the site header is the way back", () => {
   const page = readFileSync(join(output, "404", "index.html"), "utf8");
 
   assert.equal((page.match(/<h1\b/g) ?? []).length, 1, "/404 has one heading");
   assert.match(page, /does not exist/i);
 
-  for (const route of ["/", "/work/", "/resume/", "/about/", "/now/"]) {
+  // The page itself carries no second list of routes: the header above it is
+  // the way back, and it is on every page, including this one.
+  for (const route of ["/", "/work/", "/about/", "/now/"]) {
     assert.match(
       page,
-      new RegExp(`<a href="${escapeRegExp(route)}"`),
-      `/404 links back to ${route}`,
+      new RegExp(`<header class="site-header">[\\s\\S]*<a href="${escapeRegExp(route)}"`),
+      `/404 keeps the header link to ${route}`,
     );
   }
+  assert.deepEqual(currentNavLinks(page), [], "/404 is not the current section of any header link");
+  assert.doesNotMatch(page, /class="links"/, "/404 carries no second list of routes");
   assert.doesNotMatch(page, /href="\/404\/?(?:"|\/)/, "/404 must not link to itself");
+  assert.doesNotMatch(page, /\/resume/, "the 404 offers no legacy link");
 });
 
 test("the root 404.html is the same page as /404", () => {
@@ -1314,9 +1306,14 @@ test("sitemap.xml lists exactly the routes the build emitted", () => {
   assert.deepEqual(locs.slice(1), [...locs.slice(1)].sort(), "the rest are sorted");
   assert.equal(new Set(locs).size, locs.length, "no loc is repeated");
   assert.equal(locs.some((loc) => loc.endsWith("/404") || loc.endsWith("/404/")), false);
+  assert.equal(
+    locs.includes(`${SITE_HOST}/work/career/`),
+    true,
+    "/work/career/ is listed in the sitemap",
+  );
 });
 
-test("the sitemap uses absolute same-site URLs and omits articles and exports", () => {
+test("the sitemap uses absolute same-site URLs and omits articles and deleted routes", () => {
   const locs = sitemapLocs(output);
 
   for (const loc of locs) {
@@ -1329,8 +1326,7 @@ test("the sitemap uses absolute same-site URLs and omits articles and exports", 
       `${slug} is an article with no page and must not be in the sitemap`,
     );
   }
-  assert.equal(locs.some((loc) => loc.endsWith("/resume.md")), false);
-  assert.equal(locs.some((loc) => loc.endsWith("/resume.pdf")), false);
+  assert.equal(locs.some((loc) => loc.includes("/resume")), false, "no legacy route is in the sitemap");
 });
 
 test("robots.txt points at the absolute sitemap", () => {
@@ -1352,8 +1348,11 @@ function trackedFiles() {
 
 const tracked = trackedFiles();
 
-test("no binary files are committed except the self-hosted font", { skip: tracked === null && "not a git checkout" }, () => {
+test("the only binaries committed are the self-hosted font and project images", { skip: tracked === null && "not a git checkout" }, () => {
   const font = "assets/fonts/CommitMonoV143-VF.woff2";
+  // A project cover has to be a real image, so the no-binaries rule has one
+  // other door: image files under assets/. Everything else stays text.
+  const image = /^assets\/(?:[a-z0-9-]+\/)+[a-z0-9-]+\.(?:png|jpe?g|webp|gif)$/;
 
   assert.ok(tracked.includes(font), "the self-hosted font is committed");
 
@@ -1361,6 +1360,9 @@ test("no binary files are committed except the self-hosted font", { skip: tracke
     const contents = readFileSync(join(root, file));
     if (file === font) {
       assert.equal(contents.includes(0), true, "the font is binary");
+      continue;
+    }
+    if (image.test(file)) {
       continue;
     }
     assert.equal(contents.includes(0), false, `${file} contains a NUL byte`);

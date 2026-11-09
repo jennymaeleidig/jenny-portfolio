@@ -17,7 +17,6 @@ if [[ -z $dist || $dist == "/" || $dist == "$root" ]]; then
 fi
 
 content_dir=${CONTENT_DIR:-"$root/content/projects"}
-export RESUME_PDF=${RESUME_PDF:-1}
 
 if ! command -v cmark-gfm >/dev/null 2>&1; then
   echo "error: cmark-gfm is required, install it with 'brew install cmark-gfm' or 'apt install cmark-gfm'" >&2
@@ -48,12 +47,18 @@ trap cleanup EXIT
 meta_dir="$staging/.meta"
 mkdir -p "$meta_dir"
 
+# The identity file owns the site's name and host. IDENTITY_FILE lets a test
+# site supply its own, the same way the layouts do.
+identity_file=${IDENTITY_FILE:-"$root/content/identity.sh"}
+# shellcheck source=/dev/null
+source "$identity_file"
+
 "$root/scripts/stage.sh" "$content_dir" "$staging" "$meta_dir" "$root"
 
 cat > "$staging/.blogrc" <<EOF
-export BLOG_HOST='https://portfolio.jenny-page.online'
-export SITE_HOST='https://portfolio.jenny-page.online'
-export BLOG_TITLE='Jenny Leidig'
+export BLOG_HOST=$(printf '%q' "$PORTFOLIO")
+export SITE_HOST=$(printf '%q' "$PORTFOLIO")
+export BLOG_TITLE=$(printf '%q' "$SITE_NAME")
 export POSTS_PER_PAGE=1000
 export SUPPRESS_UTILS_WARN=1
 export DIST=$(printf '%q' "$dist")
@@ -61,6 +66,9 @@ export LAYOUT_DIR=$(printf '%q' "$root/layouts")
 export MARKDOWN_COMMAND='cmark-gfm --extension table --extension autolink'
 export SITE_ROOT=$(printf '%q' "$root")
 export META_DIR=$(printf '%q' "$meta_dir")
+# Development only: the sky's tuning levers. Empty in a normal build, so the
+# layouts emit neither the panel's script tag nor the body attribute.
+export SKY_LEVERS=$(printf '%q' "${SKY_LEVERS:-}")
 
 function post_hook() {
   "\$SITE_ROOT/scripts/post-build.sh" || exit 1

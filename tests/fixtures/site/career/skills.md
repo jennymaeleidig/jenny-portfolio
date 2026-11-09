@@ -1,0 +1,3 @@
+- **Languages:** Bash, C#, Python
+- **Data and cloud:** AWS (S3, EMR, DynamoDB), Apache Spark
+- **Tools:** Unity

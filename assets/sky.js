@@ -10,7 +10,7 @@
  * gradient, so a canvas block still reads as sky.
  */
 
-import { SKY_DEFAULTS, createField, renderFrame } from "/assets/sky-core.mjs";
+import { SKY_DEFAULTS, createScene, frameLayout, renderFrame } from "/assets/sky-core.mjs";
 
 // A visit gets its own sky. The seed is chosen once per page load, so the
 // field stays put across internal navigation and is only new on a real load.
@@ -41,6 +41,7 @@ if (sky && canvas) {
     let image = null;
     let pixels = null;
     let cellPx = 4;
+    let offsetY = 0;
     let offset = 0;
     let elapsed = 0;
     let lastTime = 0;
@@ -62,29 +63,33 @@ if (sky && canvas) {
 
     function draw() {
       if (!field) return;
-      renderFrame({ field, out: pixels, config, time: elapsed, offset });
+      renderFrame({
+        field,
+        out: pixels,
+        config,
+        time: elapsed,
+        offset,
+        offsetY,
+      });
       context.putImageData(image, 0, 0);
     }
 
     function resize() {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      const dpr = window.devicePixelRatio || 1;
       const previousCellPx = cellPx;
+      const layout = frameLayout({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        dpr: window.devicePixelRatio || 1,
+        cell: config.cell,
+      });
+      cellPx = layout.cellPx;
 
-      // Snap one block to a whole number of device pixels, then give the
-      // canvas an explicit CSS size that is an exact multiple of it. Without
-      // this the CSS size stretches the backing by a fractional factor and
-      // every block edge lands on a different device pixel: a flickering seam
-      // that drifts under the field.
-      cellPx = Math.max(1, Math.round(config.cell * dpr) / dpr);
-      const cols = Math.max(1, Math.ceil(width / cellPx));
-      const rows = Math.max(1, Math.ceil(height / cellPx));
-
-      canvas.width = cols;
-      canvas.height = rows;
-      canvas.style.width = `${cols * cellPx}px`;
-      canvas.style.height = `${rows * cellPx}px`;
+      // The canvas gets an explicit CSS size that is an exact multiple of the
+      // block, so its backing is never stretched by a fractional factor.
+      canvas.width = layout.cols;
+      canvas.height = layout.rows;
+      canvas.style.width = `${layout.cols * cellPx}px`;
+      canvas.style.height = `${layout.rows * cellPx}px`;
 
       // Keep the drift continuous across a resize. A mobile URL bar collapsing
       // only changes the height, so the field is unchanged; zeroing here would
@@ -93,8 +98,15 @@ if (sky && canvas) {
         offset *= previousCellPx / cellPx;
       }
 
-      field = createField({ cols, rows, cellPx, scale: config.scale, seed: config.seed });
-      image = context.createImageData(cols, rows);
+      const scene = createScene({
+        config,
+        cols: layout.cols,
+        rows: layout.rows,
+        cellPx,
+      });
+      field = scene.field;
+      offsetY = scene.offsetY;
+      image = context.createImageData(layout.cols, layout.rows);
       pixels = image.data;
       draw();
     }
@@ -154,6 +166,19 @@ if (sky && canvas) {
         start();
       }, 120);
     });
+
+    // Development only. A build made with SKY_LEVERS=1 marks <body> and loads
+    // assets/sky-levers.mjs, which needs the live config and a way to repaint.
+    // Without the attribute nothing is published, so a production page has no
+    // handle on the sky at all.
+    if (document.body.hasAttribute("data-sky-levers")) {
+      globalThis.skyLevers = {
+        config,
+        redraw: draw,
+        rebuild: resize,
+        restart: start,
+      };
+    }
 
     resize();
     start();

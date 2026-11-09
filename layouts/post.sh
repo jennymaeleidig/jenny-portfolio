@@ -23,11 +23,11 @@ title=$(html_escape "$META_TITLE")
 category=$(html_escape "$META_CATEGORY")
 status=$(html_escape "$(status_label "$META_STATUS")")
 
-page_open "$title, Jenny Leidig"
+page_open "$title, $SITE_NAME" work
 cat <<EOF
         <article>
-          <p class="meta">$category &middot; $META_YEAR &middot; <span class="status">$status</span></p>
           <h1>$title</h1>
+          <p class="meta">$category &middot; $META_YEAR &middot; <span class="status">$status</span></p>
 EOF
 
 if [[ -n ${META_COVER:-} ]]; then
@@ -44,7 +44,7 @@ EOF
 
 if ((${#META_LINKS[@]})); then
   cat <<EOF
-          <ul class="links" aria-label="Links">
+          <ul class="links ruled" aria-label="Links">
 EOF
   for entry in "${META_LINKS[@]}"; do
     key=${entry%%=*}

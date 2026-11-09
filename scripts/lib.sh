@@ -1,34 +1,76 @@
 #!/usr/bin/env bash
 # Shared helpers for the build and its layouts.
 
+# shellcheck source=/dev/null
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/frontmatter.sh"
+
 # The single source of truth for the values staging accepts and layouts label.
-STATUSES=(active shipped wip archived)
-CATEGORIES=(games sound hardware web articles)
-LINK_KINDS=(live repo itch paper video)
+# Each table holds "word=Label" entries, so a word is declared once and its
+# membership, its label and its place in the canonical order cannot drift
+# apart. Bash 3.2: no associative arrays (docs/adr/0001).
+STATUSES=(
+  active=active
+  shipped=shipped
+  "wip=work in progress"
+  archived=archived
+  study=study
+)
+CATEGORIES=(
+  games=Games
+  sound=Sound
+  hardware=Hardware
+  software=Software
+  articles=Articles
+)
+CAREER_SECTIONS=(
+  experience=Experience
+  volunteering=Volunteering
+  education=Education
+  skills=Skills
+)
+LINK_KINDS=(
+  live=Live
+  repo=Repo
+  itch=itch.io
+  paper=Paper
+  video=Video
+)
 
-is_status() {
-  local value
-  for value in "${STATUSES[@]}"; do
-    [[ $1 == "$value" ]] && return 0
+# The words of a vocabulary table, in canonical order.
+vocabulary_words() {
+  local entry
+  for entry in "$@"; do
+    printf '%s\n' "${entry%%=*}"
+  done
+}
+
+# Whether a word is in the vocabulary table passed after it.
+vocabulary_has() {
+  local word=$1 entry
+  shift
+  for entry in "$@"; do
+    [[ ${entry%%=*} == "$word" ]] && return 0
   done
   return 1
 }
 
-is_link_kind() {
-  local value
-  for value in "${LINK_KINDS[@]}"; do
-    [[ $1 == "$value" ]] && return 0
+# The label for a word in the vocabulary table passed after it; empty when the
+# word is not there.
+vocabulary_label() {
+  local word=$1 entry
+  shift
+  for entry in "$@"; do
+    if [[ ${entry%%=*} == "$word" ]]; then
+      printf '%s' "${entry#*=}"
+      return 0
+    fi
   done
-  return 1
 }
 
-is_category() {
-  local value
-  for value in "${CATEGORIES[@]}"; do
-    [[ $1 == "$value" ]] && return 0
-  done
-  return 1
-}
+is_status() { vocabulary_has "$1" "${STATUSES[@]}"; }
+is_link_kind() { vocabulary_has "$1" "${LINK_KINDS[@]}"; }
+is_career_section() { vocabulary_has "$1" "${CAREER_SECTIONS[@]}"; }
+is_category() { vocabulary_has "$1" "${CATEGORIES[@]}"; }
 
 html_escape() {
   printf '%s' "$1" | sed \
@@ -38,94 +80,31 @@ html_escape() {
     -e 's/"/\&quot;/g'
 }
 
-# A frontmatter scalar from a hand-written page, e.g. its photo or update date.
-frontmatter_value() {
-  awk -v want="$2" '
-    NR == 1 && $0 == "---" { frontmatter = 1; next }
-    frontmatter && $0 == "---" { exit }
-    frontmatter {
-      key = $0
-      sub(/:.*/, "", key)
-      if (key == want) {
-        value = $0
-        sub(/^[^:]*:[[:space:]]*/, "", value)
-        sub(/^["\047]/, "", value)
-        sub(/["\047]$/, "", value)
-        print value
-        exit
-      }
-    }
-  ' "$1"
-}
-
-# A hand-written markdown page's body, dropping its frontmatter.
-markdown_source() {
-  awk '
-    NR == 1 && $0 == "---" { frontmatter = 1; next }
-    frontmatter && $0 == "---" { frontmatter = 0; next }
-    !frontmatter { print }
-  ' "$1"
+# The attribute marking the current page in a link bar, or nothing when the
+# link is not the current one.
+current_page_attr() {
+  if [[ $1 == "$2" ]]; then
+    printf ' aria-current="page"'
+  fi
 }
 
 # Render a hand-written markdown page, dropping its frontmatter.
 markdown_body() {
-  markdown_source "$1" | cmark-gfm --extension table --extension autolink
+  frontmatter_body "$1" | cmark-gfm --extension table --extension autolink
 }
 
-status_label() {
-  case $1 in
-    wip) printf 'work in progress' ;;
-    active) printf 'active' ;;
-    shipped) printf 'shipped' ;;
-    archived) printf 'archived' ;;
-  esac
-}
+status_label() { vocabulary_label "$1" "${STATUSES[@]}"; }
+link_label() { vocabulary_label "$1" "${LINK_KINDS[@]}"; }
+career_section_label() { vocabulary_label "$1" "${CAREER_SECTIONS[@]}"; }
+category_label() { vocabulary_label "$1" "${CATEGORIES[@]}"; }
 
-link_label() {
-  case $1 in
-    live) printf 'Live' ;;
-    repo) printf 'Repo' ;;
-    itch) printf 'itch.io' ;;
-    paper) printf 'Paper' ;;
-    video) printf 'Video' ;;
-  esac
-}
-
-category_label() {
-  case $1 in
-    games) printf 'Games' ;;
-    sound) printf 'Sound' ;;
-    hardware) printf 'Hardware' ;;
-    web) printf 'Web' ;;
-    articles) printf 'Articles' ;;
-  esac
-}
-
-# The outbound URL for an article, which has no page of its own.
-article_href() {
-  local entry key url paper='' live=''
-  for entry in "$@"; do
-    key=${entry%%=*}
-    url=${entry#*=}
-    case $key in
-      paper) paper=$url ;;
-      live) live=$url ;;
-    esac
-  done
-  if [[ -n $paper ]]; then
-    printf '%s' "$paper"
-  else
-    printf '%s' "$live"
-  fi
-}
-
-# Emit the catalogue in its canonical order, one tab-separated record per
-# project: pinned, order, year, slug, category, title, blurb (HTML), href,
-# featured. A project with `order` sorts first, lowest number first, so it can
-# be pinned above newer work; everything else follows by year, newest first.
-# The slug breaks ties so the output is stable between builds.
+# Emit the catalogue in its canonical order, one slug per line. A project
+# with `order` sorts first, lowest number first, so it can be pinned above
+# newer work; everything else follows by year, newest first. The slug breaks
+# ties so the output is stable between builds. Callers read a row's facts from
+# its sidecar by name.
 project_records() {
-  local meta pinned order href
+  local meta pinned order
   shopt -s nullglob
   for meta in "$META_DIR"/*.sh; do
     (
@@ -137,48 +116,130 @@ project_records() {
         pinned=0
         order=$META_ORDER
       fi
-      href="/projects/$META_SLUG/"
-      if [[ $META_CATEGORY == articles ]]; then
-        href=$(article_href ${META_LINKS[@]+"${META_LINKS[@]}"})
-      fi
-      printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$pinned" "$order" "$META_YEAR" "$META_SLUG" "$META_CATEGORY" \
-        "$META_TITLE" "${META_BLURB:-}" "$href" "${META_FEATURED:-false}"
+      printf '%s\t%s\t%s\t%s\n' \
+        "$pinned" "$order" "$META_YEAR" "$META_SLUG"
     )
-  done | LC_ALL=C sort -t $'\t' -k1,1n -k2,2n -k3,3nr -k4,4
+  done | LC_ALL=C sort -t $'\t' -k1,1n -k2,2n -k3,3nr -k4,4 | cut -f4
 }
 
-# Emit the CV-visible projects in chronological order, newest first: year,
-# title, CV blurb, href and category. The catalogue's pinning does not apply
-# here, because the resume is the record rather than a showcase.
-cv_project_records() {
-  local meta href
-  shopt -s nullglob
-  for meta in "$META_DIR"/*.sh; do
-    (
-      # shellcheck source=/dev/null
-      source "$meta"
-      [[ ${META_CV:-false} == true ]] || exit 0
-      href="/projects/$META_SLUG/"
-      if [[ $META_CATEGORY == articles ]]; then
-        href=$(article_href ${META_LINKS[@]+"${META_LINKS[@]}"})
-      fi
-      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$META_YEAR" "$META_TITLE" "${META_CV_BLURB:-}" "$href" "$META_CATEGORY" "$META_SLUG"
-    )
-  done | LC_ALL=C sort -t $'\t' -k1,1nr -k2,2
-}
-
-# List one resume section's entry files newest first, sorted by a frontmatter
+# List one career section's entry files newest first, sorted by a frontmatter
 # field such as `start` or `year`. The filename breaks ties so the order is
 # stable between builds.
-resume_files() {
+career_files() {
   local dir=$1 field=$2 file key
   shopt -s nullglob
   for file in "$dir"/*.md; do
     key=$(frontmatter_value "$file" "$field")
     printf '%s\t%s\n' "${key:-0000}" "$file"
   done | LC_ALL=C sort -t $'\t' -k1,1r -k2,2 | cut -f2-
+}
+
+# Emit the entries of a career section grouped by one frontmatter field, newest
+# first within each group, as a record stream: a `group` record naming the
+# employer or organisation and its location, then one `file` record per entry,
+# then an `end` record. Grouping is by identity rather than adjacency, so two
+# stints at the same employer stay together even when another role is dated
+# between them.
+career_group_records() {
+  local dir=$1 field=$2
+  local -a groups=()
+  local -a group_files=()
+  local file group first location
+  local i found
+
+  while IFS= read -r file; do
+    [[ -n $file ]] || continue
+    group=$(frontmatter_value "$file" "$field")
+    found=-1
+    for ((i = 0; i < ${#groups[@]}; i++)); do
+      if [[ ${groups[i]} == "$group" ]]; then
+        found=$i
+        break
+      fi
+    done
+    if ((found < 0)); then
+      groups+=("$group")
+      group_files+=("$file")
+    else
+      group_files[found]+=$'\n'"$file"
+    fi
+  done < <(career_files "$dir" start)
+
+  for ((i = 0; i < ${#groups[@]}; i++)); do
+    group=${groups[i]}
+    first=${group_files[i]%%$'\n'*}
+    location=$(frontmatter_value "$first" location)
+    printf 'group\t%s\t%s\n' "$group" "$location"
+    while IFS= read -r file; do
+      [[ -n $file ]] || continue
+      printf 'file\t%s\n' "$file"
+    done <<< "${group_files[i]}"
+    printf 'end\n'
+  done
+}
+
+# Emit education entries newest first, one tab-separated record per entry:
+# institution, location, degree, start, end, note.
+career_education_records() {
+  local dir=$1 file key value
+  local institution location degree start end note
+  while IFS= read -r file; do
+    [[ -n $file ]] || continue
+    institution='' location='' degree='' start='' end='' note=''
+    while IFS=$'\t' read -r key value; do
+      case $key in
+        institution) institution=$value ;;
+        location) location=$value ;;
+        degree) degree=$value ;;
+        start) start=$value ;;
+        end) end=$value ;;
+        note) note=$value ;;
+      esac
+    done < <(frontmatter_scalars "$file")
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "$institution" "$location" "$degree" "$start" "$end" "$note"
+  done < <(career_files "$dir" start)
+}
+
+# Emit the skills list as records: one tab-separated `category skill` line per
+# skill. Each category is a bullet of the hand-written skills.md of the form
+# `- **Category:** skill, skill, ...`; a comma inside parentheses, as in
+# `AWS (S3, EMR, DynamoDB)`, is part of one skill rather than a separator.
+career_skill_records() {
+  local file=$1
+  awk '
+    function trim(text) {
+      sub(/^[[:space:]]+/, "", text)
+      sub(/[[:space:]]+$/, "", text)
+      return text
+    }
+    # Split on commas that sit outside parentheses, so grouped skills survive.
+    function emit(items,   i, char, depth, buffer) {
+      depth = 0
+      buffer = ""
+      for (i = 1; i <= length(items); i++) {
+        char = substr(items, i, 1)
+        if (char == "(") depth++
+        if (char == ")" && depth > 0) depth--
+        if (char == "," && depth == 0) {
+          if (trim(buffer) != "") print category "\t" trim(buffer)
+          buffer = ""
+          continue
+        }
+        buffer = buffer char
+      }
+      if (trim(buffer) != "") print category "\t" trim(buffer)
+    }
+    /^- \*\*/ {
+      line = $0
+      sub(/^- \*\*/, "", line)
+      category = line
+      sub(/:\*\*.*/, "", category)
+      items = line
+      sub(/^.*:\*\*[[:space:]]*/, "", items)
+      emit(items)
+    }
+  ' "$file"
 }
 
 month_label() {
@@ -198,7 +259,7 @@ month_label() {
   esac
 }
 
-# A resume date is a year, a year and month, or `present`. Anything else is
+# A career date is a year, a year and month, or `present`. Anything else is
 # shown as it was written rather than silently dropped.
 date_label() {
   case $1 in

@@ -15,6 +15,15 @@ const sheet = document.querySelector("main");
 const viewTransitions = typeof document.startViewTransition === "function";
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
+// The header sits outside <main>, so it keeps the previous page's current link
+// unless the swapped-in document's header is carried over too.
+function syncHeader(nextDocument) {
+  const currentHeader = document.querySelector(".site-header");
+  const nextHeader = nextDocument.querySelector(".site-header");
+  if (!currentHeader || !nextHeader) return;
+  currentHeader.innerHTML = nextHeader.innerHTML;
+}
+
 let controller = null;
 
 function isPageLink(link, event) {
@@ -27,9 +36,8 @@ function isPageLink(link, event) {
   const url = new URL(link.href, location.href);
   if (url.origin !== location.origin) return false;
   if (url.pathname.startsWith("/assets/")) return false;
-  if (url.pathname === location.pathname && url.search === location.search) return false;
-  // Exports and other non-page files keep their ordinary download/open
-  // behaviour. Routes are either "/" or end in a slash.
+  // A path that is not a page keeps its ordinary download/open behaviour.
+  // Routes are either "/" or end in a slash.
   if (url.pathname !== "/" && !url.pathname.endsWith("/")) return false;
 
   return true;
@@ -60,6 +68,7 @@ async function navigate(url, { push = true, scrollY = 0 } = {}) {
     const swap = () => {
       document.title = nextDocument.title;
       sheet.innerHTML = next.innerHTML;
+      syncHeader(nextDocument);
       focusMain();
     };
 
@@ -85,6 +94,12 @@ document.addEventListener("click", (event) => {
   if (!link || !isPageLink(link, event)) return;
 
   event.preventDefault();
+
+  // The link to the page already on screen is not a reload. Swapping it back in
+  // would restart the sky and throw away the reader's scroll for nothing.
+  const url = new URL(link.href, location.href);
+  if (url.pathname === location.pathname && url.search === location.search) return;
+
   navigate(link.href);
 });
 
@@ -94,3 +109,21 @@ window.addEventListener("popstate", (event) => {
 
 // Remember where the reader was so Back can return them there.
 history.replaceState({ scrollY: window.scrollY }, "");
+
+// The career record folds its entries into <details>. Closed ones would print
+// as bare summaries, so open every record for the print dialog and put back
+// the ones that were closed afterwards.
+const reopened = [];
+
+window.addEventListener("beforeprint", () => {
+  reopened.length = 0;
+  for (const details of document.querySelectorAll("details:not([open])")) {
+    reopened.push(details);
+    details.open = true;
+  }
+});
+
+window.addEventListener("afterprint", () => {
+  for (const details of reopened) details.open = false;
+  reopened.length = 0;
+});
