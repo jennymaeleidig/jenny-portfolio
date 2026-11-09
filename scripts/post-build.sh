@@ -67,3 +67,12 @@ for category in "${CATEGORIES[@]}"; do
     exit 1
   fi
 done
+
+for page in about now; do
+  mkdir -p "$DIST/$page"
+  "$SITE_ROOT/layouts/$page.sh" > "$DIST/$page/index.html"
+  if [[ ! -s $DIST/$page/index.html ]]; then
+    echo "error: the $page page was not emitted" >&2
+    exit 1
+  fi
+done

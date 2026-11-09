@@ -51,6 +51,10 @@ function catalogueRows(html) {
     .filter(Boolean);
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -570,6 +574,100 @@ featured: true`,
 
   const home = readFileSync(join(dist, "index.html"), "utf8");
   assert.match(home, /<div class="card-blurb"><p>A <em>quiet<\/em> game/);
+});
+
+test("About renders three paragraphs, a photo, primary links, elsewhere and the contribution line", () => {
+  const about = readFileSync(join(output, "about", "index.html"), "utf8");
+
+  assert.match(about, /<h1>About<\/h1>/);
+
+  const prose = about.match(/<div class="prose">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  assert.equal((prose.match(/<p>/g) ?? []).length, 3, "About carries three paragraphs");
+
+  assert.match(about, /<img class="portrait" src="\/assets\/portrait\.svg" alt="Jenny Leidig"/);
+
+  const primary = about.match(/<ul class="links primary-links"[^>]*>([\s\S]*?)<\/ul>/)?.[1] ?? "";
+  assert.match(primary, /<a href="mailto:jennymaeleidig@gmail\.com">Email<\/a>/);
+  assert.ok(
+    primary.indexOf("mailto:") < primary.indexOf("https://github.com/"),
+    "email is the first primary link",
+  );
+  for (const href of [
+    "https://github.com/jennymaeleidig",
+    "https://www.linkedin.com/in/jleidig/",
+    "https://jennyleidig.itch.io/",
+  ]) {
+    assert.match(primary, new RegExp(`href="${escapeRegExp(href)}"`));
+  }
+
+  const elsewhere = about.match(/<ul class="links elsewhere"[^>]*>([\s\S]*?)<\/ul>/)?.[1] ?? "";
+  for (const name of ["lazy sundays", "56 kbit/s", "x86 Soundscape", "WRIR", "PagedOut!"]) {
+    assert.match(elsewhere, new RegExp(escapeRegExp(name)), `${name} is in the elsewhere list`);
+  }
+
+  assert.match(about, /Unofficial Homestuck Collection/i);
+  assert.match(about, /href="https:\/\/github\.com\/jennymaeleidig\/unofficial-homestuck-collection-web"/);
+});
+
+test("the photo appears only on About", () => {
+  for (const file of htmlFiles) {
+    if (file === join(output, "about", "index.html")) {
+      continue;
+    }
+    const html = readFileSync(file, "utf8");
+    assert.doesNotMatch(html, /portrait/, `${relative(root, file)} must not show the photo`);
+  }
+});
+
+test("Now carries a visible update date and its five sections, without an archive or a cadence", () => {
+  const now = readFileSync(join(output, "now", "index.html"), "utf8");
+
+  assert.match(now, /<h1>Now<\/h1>/);
+  assert.match(now, /Last updated/);
+
+  const updated = readFileSync(join(root, "content", "now.md"), "utf8").match(/^updated:\s*(.+)$/m)?.[1]?.trim();
+  assert.ok(updated, "Now declares when it was last updated");
+  assert.match(now, new RegExp(escapeRegExp(updated)));
+
+  const headings = [...now.matchAll(/<h2>([^<]+)<\/h2>/g)].map(([, text]) => text.toLowerCase());
+  assert.deepEqual(headings, ["making", "reading", "listening", "watching", "not doing"]);
+
+  assert.doesNotMatch(now, /archive/i);
+  assert.doesNotMatch(now, /weekly|monthly|every week|every month|cadence/i);
+});
+
+test("no phone number appears on About or Now", () => {
+  for (const name of ["about", "now"]) {
+    const html = readFileSync(join(output, name, "index.html"), "utf8");
+    assert.doesNotMatch(html, /276[.\-\s]?356[.\-\s]?4765/);
+    assert.doesNotMatch(html, /\+1[.\-\s]?276/);
+  }
+});
+
+test("identity links come from one source that every page reads", () => {
+  const identity = join(mkdtempSync(join(tmpdir(), "portfolio-identity-")), "identity.sh");
+  writeFileSync(
+    identity,
+    `EMAIL=hello@example.com
+GITHUB=https://example.com/github
+LINKEDIN=https://example.com/linkedin
+ITCH=https://example.com/itch
+HOMESTUCK=https://example.com/homestuck
+PRIMARY_LINKS=("Email=mailto:hello@example.com" "GitHub=https://example.com/github" "LinkedIn=https://example.com/linkedin" "itch.io=https://example.com/itch")
+ELSEWHERE_LINKS=("lazy sundays=https://example.com/lazy" "56 kbit/s=https://example.com/56" "x86 Soundscape=https://example.com/x86" "WRIR=https://example.com/wrir" "PagedOut!=https://example.com/pagedout")
+`,
+  );
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-identity-dist-"));
+
+  build(dist, { IDENTITY_FILE: identity });
+
+  const about = readFileSync(join(dist, "about", "index.html"), "utf8");
+  const home = readFileSync(join(dist, "index.html"), "utf8");
+  assert.match(about, /hello@example\.com/);
+  assert.match(about, /https:\/\/example\.com\/github/);
+  assert.doesNotMatch(about, /jennymaeleidig@gmail\.com/);
+  assert.match(home, /mailto:hello@example\.com/);
+  assert.doesNotMatch(home, /jennymaeleidig@gmail\.com/);
 });
 
 test("the build fails when a project page is not emitted", () => {

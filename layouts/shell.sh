@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # The shared HTML shell. Sourced by the page layouts.
 
+identity_file=${IDENTITY_FILE:-"$SITE_ROOT/content/identity.sh"}
+# shellcheck source=/dev/null
+source "$identity_file"
+
 page_open() {
   local title=$1
 
@@ -26,6 +30,8 @@ page_open() {
         <nav aria-label="Primary">
           <a href="/">Jenny Leidig</a>
           <a href="/work/">Work</a>
+          <a href="/about/">About</a>
+          <a href="/now/">Now</a>
         </nav>
       </header>
       <main>
@@ -35,7 +41,7 @@ EOF
 page_close() {
   printf '      </main>\n'
   cat <<EOF
-      <footer class="site-footer"><a href="/">Jenny Leidig</a></footer>
+      <footer class="site-footer"><a href="/">Jenny Leidig</a> <a href="mailto:$(html_escape "$EMAIL")">$(html_escape "$EMAIL")</a></footer>
     </div>
     <script type="module" src="/assets/sky.js"></script>
     <script type="module" src="/assets/nav.js"></script>

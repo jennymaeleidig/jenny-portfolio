@@ -38,6 +38,35 @@ html_escape() {
     -e 's/"/\&quot;/g'
 }
 
+# A frontmatter scalar from a hand-written page, e.g. its photo or update date.
+frontmatter_value() {
+  awk -v want="$2" '
+    NR == 1 && $0 == "---" { frontmatter = 1; next }
+    frontmatter && $0 == "---" { exit }
+    frontmatter {
+      key = $0
+      sub(/:.*/, "", key)
+      if (key == want) {
+        value = $0
+        sub(/^[^:]*:[[:space:]]*/, "", value)
+        sub(/^["\047]/, "", value)
+        sub(/["\047]$/, "", value)
+        print value
+        exit
+      }
+    }
+  ' "$1"
+}
+
+# Render a hand-written markdown page, dropping its frontmatter.
+markdown_body() {
+  awk '
+    NR == 1 && $0 == "---" { frontmatter = 1; next }
+    frontmatter && $0 == "---" { frontmatter = 0; next }
+    !frontmatter { print }
+  ' "$1" | cmark-gfm --extension table --extension autolink
+}
+
 status_label() {
   case $1 in
     wip) printf 'work in progress' ;;

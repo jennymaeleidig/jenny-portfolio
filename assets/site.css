@@ -262,6 +262,32 @@ i {
   max-width: 56ch;
 }
 
+.portrait {
+  float: right;
+  width: 12rem;
+  height: 12rem;
+  margin: 0 0 var(--line-height) 2ch;
+  border: var(--border-thickness) solid var(--sky-2);
+  object-fit: cover;
+}
+
+.contribution {
+  max-width: 56ch;
+  font-size: 0.875rem;
+}
+
+.elsewhere {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: calc(var(--line-height) / 2);
+  font-size: 0.875rem;
+}
+
+.elsewhere a {
+  font-weight: var(--font-weight-regular);
+  color: color-mix(in srgb, var(--ink) 75%, var(--paper));
+}
+
 .meta {
   font-size: 0.875rem;
   font-weight: var(--font-weight-medium);
@@ -423,6 +449,10 @@ i {
 
 .site-footer a {
   font-weight: inherit;
+}
+
+.site-footer > * + * {
+  margin-top: 0;
 }
 
 hr {

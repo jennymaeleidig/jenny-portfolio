@@ -39,13 +39,27 @@ The front page carries one line about what she does, then shows the projects
 marked `featured: true` as cards on the character grid, with the same
 category, year and blurb.
 
+### About and Now
+
+`content/about.md` and `content/now.md` are hand-written markdown, rendered by
+`layouts/about.sh` and `layouts/now.sh`. About is three paragraphs, a square
+portrait, the primary links, an elsewhere list and one contribution line. Its
+portrait is `assets/portrait.svg`, the image from the previous site embedded
+as text so the no-binaries rule still holds; replace that one file when there
+is a newer photo. Now carries a visible last-updated date and five sections:
+making, reading, listening, watching and not doing.
+
+`content/identity.sh` is the one identity block. It holds the email and the
+profile links, and every page sources it, so changing an address changes it
+everywhere it appears, including the footer.
+
 ## How the build works
 
 `make build` produces `dist/`, a deployable tree:
 
 1. `scripts/stage.sh` reads `content/projects/*.md`, validates its frontmatter, strips it, writes a dated CommonMark file and a shell-sourceable metadata sidecar. A missing required field, a `cv: true` entry without a `cv_blurb`, an article without a `paper` or `live` link, a declared cover that does not exist, or a filename outside `^[a-z0-9-]+$` fails the build with the file named. Articles get a sidecar but no staged markdown, because they have no page.
 2. `vendor/jenny/bin/jenny` renders each staged file at `/post/<slug>.html` using `layouts/post.sh`.
-3. `scripts/post-build.sh` relocates each page to `/projects/<slug>/index.html`, writes `/`, `/work/` and the five `/work/<category>/` pages, copies `/assets`, and discards jenny's unused index and feed.
+3. `scripts/post-build.sh` relocates each page to `/projects/<slug>/index.html`, writes `/`, `/work/`, the five `/work/<category>/` pages, `/about/` and `/now/`, copies `/assets`, and discards jenny's unused index and feed.
 
 The build empties `dist/` before generating, sets `cmark-gfm` as the markdown parser, and fails if a project cannot be staged or a page is not emitted.
 
@@ -59,6 +73,7 @@ The build empties `dist/` before generating, sets `cmark-gfm` as the markdown pa
 - `assets/sky.js` is the browser half: it picks a fresh seed per visit, snaps a block to whole device pixels, re-quantises the cached field each frame, and stops on `visibilitychange`, when the canvas leaves the viewport, or under `prefers-reduced-motion`.
 - `assets/nav.js` is the progressive navigation enhancement: internal page links swap `<main>` and the title through `history.pushState` instead of reloading. The sky canvas lives outside `<main>`, so it keeps running across page changes. Without it, or when a fetch fails, links behave as ordinary links.
 - `assets/sky-poster.svg` is a static frame at the shipped 2px cell size, shown when JavaScript is off or no 2D context can be created. It is generated from the same core by `node scripts/sky-poster.mjs`; the frame is embedded as a base64 PNG so the committed file stays text inside the no-binaries rule. The SVG records a frame hash that the tests check against the core.
+- `assets/portrait.svg` is the square portrait on About, carried over from the previous straw.page site and embedded as a base64 JPEG for the same reason. It appears on About only, never on Now or the resume.
 - `assets/fonts/CommitMonoV143-VF.woff2` is Commit Mono v1.143, the `wght 200-700`, `ital 0-1` variable font, self-hosted and preloaded. Its SIL Open Font License sits beside it as `LICENSE-FONT`. It is the one binary file committed to the repo.
 
 ## Local development
