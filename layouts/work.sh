@@ -52,12 +52,12 @@ EOF
 
 printf '            <li><a href="/work/"%s>All</a></li>\n' \
   "$(current_page_attr "" "$category")"
-for name in "${CATEGORIES[@]}"; do
+while IFS= read -r name; do
   printf '            <li><a href="/work/%s/"%s>%s</a></li>\n' \
     "$name" \
     "$(current_page_attr "$name" "$category")" \
     "$(category_label "$name")"
-done
+done < <(vocabulary_words "${CATEGORIES[@]}")
 
 cat <<EOF
           </ul>

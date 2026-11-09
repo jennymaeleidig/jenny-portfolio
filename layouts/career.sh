@@ -177,23 +177,23 @@ EOF
 
 printf '            <li><a href="/work/career/"%s>All</a></li>\n' \
   "$(current_page_attr "" "$section")"
-for name in "${CAREER_SECTIONS[@]}"; do
+while IFS= read -r name; do
   printf '            <li><a href="/work/career/%s/"%s>%s</a></li>\n' \
     "$name" \
     "$(current_page_attr "$name" "$section")" \
     "$(career_section_label "$name")"
-done
+done < <(vocabulary_words "${CAREER_SECTIONS[@]}")
 
 cat <<EOF
           </ul>
         </nav>
 EOF
 
-for name in "${CAREER_SECTIONS[@]}"; do
+while IFS= read -r name; do
   if [[ -n $section && $section != "$name" ]]; then
     continue
   fi
   render_section "$name"
-done
+done < <(vocabulary_words "${CAREER_SECTIONS[@]}")
 
 page_close
