@@ -247,20 +247,17 @@ h1 {
 }
 
 /*
- * A title that carries its own metadata — a project's category, year and
- * status, the front page's tagline, Now's update date — keeps that metadata
- * directly beneath it, on the half-line gap the rest of the record uses. The
- * title drops its own bottom margin, or the two margins would collapse back to
- * the larger one.
+ * The title keeps one step to whatever follows it, on every page: a project's
+ * category line, the front page's tagline, Now's date, the work tab bar, or the
+ * first paragraph of About. The title drops its own bottom margin, or the two
+ * margins would collapse back to the larger one.
  */
-h1:has(+ .meta),
-h1:has(+ .lede) {
+h1 {
   margin-bottom: 0;
 }
 
-h1 + .meta,
-h1 + .lede {
-  margin-top: calc(var(--line-height) / 2);
+main h1 + * {
+  margin-top: var(--line-height);
 }
 
 h2 {
@@ -318,10 +315,9 @@ i {
 }
 
 /*
- * The featured cards rule off like a table: one light rule above every card,
- * and one under each card in the last row. Cards in a row share a height, so
- * the closing rules line up, and they keep the grid's gap between them instead
- * of running together into a single bar.
+ * The featured cards rule off like a table: one light rule above every card.
+ * Cards in a row share a height, so the rules line up. No card rules off its
+ * own bottom — the run ends where the page does.
  */
 .featured {
   list-style: none;
@@ -334,11 +330,6 @@ i {
   flex-direction: column;
   border-top: var(--border-thickness) solid var(--sky-2);
   padding-top: calc(var(--line-height) / 2);
-}
-
-.card-last {
-  border-bottom: var(--border-thickness) solid var(--sky-2);
-  padding-bottom: calc(var(--line-height) / 2);
 }
 
 .card > * {
@@ -379,7 +370,7 @@ i {
   flex-wrap: wrap;
   gap: 2ch;
   padding: 0;
-  margin: 0 0 calc(var(--line-height) * 1.5);
+  margin: 0 0 calc(var(--line-height) / 2);
   list-style: none;
   border-bottom: var(--border-thickness) solid var(--sky-4);
   padding-bottom: calc(var(--line-height) / 2);
@@ -402,10 +393,6 @@ i {
 .catalogue td {
   border: 0;
   border-bottom: var(--border-thickness) solid var(--sky-2);
-}
-
-.catalogue thead th {
-  border-bottom-color: var(--sky-4);
 }
 
 .catalogue .meta {
@@ -477,8 +464,8 @@ i {
 }
 
 /*
- * Project links close on the same rule they open on, like the About page's
- * primary links.
+ * Project links open on the same rule they close on, like the About page's
+ * primary links. A list that ends the page drops its closing rule; see below.
  */
 .primary-links,
 .ruled {
@@ -499,15 +486,12 @@ article > .links {
   font-size: 0.875rem;
   color: color-mix(in srgb, var(--ink) 75%, var(--paper));
   /*
-   * The tags close the page: the links above them are ruled top and bottom, and
-   * the tags add the third rule, so the article ends on one. The gap matches the
-   * padding inside each band, so all three rules are evenly spaced.
+   * The tags are the article's last line: the gap above them matches the padding
+   * inside the band the links sit in, so the rule under the links reads as the
+   * rule between the two, and the article ends without one of its own.
    */
   margin-top: calc(var(--line-height) / 2);
   gap: 0;
-  /* The tags sit below the links, so they close the article on their own rule. */
-  border-bottom: var(--border-thickness) solid var(--sky-2);
-  padding-bottom: calc(var(--line-height) / 2);
 }
 
 /* The same separator the meta line uses, so the tags read as one line. */
@@ -516,10 +500,40 @@ article > .links {
   margin: 0 1ch;
 }
 
+/*
+ * A rule separates one row from the next, so a run never closes on one: the
+ * last catalogue row, the last disclosure in a career section, the links that
+ * end an article all stop without a line of their own. A rule left at the end
+ * reads as one more row beginning beneath it.
+ */
+.primary-links:last-child,
+.career-section > :last-child,
+.catalogue tbody tr:last-child > *,
+article > :last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/*
+ * The page ends on whatever its last element is: a table, a list of links, a
+ * paragraph of prose. The gap to the footer's rule is the page's own padding,
+ * so it is the same size whatever that element happens to be. Padding is used
+ * here because it cannot collapse through the last element's bottom margin.
+ */
+main {
+  padding-bottom: calc(var(--line-height) / 2);
+}
+
+main > :last-child,
+main > :last-child > :last-child {
+  margin-bottom: 0;
+}
+
 .site-footer {
   display: flex;
   flex-wrap: wrap;
   gap: 2ch;
+  margin-top: 0;
   border-top: var(--border-thickness) solid var(--sky-4);
   padding-top: calc(var(--line-height) / 2);
   font-size: 0.875rem;
@@ -637,8 +651,23 @@ img {
 table {
   width: 100%;
   border-collapse: collapse;
-  position: relative;
-  top: calc(var(--line-height) / 2);
+}
+
+/*
+ * The body starts one half-step below the last bar, which is the same gap the
+ * footer keeps above its rule, so the sheet is framed evenly top and bottom.
+ * The body's own first element gives up its margin too, or its heading would
+ * collapse through the block and push the body back down again.
+ */
+nav + *,
+nav + * > :first-child {
+  margin-top: 0;
+}
+
+/* Now's table keeps a larger step under the date line than the work pages do
+   under their filter bar. */
+.catalogue.now-table {
+  margin-top: calc(var(--line-height) * 1.5);
 }
 
 th,
@@ -738,6 +767,9 @@ th {
 }
 
 .career-section h2 {
+  /* A section break is one row's gap, not the two steps a heading takes by
+     default: the previous section already ended without a closing rule. */
+  margin-top: var(--line-height);
   border-bottom: var(--border-thickness) solid var(--sky-2);
   padding-bottom: calc(var(--line-height) / 2);
   margin-bottom: calc(var(--line-height) / 2);

@@ -2,7 +2,7 @@
 year: 2026
 status: study
 category: games
-cover: /assets/broadcast/cover.png
+cover: /assets/projects/broadcast/cover.png
 tags:
   - unity
   - hlsl

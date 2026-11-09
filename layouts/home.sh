@@ -9,21 +9,13 @@ source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 
-# Collect the featured records first: the grid runs at most three to a row, so
-# the last row is known here and only its cards carry the closing rule.
+# Collect the featured records first, so a project that is not featured never
+# reaches the grid.
 cards=()
 while IFS=$'\t' read -r _group _order year _slug category title blurb href featured; do
   [[ $featured == "true" ]] || continue
   cards+=("$year"$'\t'"$category"$'\t'"$title"$'\t'"$blurb"$'\t'"$href")
 done < <(project_records)
-
-count=${#cards[@]}
-if ((count <= 3)); then
-  last_row=$count
-else
-  last_row=$(((count - 1) % 3 + 1))
-fi
-last_start=$((count - last_row))
 
 page_open "Jenny Leidig" home
 cat <<EOF
@@ -32,14 +24,9 @@ cat <<EOF
         <ul class="grid featured">
 EOF
 
-index=0
 for card in ${cards[@]+"${cards[@]}"}; do
   IFS=$'\t' read -r year category title blurb href <<< "$card"
-  class="card"
-  if ((index >= last_start)); then
-    class="card card-last"
-  fi
-  printf '          <li class="%s">\n' "$class"
+  printf '          <li class="card">\n'
   printf '            <a href="%s">%s</a>\n' "$(html_escape "$href")" "$(html_escape "$title")"
   printf '            <p class="meta">%s &middot; %s</p>\n' \
     "$(html_escape "$category")" "$(html_escape "$year")"
@@ -47,7 +34,6 @@ for card in ${cards[@]+"${cards[@]}"}; do
     printf '            <div class="card-blurb">%s</div>\n' "$blurb"
   fi
   printf '          </li>\n'
-  index=$((index + 1))
 done
 
 cat <<EOF

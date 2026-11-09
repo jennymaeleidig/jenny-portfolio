@@ -774,13 +774,9 @@ category: software`);
   const home = readFileSync(join(dist, "index.html"), "utf8");
   assert.match(home, /<ul class="grid featured">/);
 
-  const cards = [...home.matchAll(/<li class="card(?: card-last)?">([\s\S]*?)<\/li>/g)].map(([, card]) => card);
+  const cards = [...home.matchAll(/<li class="card">([\s\S]*?)<\/li>/g)].map(([, card]) => card);
   assert.equal(cards.length, 2, "only the featured projects are cards");
-  assert.equal(
-    (home.match(/<li class="card card-last">/g) ?? []).length,
-    2,
-    "both cards are in the last row, so both rule off their bottom",
-  );
+  assert.doesNotMatch(home, /card-last/, "no card carries a closing rule of its own");
   assert.match(cards[0], /href="\/projects\/featured-game\/"/);
   assert.match(cards[0], /games/);
   assert.match(cards[0], /2026/);
@@ -1133,8 +1129,8 @@ test("the featured grid caps at three columns and collapses on a narrow viewport
   );
   assert.match(
     siteCss,
-    /\.card-last\s*\{[^}]*border-bottom:\s*var\(--border-thickness\) solid var\(--sky-2\)/s,
-    "the last row closes on the light rule",
+    /\.primary-links:last-child,\s*\n\.career-section > :last-child,\s*\n\.catalogue tbody tr:last-child > \*/,
+    "a ruled run never closes on a rule of its own",
   );
   assert.match(siteCss, /\.grid:has\(> :nth-child\(3\)\)\s*\{\s*--grid-cells:\s*3/);
   assert.doesNotMatch(siteCss, /:nth-child\([4-9]\)\)\s*\{\s*--grid-cells/);
@@ -1267,19 +1263,23 @@ function articleSlugs() {
     .map((name) => name.replace(/\.md$/, ""));
 }
 
-test("/404 renders, offers the way back, and does not link to itself", () => {
+test("/404 says what happened, and the site header is the way back", () => {
   const page = readFileSync(join(output, "404", "index.html"), "utf8");
 
   assert.equal((page.match(/<h1\b/g) ?? []).length, 1, "/404 has one heading");
   assert.match(page, /does not exist/i);
 
-  for (const route of ["/", "/work/", "/work/career/", "/about/", "/now/"]) {
+  // The page itself carries no second list of routes: the header above it is
+  // the way back, and it is on every page, including this one.
+  for (const route of ["/", "/work/", "/about/", "/now/"]) {
     assert.match(
       page,
-      new RegExp(`<a href="${escapeRegExp(route)}"`),
-      `/404 links back to ${route}`,
+      new RegExp(`<header class="site-header">[\\s\\S]*<a href="${escapeRegExp(route)}"`),
+      `/404 keeps the header link to ${route}`,
     );
   }
+  assert.deepEqual(currentNavLinks(page), [], "/404 is not the current section of any header link");
+  assert.doesNotMatch(page, /class="links"/, "/404 carries no second list of routes");
   assert.doesNotMatch(page, /href="\/404\/?(?:"|\/)/, "/404 must not link to itself");
   assert.doesNotMatch(page, /\/resume/, "the 404 offers no legacy link");
 });
@@ -1346,7 +1346,7 @@ test("the only binaries committed are the self-hosted font and project images", 
   const font = "assets/fonts/CommitMonoV143-VF.woff2";
   // A project cover has to be a real image, so the no-binaries rule has one
   // other door: image files under assets/. Everything else stays text.
-  const image = /^assets\/(?:[a-z0-9-]+\/)?[a-z0-9-]+\.(?:png|jpe?g|webp|gif)$/;
+  const image = /^assets\/(?:[a-z0-9-]+\/)+[a-z0-9-]+\.(?:png|jpe?g|webp|gif)$/;
 
   assert.ok(tracked.includes(font), "the self-hosted font is committed");
 
