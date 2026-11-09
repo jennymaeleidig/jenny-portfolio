@@ -38,6 +38,18 @@ if (sky && canvas) {
     let inView = true;
     let resizeTimer = 0;
 
+    function onScreen() {
+      const rect = canvas.getBoundingClientRect();
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom > 0 &&
+        rect.right > 0 &&
+        rect.top < window.innerHeight &&
+        rect.left < window.innerWidth
+      );
+    }
+
     function draw() {
       if (!field) return;
       renderFrame({ field, out: pixels, config, time: elapsed, offset });
@@ -106,7 +118,9 @@ if (sky && canvas) {
     if ("IntersectionObserver" in window) {
       new IntersectionObserver(
         (entries) => {
-          inView = entries.some((entry) => entry.isIntersecting);
+          // A fixed canvas can report zero intersection in some browsers while
+          // still filling the viewport, so confirm against its box.
+          inView = entries.some((entry) => entry.isIntersecting) || onScreen();
           if (inView) start();
           else stop();
         },
