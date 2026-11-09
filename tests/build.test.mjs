@@ -1133,7 +1133,9 @@ test("the stylesheet is a light-only fork with the grid and its fallbacks", () =
 });
 
 test("the sheet insets its content from its own border", () => {
-  assert.match(siteCss, /\.sheet\s*\{[^}]*padding:\s*0 2ch/s);
+  assert.match(siteCss, /\.sheet\s*\{[^}]*padding:\s*var\(--line-height\) 3ch/s);
+  const print = siteCss.slice(siteCss.indexOf("@media print"));
+  assert.match(print, /\.sheet\s*\{[^}]*padding:\s*0/s, "print drops the sheet padding");
 });
 
 test("the featured grid caps at three columns and collapses on a narrow viewport", () => {

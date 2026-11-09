@@ -93,7 +93,7 @@ body {
 
 .sheet {
   width: 100%;
-  padding: 0 2ch;
+  padding: var(--line-height) 3ch;
   background: var(--paper);
   border: var(--border-thickness) solid var(--sky-2);
 }
@@ -800,6 +800,7 @@ th {
 
   .sheet {
     border: 0;
+    padding: 0;
   }
 
   .site-header,
@@ -904,10 +905,19 @@ th {
 }
 
 @media screen and (max-width: 560px) {
+  .sheet {
+    padding: calc(var(--line-height) / 2) 2ch;
+  }
+
   .site-header {
     flex-direction: column;
     align-items: flex-start;
     gap: calc(var(--line-height) / 4);
+  }
+
+  .site-footer {
+    gap: 1ch;
+    font-size: 0.75rem;
   }
 
   .site-header nav {
