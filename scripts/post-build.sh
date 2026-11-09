@@ -65,14 +65,14 @@ if [[ ! -s $DIST/work/index.html ]]; then
   exit 1
 fi
 
-for category in "${CATEGORIES[@]}"; do
+while IFS= read -r category; do
   mkdir -p "$DIST/work/$category"
   "$SITE_ROOT/layouts/work.sh" "$category" > "$DIST/work/$category/index.html"
   if [[ ! -s $DIST/work/$category/index.html ]]; then
     echo "error: the $category catalogue was not emitted" >&2
     exit 1
   fi
-done
+done < <(vocabulary_words "${CATEGORIES[@]}")
 
 mkdir -p "$DIST/work/career"
 "$SITE_ROOT/layouts/career.sh" > "$DIST/work/career/index.html"
@@ -81,14 +81,14 @@ if [[ ! -s $DIST/work/career/index.html ]]; then
   exit 1
 fi
 
-for section in "${CAREER_SECTIONS[@]}"; do
+while IFS= read -r section; do
   mkdir -p "$DIST/work/career/$section"
   "$SITE_ROOT/layouts/career.sh" "$section" > "$DIST/work/career/$section/index.html"
   if [[ ! -s $DIST/work/career/$section/index.html ]]; then
     echo "error: the career $section page was not emitted" >&2
     exit 1
   fi
-done
+done < <(vocabulary_words "${CAREER_SECTIONS[@]}")
 
 for page in about now; do
   mkdir -p "$DIST/$page"

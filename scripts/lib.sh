@@ -2,42 +2,72 @@
 # Shared helpers for the build and its layouts.
 
 # The single source of truth for the values staging accepts and layouts label.
-STATUSES=(active shipped wip archived study)
-CATEGORIES=(games sound hardware software articles)
-CAREER_SECTIONS=(experience volunteering education skills)
-LINK_KINDS=(live repo itch paper video)
+# Each table holds "word=Label" entries, so a word is declared once and its
+# membership, its label and its place in the canonical order cannot drift
+# apart. Bash 3.2: no associative arrays (docs/adr/0001).
+STATUSES=(
+  active=active
+  shipped=shipped
+  "wip=work in progress"
+  archived=archived
+  study=study
+)
+CATEGORIES=(
+  games=Games
+  sound=Sound
+  hardware=Hardware
+  software=Software
+  articles=Articles
+)
+CAREER_SECTIONS=(
+  experience=Experience
+  volunteering=Volunteering
+  education=Education
+  skills=Skills
+)
+LINK_KINDS=(
+  live=Live
+  repo=Repo
+  itch=itch.io
+  paper=Paper
+  video=Video
+)
 
-is_status() {
-  local value
-  for value in "${STATUSES[@]}"; do
-    [[ $1 == "$value" ]] && return 0
+# The words of a vocabulary table, in canonical order.
+vocabulary_words() {
+  local entry
+  for entry in "$@"; do
+    printf '%s\n' "${entry%%=*}"
+  done
+}
+
+# Whether a word is in the vocabulary table passed after it.
+vocabulary_has() {
+  local word=$1 entry
+  shift
+  for entry in "$@"; do
+    [[ ${entry%%=*} == "$word" ]] && return 0
   done
   return 1
 }
 
-is_link_kind() {
-  local value
-  for value in "${LINK_KINDS[@]}"; do
-    [[ $1 == "$value" ]] && return 0
+# The label for a word in the vocabulary table passed after it; empty when the
+# word is not there.
+vocabulary_label() {
+  local word=$1 entry
+  shift
+  for entry in "$@"; do
+    if [[ ${entry%%=*} == "$word" ]]; then
+      printf '%s' "${entry#*=}"
+      return 0
+    fi
   done
-  return 1
 }
 
-is_career_section() {
-  local value
-  for value in "${CAREER_SECTIONS[@]}"; do
-    [[ $1 == "$value" ]] && return 0
-  done
-  return 1
-}
-
-is_category() {
-  local value
-  for value in "${CATEGORIES[@]}"; do
-    [[ $1 == "$value" ]] && return 0
-  done
-  return 1
-}
+is_status() { vocabulary_has "$1" "${STATUSES[@]}"; }
+is_link_kind() { vocabulary_has "$1" "${LINK_KINDS[@]}"; }
+is_career_section() { vocabulary_has "$1" "${CAREER_SECTIONS[@]}"; }
+is_category() { vocabulary_has "$1" "${CATEGORIES[@]}"; }
 
 html_escape() {
   printf '%s' "$1" | sed \
@@ -89,44 +119,10 @@ markdown_body() {
   markdown_source "$1" | cmark-gfm --extension table --extension autolink
 }
 
-status_label() {
-  case $1 in
-    wip) printf 'work in progress' ;;
-    active) printf 'active' ;;
-    shipped) printf 'shipped' ;;
-    archived) printf 'archived' ;;
-    study) printf 'study' ;;
-  esac
-}
-
-link_label() {
-  case $1 in
-    live) printf 'Live' ;;
-    repo) printf 'Repo' ;;
-    itch) printf 'itch.io' ;;
-    paper) printf 'Paper' ;;
-    video) printf 'Video' ;;
-  esac
-}
-
-career_section_label() {
-  case $1 in
-    experience) printf 'Experience' ;;
-    volunteering) printf 'Volunteering' ;;
-    education) printf 'Education' ;;
-    skills) printf 'Skills' ;;
-  esac
-}
-
-category_label() {
-  case $1 in
-    games) printf 'Games' ;;
-    sound) printf 'Sound' ;;
-    hardware) printf 'Hardware' ;;
-    software) printf 'Software' ;;
-    articles) printf 'Articles' ;;
-  esac
-}
+status_label() { vocabulary_label "$1" "${STATUSES[@]}"; }
+link_label() { vocabulary_label "$1" "${LINK_KINDS[@]}"; }
+career_section_label() { vocabulary_label "$1" "${CAREER_SECTIONS[@]}"; }
+category_label() { vocabulary_label "$1" "${CATEGORIES[@]}"; }
 
 # The outbound URL for an article, which has no page of its own.
 article_href() {
