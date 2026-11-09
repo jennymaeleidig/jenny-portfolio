@@ -98,31 +98,13 @@ link_label() { vocabulary_label "$1" "${LINK_KINDS[@]}"; }
 career_section_label() { vocabulary_label "$1" "${CAREER_SECTIONS[@]}"; }
 category_label() { vocabulary_label "$1" "${CATEGORIES[@]}"; }
 
-# The outbound URL for an article, which has no page of its own.
-article_href() {
-  local entry key url paper='' live=''
-  for entry in "$@"; do
-    key=${entry%%=*}
-    url=${entry#*=}
-    case $key in
-      paper) paper=$url ;;
-      live) live=$url ;;
-    esac
-  done
-  if [[ -n $paper ]]; then
-    printf '%s' "$paper"
-  else
-    printf '%s' "$live"
-  fi
-}
-
-# Emit the catalogue in its canonical order, one tab-separated record per
-# project: pinned, order, year, slug, category, title, blurb (HTML), href,
-# featured. A project with `order` sorts first, lowest number first, so it can
-# be pinned above newer work; everything else follows by year, newest first.
-# The slug breaks ties so the output is stable between builds.
+# Emit the catalogue in its canonical order, one slug per line. A project
+# with `order` sorts first, lowest number first, so it can be pinned above
+# newer work; everything else follows by year, newest first. The slug breaks
+# ties so the output is stable between builds. Callers read a row's facts from
+# its sidecar by name.
 project_records() {
-  local meta pinned order href
+  local meta pinned order
   shopt -s nullglob
   for meta in "$META_DIR"/*.sh; do
     (
@@ -134,15 +116,10 @@ project_records() {
         pinned=0
         order=$META_ORDER
       fi
-      href="/projects/$META_SLUG/"
-      if [[ $META_CATEGORY == articles ]]; then
-        href=$(article_href ${META_LINKS[@]+"${META_LINKS[@]}"})
-      fi
-      printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$pinned" "$order" "$META_YEAR" "$META_SLUG" "$META_CATEGORY" \
-        "$META_TITLE" "${META_BLURB:-}" "$href" "${META_FEATURED:-false}"
+      printf '%s\t%s\t%s\t%s\n' \
+        "$pinned" "$order" "$META_YEAR" "$META_SLUG"
     )
-  done | LC_ALL=C sort -t $'\t' -k1,1n -k2,2n -k3,3nr -k4,4
+  done | LC_ALL=C sort -t $'\t' -k1,1n -k2,2n -k3,3nr -k4,4 | cut -f4
 }
 
 # List one career section's entry files newest first, sorted by a frontmatter

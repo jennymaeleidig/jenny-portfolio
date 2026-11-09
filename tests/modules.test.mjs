@@ -12,10 +12,11 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const lib = join(root, "scripts", "lib.sh");
 
-function shell(script) {
+function shell(script, env = {}) {
   return execFileSync("bash", ["-c", `source "$1"\n${script}`, "modules-test", lib], {
     cwd: root,
     encoding: "utf8",
+    env: { ...process.env, ...env },
   });
 }
 
@@ -126,4 +127,18 @@ test("lists, mappings and unparseable lines keep their record shapes", () => {
     shell(`frontmatter_records "${file}"`),
     "item\ttags\tone\npair\tlinks\trepo\thttps://example.com\ninvalid\tnonsense line\n",
   );
+});
+
+test("the catalogue record is an ordered list of slugs", () => {
+  const dir = mkdtempSync(join(tmpdir(), "catalogue-"));
+  const sidecar = (slug, year, order = "") =>
+    writeFileSync(
+      join(dir, `${slug}.sh`),
+      `META_SLUG=${slug}\nMETA_YEAR=${year}\nMETA_ORDER=${order}\n`,
+    );
+  sidecar("alpha", 2024);
+  sidecar("beta", 2026);
+  sidecar("pinned", 2020, 1);
+
+  assert.equal(shell("project_records", { META_DIR: dir }), "pinned\nbeta\nalpha\n");
 });

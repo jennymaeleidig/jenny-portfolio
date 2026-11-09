@@ -9,13 +9,20 @@ source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 
-# Collect the featured records first, so a project that is not featured never
-# reaches the grid.
-cards=()
-while IFS=$'\t' read -r _group _order year _slug category title blurb href featured; do
-  [[ $featured == "true" ]] || continue
-  cards+=("$year"$'\t'"$category"$'\t'"$title"$'\t'"$blurb"$'\t'"$href")
-done < <(project_records)
+# Collect the featured cards first, so a project that is not featured never
+# reaches the grid. project_records puts the catalogue in canonical order; each
+# row's facts come from its sidecar by name.
+cards=$(
+  while IFS= read -r slug; do
+    (
+      # shellcheck source=/dev/null
+      source "$META_DIR/$slug.sh"
+      [[ ${META_FEATURED:-} == "true" ]] || exit 0
+      printf '%s\t%s\t%s\t%s\t%s\n' \
+        "$META_YEAR" "$META_CATEGORY" "$META_TITLE" "${META_BLURB:-}" "$META_HREF"
+    )
+  done < <(project_records)
+)
 
 page_open "$SITE_NAME" home
 cat <<EOF
@@ -24,17 +31,18 @@ cat <<EOF
         <ul class="grid featured">
 EOF
 
-for card in ${cards[@]+"${cards[@]}"}; do
-  IFS=$'\t' read -r year category title blurb href <<< "$card"
-  printf '          <li class="card">\n'
-  printf '            <a href="%s">%s</a>\n' "$(html_escape "$href")" "$(html_escape "$title")"
-  printf '            <p class="meta">%s &middot; %s</p>\n' \
-    "$(html_escape "$category")" "$(html_escape "$year")"
-  if [[ -n $blurb ]]; then
-    printf '            <div class="card-blurb">%s</div>\n' "$blurb"
-  fi
-  printf '          </li>\n'
-done
+if [[ -n $cards ]]; then
+  while IFS=$'\t' read -r year category title blurb href; do
+    printf '          <li class="card">\n'
+    printf '            <a href="%s">%s</a>\n' "$(html_escape "$href")" "$(html_escape "$title")"
+    printf '            <p class="meta">%s &middot; %s</p>\n' \
+      "$(html_escape "$category")" "$(html_escape "$year")"
+    if [[ -n $blurb ]]; then
+      printf '            <div class="card-blurb">%s</div>\n' "$blurb"
+    fi
+    printf '          </li>\n'
+  done <<< "$cards"
+fi
 
 cat <<EOF
         </ul>
