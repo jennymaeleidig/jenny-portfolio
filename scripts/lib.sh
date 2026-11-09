@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Shared helpers for the build and its layouts.
 
+# shellcheck source=/dev/null
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/frontmatter.sh"
+
 # The single source of truth for the values staging accepts and layouts label.
 # Each table holds "word=Label" entries, so a word is declared once and its
 # membership, its label and its place in the canonical order cannot drift
@@ -85,38 +88,9 @@ current_page_attr() {
   fi
 }
 
-# A frontmatter scalar from a hand-written page, e.g. its photo or update date.
-frontmatter_value() {
-  awk -v want="$2" '
-    NR == 1 && $0 == "---" { frontmatter = 1; next }
-    frontmatter && $0 == "---" { exit }
-    frontmatter {
-      key = $0
-      sub(/:.*/, "", key)
-      if (key == want) {
-        value = $0
-        sub(/^[^:]*:[[:space:]]*/, "", value)
-        sub(/^["\047]/, "", value)
-        sub(/["\047]$/, "", value)
-        print value
-        exit
-      }
-    }
-  ' "$1"
-}
-
-# A hand-written markdown page's body, dropping its frontmatter.
-markdown_source() {
-  awk '
-    NR == 1 && $0 == "---" { frontmatter = 1; next }
-    frontmatter && $0 == "---" { frontmatter = 0; next }
-    !frontmatter { print }
-  ' "$1"
-}
-
 # Render a hand-written markdown page, dropping its frontmatter.
 markdown_body() {
-  markdown_source "$1" | cmark-gfm --extension table --extension autolink
+  frontmatter_body "$1" | cmark-gfm --extension table --extension autolink
 }
 
 status_label() { vocabulary_label "$1" "${STATUSES[@]}"; }
@@ -230,16 +204,23 @@ career_group_records() {
 # Emit education entries newest first, one tab-separated record per entry:
 # institution, location, degree, start, end, note.
 career_education_records() {
-  local dir=$1 file
+  local dir=$1 file key value
+  local institution location degree start end note
   while IFS= read -r file; do
     [[ -n $file ]] || continue
+    institution='' location='' degree='' start='' end='' note=''
+    while IFS=$'\t' read -r key value; do
+      case $key in
+        institution) institution=$value ;;
+        location) location=$value ;;
+        degree) degree=$value ;;
+        start) start=$value ;;
+        end) end=$value ;;
+        note) note=$value ;;
+      esac
+    done < <(frontmatter_scalars "$file")
     printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
-      "$(frontmatter_value "$file" institution)" \
-      "$(frontmatter_value "$file" location)" \
-      "$(frontmatter_value "$file" degree)" \
-      "$(frontmatter_value "$file" start)" \
-      "$(frontmatter_value "$file" end)" \
-      "$(frontmatter_value "$file" note)"
+      "$institution" "$location" "$degree" "$start" "$end" "$note"
   done < <(career_files "$dir" start)
 }
 

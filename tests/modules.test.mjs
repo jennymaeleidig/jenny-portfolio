@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -74,4 +76,54 @@ test("a label may differ from its word", () => {
   assert.equal(shell("link_label itch"), "itch.io");
   assert.equal(shell("category_label games"), "Games");
   assert.equal(shell("career_section_label skills"), "Skills");
+});
+
+// A page on disk, so the frontmatter module is read the way a layout reads it.
+function page(text) {
+  const dir = mkdtempSync(join(tmpdir(), "frontmatter-"));
+  const file = join(dir, "page.md");
+  writeFileSync(file, text);
+  return file;
+}
+
+test("the body is the page without its frontmatter", () => {
+  const file = page("---\ntitle: A page\n---\n# A page\n\nProse.\n");
+  assert.equal(shell(`frontmatter_body "${file}"`), "# A page\n\nProse.\n");
+});
+
+test("scalars unquote their values and skip lists and mappings", () => {
+  const file = page(
+    [
+      "---",
+      'title: "A: title"',
+      "photo: /assets/me.png",
+      "tags: [one, two]",
+      "links:",
+      "  repo: https://example.com",
+      "---",
+      "# A page",
+    ].join("\n"),
+  );
+  assert.equal(shell(`frontmatter_scalars "${file}"`), "title\tA: title\nphoto\t/assets/me.png\n");
+});
+
+test("one scalar is read by name, and a missing key is empty", () => {
+  const file = page("---\ntitle: A page\nstart: 2020-01\n---\n");
+  assert.equal(shell(`frontmatter_value "${file}" start`), "2020-01\n");
+  assert.equal(shell(`frontmatter_value "${file}" end`), "");
+});
+
+test("a trailing carriage return never reaches a value", () => {
+  const file = page("---\nkey: value\r\n---\n");
+  assert.equal(shell(`frontmatter_value "${file}" key`), "value\n");
+});
+
+test("lists, mappings and unparseable lines keep their record shapes", () => {
+  const file = page(
+    ["---", "tags: [one]", "links:", "  repo: https://example.com", "nonsense line", "---"].join("\n"),
+  );
+  assert.equal(
+    shell(`frontmatter_records "${file}"`),
+    "item\ttags\tone\npair\tlinks\trepo\thttps://example.com\ninvalid\tnonsense line\n",
+  );
 });
