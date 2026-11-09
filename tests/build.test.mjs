@@ -56,6 +56,21 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function tabBar(html) {
+  return html.match(/<nav class="tab-bar" aria-label="Work sections">([\s\S]*?)<\/nav>/)?.[1] ?? "";
+}
+
+function currentTabs(html) {
+  return [...tabBar(html).matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map(([, href]) => href);
+}
+
+function careerSection(html, name) {
+  const start = html.indexOf(`<h2 id="career-${name}">`);
+  if (start < 0) return "";
+  const next = html.indexOf('<h2 id="career-', start + 1);
+  return html.slice(start, next < 0 ? undefined : next);
+}
+
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -449,6 +464,127 @@ links:
     const hrefs = catalogueRows(page).map((href) => href.replace(/^\/projects\/|\/$/g, ""));
     assert.deepEqual(hrefs, slugs, `/work/${category}/ carries exactly ${category}`);
   }
+});
+
+test("the work pages carry Projects and Career tabs, marking only the current page", () => {
+  const routes = [
+    [join(output, "work", "index.html"), "/work/"],
+    [join(output, "work", "career", "index.html"), "/work/career/"],
+    ...["games", "sound", "hardware", "web", "articles"].map((category) => [
+      join(output, "work", category, "index.html"),
+      "/work/",
+    ]),
+  ];
+
+  for (const [file, current] of routes) {
+    const html = readFileSync(file, "utf8");
+    const bar = tabBar(html);
+    assert.match(bar, /<a href="\/work\/"[^>]*>Projects<\/a>/, `${relative(root, file)} links to Projects`);
+    assert.match(bar, /<a href="\/work\/career\/"[^>]*>Career<\/a>/, `${relative(root, file)} links to Career`);
+    assert.deepEqual(currentTabs(html), [current], `${relative(root, file)} marks only ${current} as current`);
+  }
+
+  const career = readFileSync(join(output, "work", "career", "index.html"), "utf8");
+  assert.doesNotMatch(career, /<nav aria-label="Categories"/, "category filters stay on the Projects side");
+  assert.doesNotMatch(career, /class="filters"/, "category filters stay on the Projects side");
+});
+
+test("/work/career is a normal-shell career page with one heading and only the narrow record", () => {
+  const career = readFileSync(join(output, "work", "career", "index.html"), "utf8");
+
+  assert.equal((career.match(/<h1\b/g) ?? []).length, 1, "the career page has one heading");
+  assert.match(career, /<h1>Career<\/h1>/);
+  assert.match(career, /<canvas class="sky-canvas"><\/canvas>/);
+  assert.match(career, /<script type="module" src="\/assets\/sky\.js"><\/script>/);
+  assert.match(career, /<script type="module" src="\/assets\/nav\.js"><\/script>/);
+
+  const headings = [...career.matchAll(/<h2 id="career-[^"]+">([^<]+)<\/h2>/g)].map(([, text]) => text);
+  assert.deepEqual(headings, ["Experience", "Education", "Skills"]);
+
+  const experience = careerSection(career, "experience");
+  for (const role of [
+    "Sales Associate &amp; Website Designer",
+    "Software Engineer - Consultant",
+    "Software Engineer - Associate Consultant",
+    "Software Assistance Triage (SWAT) Technician",
+  ]) {
+    assert.match(experience, new RegExp(escapeRegExp(role)), `${role} is in the experience section`);
+  }
+
+  const employers = [...experience.matchAll(/<h3>([^<]+)<\/h3>/g)].map(([, name]) => name);
+  assert.deepEqual(employers, [
+    "Chadwick &amp; Son Orchids",
+    "CapTech Consulting",
+    "Virginia Tech College of Engineering",
+  ]);
+  assert.equal(
+    employers.filter((name) => name === "CapTech Consulting").length,
+    1,
+    "the three CapTech roles share one employer heading",
+  );
+
+  const capStart = experience.indexOf("<h3>CapTech Consulting</h3>");
+  const capEnd = experience.indexOf("<h3>", capStart + 1);
+  const capTech = experience.slice(capStart, capEnd);
+  const capDates = ["September 2025", "April 2025", "September 2023"].map((date) => capTech.indexOf(date));
+  for (const position of capDates) {
+    assert.notEqual(position, -1, "every CapTech role carries its dates");
+  }
+  assert.deepEqual([...capDates].sort((a, b) => a - b), capDates, "CapTech roles run newest first");
+  assert.ok(
+    experience.indexOf("Chadwick &amp; Son Orchids") < experience.indexOf("CapTech Consulting"),
+    "employers run newest first",
+  );
+
+  const education = careerSection(career, "education");
+  assert.ok(
+    education.indexOf("University of Oklahoma") < education.indexOf("Virginia Tech"),
+    "education runs newest first",
+  );
+  assert.match(education, /Master of Fine Arts \(MFA\), Art and Technology/);
+  assert.match(education, /Bachelor of Science \(BS\), Computer Science/);
+
+  const skills = careerSection(career, "skills");
+  for (const group of ["Data and cloud", "Languages", "AI and agent harness engineering"]) {
+    assert.match(skills, new RegExp(escapeRegExp(group)), `${group} is in the skills section`);
+  }
+
+  assert.doesNotMatch(career, /Software engineer with two years/, "the summary stays private");
+  assert.doesNotMatch(career, /pi-agent-harness/, "CV projects stay private");
+  assert.doesNotMatch(career, /Broadcast/, "CV projects stay private");
+  assert.doesNotMatch(career, /Dreamcast Repair/, "publications stay private");
+  assert.doesNotMatch(career, /WRIR-LP/, "volunteering stays private");
+
+  assert.doesNotMatch(career, /portrait/, "the career page has no photo");
+  assert.doesNotMatch(career, /<(?:picture|svg)\b/i, "the career page has no image");
+  const images = [...career.matchAll(/<img\b[^>]*>/g)].map(([tag]) => tag);
+  assert.deepEqual(
+    images.filter((tag) => !/class="sky-poster"/.test(tag)),
+    [],
+    "the only image is the sky's no-JavaScript poster",
+  );
+  assert.doesNotMatch(career, /276\)?[.\-\s]?356[.\-\s]?4765/, "the career page has no phone number");
+  assert.doesNotMatch(career, /\+1[.\-\s]?276/, "the career page has no phone number");
+  assert.doesNotMatch(career, /type="checkbox"/, "the career page has no selector");
+  assert.doesNotMatch(career, /name="include"/, "the career page has no query selection");
+  assert.doesNotMatch(career, /resume-selector/, "the career page has no selector note or module");
+});
+
+test("the career tab is in the sitemap and its print treatment leaves paper", () => {
+  assert.equal(
+    sitemapLocs(output).includes(`${SITE_HOST}/work/career/`),
+    true,
+    "/work/career/ is listed in the sitemap",
+  );
+
+  const print = siteCss.slice(siteCss.indexOf("@media print"));
+  assert.match(
+    print,
+    /\.sky,\s*\.tab-bar,\s*\.site-header,\s*\.site-footer\s*\{[^}]*display:\s*none/s,
+    "print hides the sky, the site chrome and the tab bar",
+  );
+  assert.match(print, /\.career-group[^{]*\{[^}]*break-inside:\s*avoid/s);
+  assert.match(print, /\.career-entry[^{]*\{[^}]*break-inside:\s*avoid/s);
 });
 
 test("the front page shows exactly the featured projects as cards with category and year", () => {

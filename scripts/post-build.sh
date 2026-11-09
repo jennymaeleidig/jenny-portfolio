@@ -68,6 +68,13 @@ for category in "${CATEGORIES[@]}"; do
   fi
 done
 
+mkdir -p "$DIST/work/career"
+"$SITE_ROOT/layouts/career.sh" > "$DIST/work/career/index.html"
+if [[ ! -s $DIST/work/career/index.html ]]; then
+  echo "error: the career tab was not emitted" >&2
+  exit 1
+fi
+
 for page in resume about now; do
   mkdir -p "$DIST/$page"
   "$SITE_ROOT/layouts/$page.sh" > "$DIST/$page/index.html"

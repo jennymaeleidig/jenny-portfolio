@@ -749,6 +749,94 @@ th {
   margin: 0;
 }
 
+/*
+ * The Work tabs are ordinary links to real pages, and the career page is the
+ * narrow record on the site's normal shell.
+ */
+.tab-bar {
+  margin-bottom: calc(var(--line-height) * 1.5);
+}
+
+.tab-bar ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2ch;
+  padding: 0 0 calc(var(--line-height) / 2);
+  margin: 0;
+  list-style: none;
+  border-bottom: var(--border-thickness) solid var(--sky-4);
+}
+
+.tab-bar li {
+  margin: 0;
+}
+
+.tab-bar a {
+  font-weight: var(--font-weight-medium);
+}
+
+.tab-bar a[aria-current="page"] {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.career-section > * + * {
+  margin-top: var(--line-height);
+}
+
+.career-section h2 {
+  border-bottom: var(--border-thickness) solid var(--sky-2);
+  padding-bottom: calc(var(--line-height) / 2);
+  margin-bottom: calc(var(--line-height) / 2);
+}
+
+.career-group + .career-group {
+  margin-top: calc(var(--line-height) * 1.5);
+}
+
+.career-group > * + * {
+  margin-top: calc(var(--line-height) / 2);
+}
+
+.career-group h3 {
+  margin: 0;
+}
+
+.career-group .meta {
+  margin-top: 0;
+}
+
+.career-entry + .career-entry {
+  margin-top: var(--line-height);
+}
+
+.career-entry > * + * {
+  margin-top: calc(var(--line-height) / 4);
+}
+
+.career-entry-title {
+  font-weight: var(--font-weight-bold);
+}
+
+.career-entry-dates,
+.career-note {
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--ink) 75%, var(--paper));
+}
+
+.career-body {
+  margin-top: calc(var(--line-height) / 2);
+}
+
+.career-body > * + * {
+  margin-top: calc(var(--line-height) / 2);
+}
+
+.career-body p,
+.career-body ul {
+  margin: 0;
+}
+
 @media print {
   .resume-toggle,
   .resume-selector-note {
@@ -803,6 +891,8 @@ th {
     padding: 0;
   }
 
+  .sky,
+  .tab-bar,
   .site-header,
   .site-footer {
     display: none;
@@ -877,6 +967,11 @@ th {
 
   .resume-entry,
   .resume-group {
+    break-inside: avoid;
+  }
+
+  .career-entry,
+  .career-group {
     break-inside: avoid;
   }
 

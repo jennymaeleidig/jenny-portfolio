@@ -6,6 +6,8 @@ set -euo pipefail
 source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
+# shellcheck source=/dev/null
+source "$SITE_ROOT/layouts/tabs.sh"
 
 category=${1:-}
 if [[ -n $category ]] && ! is_category "$category"; then
@@ -41,6 +43,7 @@ rows=$(
 page_open "$title"
 cat <<EOF
         <h1>$heading</h1>
+$(tab_bar projects)
         <p class="lede">$lede</p>
         <nav aria-label="Categories">
           <ul class="filters">
