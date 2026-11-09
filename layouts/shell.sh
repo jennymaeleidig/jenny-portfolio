@@ -41,7 +41,7 @@ shell_sheet_open() {
     <div class="sheet">
       <header class="site-header">
         <nav aria-label="Primary">
-          <a href="/"$(current_page_attr "$section" home)>Jenny Leidig</a>
+          <a href="/"$(current_page_attr "$section" home)>$SITE_NAME</a>
           <a href="/work/"$(current_page_attr "$section" work)>Work</a>
           <a href="/about/"$(current_page_attr "$section" about)>About</a>
           <a href="/now/"$(current_page_attr "$section" now)>Now</a>

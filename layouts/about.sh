@@ -25,7 +25,7 @@ render_links() {
   done
 }
 
-page_open "About, Jenny Leidig" about
+page_open "About, $SITE_NAME" about
 cat <<EOF
         <h1>About</h1>
         <img class="portrait" src="$(html_escape "$photo")" alt="$(html_escape "$FULL_NAME")">

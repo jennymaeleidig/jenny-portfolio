@@ -17,11 +17,11 @@ fi
 
 if [[ -n $category ]]; then
   heading=$(category_label "$category")
-  title="$heading, Jenny Leidig"
+  title="$heading, $SITE_NAME"
 else
   # The route is /work/, but the tab the reader is on is Projects.
   heading="Projects"
-  title="Projects, Jenny Leidig"
+  title="Projects, $SITE_NAME"
 fi
 
 rows=$(

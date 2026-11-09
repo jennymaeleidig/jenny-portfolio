@@ -1002,6 +1002,8 @@ test("identity links come from one source that every page reads", () => {
   writeFileSync(
     identity,
     `FULL_NAME="Hello Example"
+SITE_NAME="Hello Example"
+PORTFOLIO=https://example.com
 TAGLINE="Test Tagline"
 EMAIL=hello@example.com
 GITHUB=https://example.com/github
@@ -1222,7 +1224,11 @@ test("the build fails, naming the file, when a project cannot be staged", () => 
   assert.match(result.stderr, /broken\.md/);
 });
 
-const SITE_HOST = "https://portfolio.jenny-page.online";
+// The fixture site's identity owns the host the build writes into the sitemap,
+// so the expectation is read from the same file the build reads.
+const SITE_HOST = readFileSync(join(fixtureSite, "identity.sh"), "utf8")
+  .match(/^PORTFOLIO=(.*)$/m)[1]
+  .trim();
 
 // The route set as a visitor could enumerate it: every index.html under the
 // dist tree, with the Pages 404 fallback and the /404 route itself excluded.

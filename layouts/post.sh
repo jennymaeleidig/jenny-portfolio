@@ -23,7 +23,7 @@ title=$(html_escape "$META_TITLE")
 category=$(html_escape "$META_CATEGORY")
 status=$(html_escape "$(status_label "$META_STATUS")")
 
-page_open "$title, Jenny Leidig" work
+page_open "$title, $SITE_NAME" work
 cat <<EOF
         <article>
           <h1>$title</h1>

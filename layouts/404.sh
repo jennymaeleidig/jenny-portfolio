@@ -7,7 +7,7 @@ source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 
-page_open "404, page not found, Jenny Leidig"
+page_open "404, page not found, $SITE_NAME"
 cat <<'EOF'
         <h1>Page not found</h1>
         <p class="lede">That page does not exist.</p>
