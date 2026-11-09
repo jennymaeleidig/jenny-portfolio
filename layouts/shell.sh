@@ -37,6 +37,7 @@ page_close() {
       <footer class="site-footer"><a href="/">Jenny Leidig</a></footer>
     </div>
     <script type="module" src="/assets/sky.js"></script>
+    <script type="module" src="/assets/nav.js"></script>
   </body>
 </html>
 EOF

@@ -12,7 +12,16 @@
 
 import { SKY_DEFAULTS, createField, renderFrame } from "/assets/sky-core.mjs";
 
-const config = { ...SKY_DEFAULTS };
+// A visit gets its own sky. The seed is chosen once per page load, so the
+// field stays put across internal navigation and is only new on a real load.
+function randomSeed() {
+  if (globalThis.crypto?.getRandomValues) {
+    return globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
+  }
+  return Math.floor(Math.random() * 0xffffffff);
+}
+
+const config = { ...SKY_DEFAULTS, seed: randomSeed() };
 
 const sky = document.querySelector(".sky");
 const canvas = document.querySelector(".sky-canvas");

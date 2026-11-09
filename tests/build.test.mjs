@@ -249,9 +249,22 @@ test("every page carries its content without JavaScript", () => {
 
     for (const [tag] of html.matchAll(/<script\b[^>]*>/gi)) {
       assert.match(tag, /type="module"/, `${relative(root, file)} must not use a classic script`);
-      assert.match(tag, /src="\/assets\/sky\.js"/, `${relative(root, file)} may only load the sky`);
+      assert.match(
+        tag,
+        /src="\/assets\/(sky|nav)\.js"/,
+        `${relative(root, file)} may only load the site's own modules`,
+      );
     }
   }
+});
+
+test("client-side navigation is a progressive enhancement", () => {
+  const home = readFileSync(join(output, "index.html"), "utf8");
+  const nav = readFileSync(join(output, "assets", "nav.js"), "utf8");
+
+  assert.match(home, /<script type="module" src="\/assets\/nav\.js"><\/script>/);
+  assert.match(nav, /history\.pushState/);
+  assert.match(nav, /location\.href = url/);
 });
 
 test("the sky sits behind the sheet with its poster and gradient fallbacks", () => {
@@ -268,7 +281,7 @@ test("the sky sits behind the sheet with its poster and gradient fallbacks", () 
   assert.match(siteCss, /\.sky--fallback\s*\{[^}]*url\("\/assets\/sky-poster\.svg"\)/s);
   assert.match(siteCss, /\.sky--fallback\s+\.sky-canvas[^{]*\{[^}]*display:\s*none/s);
 
-  for (const asset of ["sky.js", "sky-core.mjs", "sky-poster.svg"]) {
+  for (const asset of ["sky.js", "sky-core.mjs", "sky-poster.svg", "nav.js"]) {
     assert.equal(statSync(join(output, "assets", asset)).isFile(), true, `${asset} is emitted`);
   }
 });
