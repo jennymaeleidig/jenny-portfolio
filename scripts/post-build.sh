@@ -68,7 +68,7 @@ for category in "${CATEGORIES[@]}"; do
   fi
 done
 
-for page in about now; do
+for page in resume about now; do
   mkdir -p "$DIST/$page"
   "$SITE_ROOT/layouts/$page.sh" > "$DIST/$page/index.html"
   if [[ ! -s $DIST/$page/index.html ]]; then

@@ -49,9 +49,25 @@ as text so the no-binaries rule still holds; replace that one file when there
 is a newer photo. Now carries a visible last-updated date and five sections:
 making, reading, listening, watching and not doing.
 
-`content/identity.sh` is the one identity block. It holds the email and the
-profile links, and every page sources it, so changing an address changes it
-everywhere it appears, including the footer.
+`content/identity.sh` is the one identity block. It holds the full name, the
+tagline, the email and the profile links, and every page sources it, so
+changing an address changes it everywhere it appears, including the footer.
+
+### Resume
+
+`/resume` is the complete record: every role, every project marked `cv: true`
+and every publication, newest first within each section. It carries no phone
+number, photo, image or canvas, and it loads no scripts, so it reads and prints
+without JavaScript.
+
+The career record lives under `content/resume/`: `summary.md` and `skills.md`
+are hand-written markdown, while `experience/`, `volunteering/`, `education/`
+and `publications/` hold one entry per file with flat frontmatter. Experience
+entries group under their employer, so CapTech's three roles nest under one
+heading. Projects come from the project sidecars, filtered by `cv: true` and
+described by `cv_blurb`; the catalogue's `order` pinning does not apply here.
+The page is built by `layouts/resume.sh`, and print styles in `site.css` hide
+the site chrome and keep entries off page breaks.
 
 ## How the build works
 
@@ -59,7 +75,7 @@ everywhere it appears, including the footer.
 
 1. `scripts/stage.sh` reads `content/projects/*.md`, validates its frontmatter, strips it, writes a dated CommonMark file and a shell-sourceable metadata sidecar. A missing required field, a `cv: true` entry without a `cv_blurb`, an article without a `paper` or `live` link, a declared cover that does not exist, or a filename outside `^[a-z0-9-]+$` fails the build with the file named. Articles get a sidecar but no staged markdown, because they have no page.
 2. `vendor/jenny/bin/jenny` renders each staged file at `/post/<slug>.html` using `layouts/post.sh`.
-3. `scripts/post-build.sh` relocates each page to `/projects/<slug>/index.html`, writes `/`, `/work/`, the five `/work/<category>/` pages, `/about/` and `/now/`, copies `/assets`, and discards jenny's unused index and feed.
+3. `scripts/post-build.sh` relocates each page to `/projects/<slug>/index.html`, writes `/`, `/work/`, the five `/work/<category>/` pages, `/resume/`, `/about/` and `/now/`, copies `/assets`, and discards jenny's unused index and feed.
 
 The build empties `dist/` before generating, sets `cmark-gfm` as the markdown parser, and fails if a project cannot be staged or a page is not emitted.
 

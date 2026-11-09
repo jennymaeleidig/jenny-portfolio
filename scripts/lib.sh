@@ -142,3 +142,69 @@ project_records() {
     )
   done | LC_ALL=C sort -t $'\t' -k1,1n -k2,2n -k3,3nr -k4,4
 }
+
+# Emit the CV-visible projects in chronological order, newest first: year,
+# title, CV blurb, href and category. The catalogue's pinning does not apply
+# here, because the resume is the record rather than a showcase.
+cv_project_records() {
+  local meta href
+  shopt -s nullglob
+  for meta in "$META_DIR"/*.sh; do
+    (
+      # shellcheck source=/dev/null
+      source "$meta"
+      [[ ${META_CV:-false} == true ]] || exit 0
+      href="/projects/$META_SLUG/"
+      if [[ $META_CATEGORY == articles ]]; then
+        href=$(article_href ${META_LINKS[@]+"${META_LINKS[@]}"})
+      fi
+      printf '%s\t%s\t%s\t%s\t%s\n' \
+        "$META_YEAR" "$META_TITLE" "${META_CV_BLURB:-}" "$href" "$META_CATEGORY"
+    )
+  done | LC_ALL=C sort -t $'\t' -k1,1nr -k2,2
+}
+
+# List one resume section's entry files newest first, sorted by a frontmatter
+# field such as `start` or `year`. The filename breaks ties so the order is
+# stable between builds.
+resume_files() {
+  local dir=$1 field=$2 file key
+  shopt -s nullglob
+  for file in "$dir"/*.md; do
+    key=$(frontmatter_value "$file" "$field")
+    printf '%s\t%s\n' "${key:-0000}" "$file"
+  done | LC_ALL=C sort -t $'\t' -k1,1r -k2,2 | cut -f2-
+}
+
+month_label() {
+  case ${1#*-} in
+    01) printf 'January' ;;
+    02) printf 'February' ;;
+    03) printf 'March' ;;
+    04) printf 'April' ;;
+    05) printf 'May' ;;
+    06) printf 'June' ;;
+    07) printf 'July' ;;
+    08) printf 'August' ;;
+    09) printf 'September' ;;
+    10) printf 'October' ;;
+    11) printf 'November' ;;
+    12) printf 'December' ;;
+  esac
+}
+
+# A resume date is a year, a year and month, or `present`. Anything else is
+# shown as it was written rather than silently dropped.
+date_label() {
+  case $1 in
+    "" | present | Present) printf 'Present' ;;
+    [0-9][0-9][0-9][0-9]) printf '%s' "$1" ;;
+    [0-9][0-9][0-9][0-9]-[0-9][0-9]) printf '%s %s' "$(month_label "$1")" "${1%%-*}" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+
+date_range() {
+  local start=$1 end=$2
+  printf '%s – %s' "$(date_label "$start")" "$(date_label "$end")"
+}

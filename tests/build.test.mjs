@@ -636,19 +636,161 @@ test("Now carries a visible update date and its five sections, without an archiv
   assert.doesNotMatch(now, /weekly|monthly|every week|every month|cadence/i);
 });
 
-test("no phone number appears on About or Now", () => {
-  for (const name of ["about", "now"]) {
-    const html = readFileSync(join(output, name, "index.html"), "utf8");
-    assert.doesNotMatch(html, /276[.\-\s]?356[.\-\s]?4765/);
-    assert.doesNotMatch(html, /\+1[.\-\s]?276/);
+test("no phone number appears on any page", () => {
+  for (const file of htmlFiles) {
+    const html = readFileSync(file, "utf8");
+    assert.doesNotMatch(html, /276[.\-\s]?356[.\-\s]?4765/, `${relative(root, file)} must not carry the phone number`);
+    assert.doesNotMatch(html, /\+1[.\-\s]?276/, `${relative(root, file)} must not carry the phone number`);
   }
+});
+
+function resumeSection(name, base = output) {
+  const resume = readFileSync(join(base, "resume", "index.html"), "utf8");
+  return resume.match(
+    new RegExp(`<section class="resume-section" aria-labelledby="resume-${name}">([\\s\\S]*?)</section>`),
+  )?.[1] ?? "";
+}
+
+test("the resume carries every role, CV project and publication", () => {
+  const resume = readFileSync(join(output, "resume", "index.html"), "utf8");
+
+  for (const heading of ["Summary", "Experience", "Projects", "Publications", "Volunteering", "Education", "Skills"]) {
+    assert.match(resume, new RegExp(`<h2[^>]*>${heading}</h2>`), `${heading} is a resume section`);
+  }
+
+  for (const role of [
+    "Sales Associate &amp; Website Designer",
+    "Software Engineer - Consultant",
+    "Software Engineer - Associate Consultant",
+    "Software Assistance Triage (SWAT) Technician",
+    "Co-Chair, Music Programming Committee",
+  ]) {
+    assert.match(resume, new RegExp(escapeRegExp(role)), `${role} is on the resume`);
+  }
+
+  for (const institution of ["CapTech Consulting", "Chadwick &amp; Son Orchids", "WRIR-LP 97.3FM", "University of Oklahoma", "Virginia Tech"]) {
+    assert.match(resume, new RegExp(escapeRegExp(institution)), `${institution} is on the resume`);
+  }
+
+  const projects = resumeSection("projects");
+  const cvProjects = readdirSync(join(root, "content", "projects"))
+    .filter((name) => name.endsWith(".md"))
+    .filter((name) => /^cv:\s*true$/m.test(readFileSync(join(root, "content", "projects", name), "utf8")))
+    .map((name) => name.replace(/\.md$/, ""));
+  assert.equal(
+    (projects.match(/<div class="resume-entry">/g) ?? []).length,
+    cvProjects.length,
+    "the project section carries every CV-visible project and no others",
+  );
+  for (const slug of cvProjects) {
+    assert.match(projects, new RegExp(`href="/projects/${escapeRegExp(slug)}/"`), `${slug} is on the resume`);
+  }
+
+  const publications = resumeSection("publications");
+  assert.match(publications, /Dreamcast Repair: A Journey of a Thousand Parts/);
+  assert.match(publications, /PagedOut!/);
+  assert.match(publications, /Issue 008, p\. 67/);
+});
+
+test("the resume is chronological, newest first, within each section", () => {
+  const experience = resumeSection("experience");
+
+  const order = [
+    "Chadwick &amp; Son Orchids",
+    "September 2025",
+    "April 2025",
+    "September 2023",
+    "August 2019",
+  ];
+  const positions = order.map((text) => experience.indexOf(text));
+  for (const position of positions) {
+    assert.notEqual(position, -1, "every dated role is present");
+  }
+  assert.deepEqual([...positions].sort((a, b) => a - b), positions, "experience runs newest first");
+
+  const projects = resumeSection("projects");
+  assert.ok(projects.indexOf("2026") < projects.indexOf("2025"), "projects run newest first");
+
+  const education = resumeSection("education");
+  assert.ok(
+    education.indexOf("University of Oklahoma") < education.indexOf("Virginia Tech"),
+    "education runs newest first",
+  );
+});
+
+test("the resume has no phone, photo, image, canvas or script", () => {
+  const resume = readFileSync(join(output, "resume", "index.html"), "utf8");
+
+  assert.doesNotMatch(resume, /276[.\-\s]?356[.\-\s]?4765/);
+  assert.doesNotMatch(resume, /\+1[.\-\s]?276/);
+  assert.doesNotMatch(resume, /portrait/);
+  assert.doesNotMatch(resume, /<(?:img|picture|svg|canvas)\b/i);
+  assert.doesNotMatch(resume, /<script\b/i);
+  assert.doesNotMatch(resume, /class="sky"/);
+});
+
+test("the resume's project section is exactly the CV-visible projects", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-resume-projects-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-resume-projects-dist-"));
+  writeProject(
+    content,
+    "cv-visible-older",
+    `year: 2024
+status: shipped
+category: web
+cv: true
+cv_blurb: An older project the CV still carries.
+order: 1`,
+  );
+  writeProject(
+    content,
+    "cv-visible-newer",
+    `year: 2026
+status: shipped
+category: games
+cv: true
+cv_blurb: A newer project the CV carries.
+`,
+  );
+  writeProject(
+    content,
+    "not-on-the-cv",
+    `year: 2025
+status: shipped
+category: sound
+featured: true
+cv: false`,
+  );
+
+  build(dist, { CONTENT_DIR: content });
+
+  const projects = resumeSection("projects", dist);
+
+  assert.match(projects, /cv-visible-newer/);
+  assert.match(projects, /A newer project the CV carries\./);
+  assert.match(projects, /cv-visible-older/);
+  assert.match(projects, /An older project the CV still carries\./);
+  assert.doesNotMatch(projects, /not-on-the-cv/);
+  assert.ok(
+    projects.indexOf("cv-visible-newer") < projects.indexOf("cv-visible-older"),
+    "the resume ignores catalogue pinning and stays chronological",
+  );
+});
+
+test("the resume has print styles for a clean browser print", () => {
+  assert.match(siteCss, /@media print\s*\{/);
+  assert.match(siteCss, /\.site-header,\s*\.site-footer\s*\{[^}]*display:\s*none/s);
+  assert.match(siteCss, /\.resume-entry,\s*\.resume-group\s*\{[^}]*break-inside:\s*avoid/s);
+  assert.match(siteCss, /@page\s*\{[^}]*size:\s*letter/s);
 });
 
 test("identity links come from one source that every page reads", () => {
   const identity = join(mkdtempSync(join(tmpdir(), "portfolio-identity-")), "identity.sh");
   writeFileSync(
     identity,
-    `EMAIL=hello@example.com
+    `FULL_NAME="Hello Example"
+TAGLINE="Test Tagline"
+EMAIL=hello@example.com
 GITHUB=https://example.com/github
 LINKEDIN=https://example.com/linkedin
 ITCH=https://example.com/itch

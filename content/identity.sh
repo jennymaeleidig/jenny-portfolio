@@ -1,5 +1,7 @@
 # The identity block. Every page reads this file, so changing an address here
 # changes it everywhere it appears.
+FULL_NAME="Jenny Mae Leidig"
+TAGLINE="Software Engineer & Digital Experience Creator"
 EMAIL=jennymaeleidig@gmail.com
 GITHUB=https://github.com/jennymaeleidig
 LINKEDIN=https://www.linkedin.com/in/jleidig/

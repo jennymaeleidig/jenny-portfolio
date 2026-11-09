@@ -1,0 +1,6 @@
+- **Data and cloud:** Apache Spark, PySpark, Scala, Apache Airflow, AWS (S3, EMR, DynamoDB, Step Functions), Snowflake SQL, Redwood Orchestration, Docker
+- **Languages:** Python, TypeScript, JavaScript, Go, Scala, .NET, C++, SQL, shell scripting
+- **Web and tooling:** Angular, Next.js, React, Tailwind CSS, Strapi, Redis, GitHub Pages
+- **Design and interface:** Figma, interface and visual design practice, design-to-code implementation in Angular, Next.js and React
+- **Creative computing:** Unity, PICO-8, GameMaker, Godot, Processing and p5.js, Panic Playdate, custom shaders, 3D rendering fundamentals, FPGA emulation, retro hardware repair
+- **AI and agent harness engineering:** pi, local model inference via oMLX, NeuralWatt, LangChain, LLM API integration, retrieval-augmented generation, LanceDB, embeddings, prompt engineering, Kagi web search integration, classifier-model verification gates

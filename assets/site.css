@@ -618,3 +618,142 @@ th {
   }
 }
 
+/*
+ * The resume is the complete record. It has no sky, no photo and no scripts,
+ * and prints from the browser without the selector being present.
+ */
+.resume-header {
+  border-bottom: var(--border-thickness) solid var(--sky-4);
+  padding-bottom: var(--line-height);
+}
+
+.resume-header > * + * {
+  margin-top: calc(var(--line-height) / 2);
+}
+
+.resume-header h1 {
+  margin: 0;
+}
+
+.resume-name {
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.resume-tagline {
+  font-weight: var(--font-weight-medium);
+}
+
+.resume-header .links {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.resume-section > * + * {
+  margin-top: var(--line-height);
+}
+
+.resume-section h2 {
+  border-bottom: var(--border-thickness) solid var(--sky-2);
+  padding-bottom: calc(var(--line-height) / 2);
+  margin-bottom: calc(var(--line-height) / 2);
+}
+
+.resume-group + .resume-group {
+  margin-top: calc(var(--line-height) * 1.5);
+}
+
+.resume-group > * + * {
+  margin-top: calc(var(--line-height) / 2);
+}
+
+.resume-group h3 {
+  margin: 0;
+}
+
+.resume-group .meta {
+  margin-top: 0;
+}
+
+.resume-entry + .resume-entry {
+  margin-top: var(--line-height);
+}
+
+.resume-entry > * + * {
+  margin-top: calc(var(--line-height) / 4);
+}
+
+.resume-entry-title {
+  font-weight: var(--font-weight-bold);
+}
+
+.resume-entry-dates,
+.resume-note {
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--ink) 75%, var(--paper));
+}
+
+.resume-body {
+  margin-top: calc(var(--line-height) / 2);
+}
+
+.resume-body > * + * {
+  margin-top: calc(var(--line-height) / 2);
+}
+
+.resume-body p,
+.resume-body ul {
+  margin: 0;
+}
+
+@media print {
+  :root {
+    --line-height: 1.25rem;
+  }
+
+  html,
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  body {
+    max-width: none;
+    padding: 0;
+    font-size: 10pt;
+  }
+
+  .sheet {
+    border: 0;
+  }
+
+  .site-header,
+  .site-footer {
+    display: none;
+  }
+
+  .resume a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .resume-section h2 {
+    border-bottom-color: #000;
+  }
+
+  .resume-entry,
+  .resume-group {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  @page {
+    size: letter;
+    margin: 0.6in;
+  }
+}
