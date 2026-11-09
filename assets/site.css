@@ -1,0 +1,151 @@
+:root {
+  color-scheme: light;
+  --paper: #f4f4ed;
+  --ink: #14140f;
+  --accent: #b83d05;
+  --accent-bright: #ff9767;
+  --line-height: 1.5rem;
+  --column: 80ch;
+  --font: "Commit Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* + * {
+  margin-top: var(--line-height);
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  font: 200 1rem/var(--line-height) var(--font);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+}
+
+.sheet {
+  max-width: var(--column);
+  margin: 0 auto;
+  padding: calc(var(--line-height) * 2) var(--line-height);
+}
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 3px;
+}
+
+.site-header {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.site-header a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 500;
+  line-height: calc(var(--line-height) * 2);
+  margin: 0;
+}
+
+h1 {
+  font-size: 2rem;
+  letter-spacing: -0.01em;
+}
+
+h2,
+h3 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+p,
+ul,
+ol,
+blockquote,
+pre,
+figure {
+  margin: 0;
+}
+
+.lede {
+  font-size: 1rem;
+  max-width: 56ch;
+}
+
+.meta {
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.work-list {
+  list-style: none;
+  padding: 0;
+}
+
+.work-item {
+  border-top: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  padding-top: calc(var(--line-height) / 2);
+}
+
+.work-item .meta {
+  color: color-mix(in srgb, var(--ink) 70%, var(--paper));
+}
+
+article > * + * {
+  margin-top: var(--line-height);
+}
+
+blockquote {
+  border-left: 2px solid var(--accent);
+  padding-left: var(--line-height);
+}
+
+code,
+pre {
+  font-family: var(--font);
+  font-size: 0.875rem;
+}
+
+pre {
+  overflow-x: auto;
+  padding: var(--line-height);
+  background: color-mix(in srgb, var(--ink) 5%, var(--paper));
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+.site-footer {
+  border-top: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  padding-top: var(--line-height);
+  font-size: 0.875rem;
+}
