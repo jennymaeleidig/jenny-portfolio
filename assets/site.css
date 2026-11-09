@@ -919,6 +919,11 @@ th {
     gap: 1.5ch;
     font-size: 0.75rem;
   }
+
+  .links,
+  .tags {
+    gap: 1ch;
+  }
 }
 
 @media screen and (max-width: 640px) {
