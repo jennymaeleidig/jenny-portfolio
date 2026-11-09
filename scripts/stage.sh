@@ -34,6 +34,17 @@ body_of() {
   ' "$1"
 }
 
+# The opening paragraph after the H1 is the project's blurb: enough to make a
+# catalogue row worth clicking, and the only prose an article carries.
+blurb_of() {
+  awk '
+    /^#[[:space:]]/ && !heading { heading = 1; next }
+    heading && /^[[:space:]]*$/ { if (text != "") exit; next }
+    heading { text = (text == "" ? $0 : text " " $0) }
+    END { print text }
+  '
+}
+
 # Flatten the frontmatter into tab-separated records the shell can read:
 #   scalar <key> <value>
 #   item   <section> <value>
@@ -197,6 +208,18 @@ for file in "$content_dir"/*.md; do
     fi
   fi
 
+  # An article has no page of its own, so its publication link is the only
+  # route to it.
+  if [[ $category == articles ]]; then
+    publication=
+    for entry in "${links[@]}"; do
+      case ${entry%%=*} in
+        paper | live) publication=1 ;;
+      esac
+    done
+    [[ -n $publication ]] || fail "$name" "articles need a 'paper' or 'live' link"
+  fi
+
   title=
   while IFS= read -r line; do
     if [[ $line =~ ^#[[:space:]]+(.*)$ ]]; then
@@ -208,10 +231,14 @@ for file in "$content_dir"/*.md; do
     fail "$name" "missing '# Title' line"
   fi
 
+  blurb=$(printf '%s\n' "$body" | blurb_of)
+  blurb_html=$(printf '%s\n' "$blurb" | cmark-gfm --extension table --extension autolink)
+
   mkdir -p "$meta_dir"
   {
     printf 'META_SLUG=%q\n' "$slug"
     printf 'META_TITLE=%q\n' "$title"
+    printf 'META_BLURB=%q\n' "$blurb_html"
     printf 'META_YEAR=%q\n' "$year"
     printf 'META_STATUS=%q\n' "$status"
     printf 'META_CATEGORY=%q\n' "$category"
@@ -232,7 +259,9 @@ for file in "$content_dir"/*.md; do
     printf ')\n'
   } > "$meta_dir/$slug.sh"
 
-  printf '%s\n' "$body" > "$staging_dir/$year-01-01 $slug.md"
+  if [[ $category != articles ]]; then
+    printf '%s\n' "$body" > "$staging_dir/$year-01-01 $slug.md"
+  fi
   count=$((count + 1))
 done
 

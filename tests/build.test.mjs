@@ -44,6 +44,13 @@ function writeProject(content, slug, frontmatter, body) {
   );
 }
 
+function catalogueRows(html) {
+  const table = html.match(/<table class="catalogue"[\s\S]*?<\/table>/)?.[0] ?? "";
+  return [...table.matchAll(/<tr>([\s\S]*?)<\/tr>/g)]
+    .map(([, row]) => row.match(/<a href="([^"]+)"/)?.[1])
+    .filter(Boolean);
+}
+
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -362,6 +369,207 @@ Not on the front page.
   assert.match(home, /href="\/projects\/featured-project\/"/);
   assert.doesNotMatch(home, /quiet-project/);
   assert.equal(statSync(join(dist, "projects", "quiet-project", "index.html")).isFile(), true);
+});
+
+test("/work lists every project, newest first, with order pinning above newer work", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-catalogue-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-catalogue-dist-"));
+  writeProject(content, "alpha", `year: 2024
+status: shipped
+category: games`);
+  writeProject(content, "beta", `year: 2026
+status: shipped
+category: web`);
+  writeProject(content, "pinned", `year: 2020
+status: shipped
+category: sound
+order: 1`);
+
+  build(dist, { CONTENT_DIR: content });
+
+  const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
+  assert.deepEqual(catalogueRows(catalogue), [
+    "/projects/pinned/",
+    "/projects/beta/",
+    "/projects/alpha/",
+  ]);
+});
+
+test("each category filter lists exactly its own projects", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-categories-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-categories-dist-"));
+  writeProject(content, "game-one", `year: 2024
+status: shipped
+category: games`);
+  writeProject(content, "game-two", `year: 2026
+status: shipped
+category: games`);
+  writeProject(content, "sound-one", `year: 2025
+status: shipped
+category: sound`);
+  writeProject(content, "web-one", `year: 2023
+status: shipped
+category: web`);
+  writeProject(
+    content,
+    "article-one",
+    `year: 2022
+status: shipped
+category: articles
+links:
+  paper: https://example.com/article-one`,
+  );
+
+  build(dist, { CONTENT_DIR: content });
+
+  const all = readFileSync(join(dist, "work", "index.html"), "utf8");
+  assert.equal(catalogueRows(all).length, 5, "the catalogue lists every project once");
+
+  const expected = {
+    games: ["game-two", "game-one"],
+    sound: ["sound-one"],
+    hardware: [],
+    web: ["web-one"],
+    articles: ["https://example.com/article-one"],
+  };
+
+  for (const [category, slugs] of Object.entries(expected)) {
+    const page = readFileSync(join(dist, "work", category, "index.html"), "utf8");
+    const hrefs = catalogueRows(page).map((href) => href.replace(/^\/projects\/|\/$/g, ""));
+    assert.deepEqual(hrefs, slugs, `/work/${category}/ carries exactly ${category}`);
+  }
+});
+
+test("the front page shows exactly the featured projects as cards with category and year", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-front-page-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-front-page-dist-"));
+  writeProject(content, "featured-game", `year: 2026
+status: shipped
+category: games
+featured: true`);
+  writeProject(content, "featured-sound", `year: 2024
+status: shipped
+category: sound
+featured: true`);
+  writeProject(content, "quiet-web", `year: 2025
+status: shipped
+category: web`);
+
+  build(dist, { CONTENT_DIR: content });
+
+  const home = readFileSync(join(dist, "index.html"), "utf8");
+  assert.match(home, /<ul class="grid featured">/);
+
+  const cards = [...home.matchAll(/<li class="card">([\s\S]*?)<\/li>/g)].map(([, card]) => card);
+  assert.equal(cards.length, 2, "only the featured projects are cards");
+  assert.match(cards[0], /href="\/projects\/featured-game\/"/);
+  assert.match(cards[0], /games/);
+  assert.match(cards[0], /2026/);
+  assert.match(cards[1], /href="\/projects\/featured-sound\/"/);
+  assert.match(cards[1], /sound/);
+  assert.match(cards[1], /2024/);
+  assert.doesNotMatch(home, /quiet-web/);
+});
+
+test("article rows link out to the publication and have no detail page", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-articles-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-articles-dist-"));
+  writeProject(
+    content,
+    "a-paper",
+    `year: 2026
+status: shipped
+category: articles
+featured: true
+links:
+  paper: https://example.com/a-paper`,
+  );
+  writeProject(
+    content,
+    "a-live-piece",
+    `year: 2025
+status: shipped
+category: articles
+links:
+  live: https://example.com/a-live-piece`,
+  );
+  writeProject(content, "a-project", `year: 2024
+status: shipped
+category: web`);
+
+  build(dist, { CONTENT_DIR: content });
+
+  assert.equal(statSync(join(dist, "projects", "a-paper"), { throwIfNoEntry: false }), undefined);
+  assert.equal(statSync(join(dist, "projects", "a-live-piece"), { throwIfNoEntry: false }), undefined);
+  assert.equal(statSync(join(dist, "projects", "a-project", "index.html")).isFile(), true);
+
+  const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
+  assert.deepEqual(catalogueRows(catalogue), [
+    "https://example.com/a-paper",
+    "https://example.com/a-live-piece",
+    "/projects/a-project/",
+  ]);
+
+  const home = readFileSync(join(dist, "index.html"), "utf8");
+  assert.match(home, /<a href="https:\/\/example\.com\/a-paper">/);
+});
+
+test("the build fails, naming the file, when an article has no publication link", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-article-link-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-article-link-dist-"));
+  writeProject(content, "orphan-article", `year: 2026
+status: shipped
+category: articles`);
+
+  const result = buildFixture(content, dist);
+
+  assert.notEqual(result.status, 0, "the build must fail");
+  assert.match(result.stderr, /orphan-article\.md/);
+  assert.match(result.stderr, /paper|live/);
+});
+
+test("the catalogue is a three-column table with a header for each column", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-headers-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-headers-dist-"));
+  writeProject(content, "headered", `year: 2026
+status: shipped
+category: games`);
+
+  build(dist, { CONTENT_DIR: content });
+
+  const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
+  const headers = [...catalogue.matchAll(/<th scope="col">([^<]+)<\/th>/g)].map(([, text]) => text);
+  assert.equal(headers.length, 3, "the catalogue has one header per column");
+  assert.match(headers[0], /categor/i);
+  assert.match(headers[1], /project/i);
+
+  const row = catalogue.match(/<tbody>[\s\S]*?<tr>([\s\S]*?)<\/tr>/)?.[1] ?? "";
+  assert.match(row, /<td class="meta">games<br>2026<\/td>/);
+  assert.match(row, /<td class="catalogue-title"><a href="\/projects\/headered\/">headered<\/a><\/td>/);
+  assert.match(row, /<td class="catalogue-blurb"><p>Prose for headered\.<\/p><\/td>/);
+});
+
+test("catalogue blurbs render inline markdown instead of showing its syntax", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-blurb-markdown-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-blurb-markdown-dist-"));
+  writeProject(
+    content,
+    "styled",
+    `year: 2026
+status: shipped
+category: games
+featured: true`,
+    "# Styled\n\nA *quiet* game with a [link](https://example.com).\n",
+  );
+
+  build(dist, { CONTENT_DIR: content });
+
+  const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
+  assert.match(catalogue, /<td class="catalogue-blurb"><p>A <em>quiet<\/em> game with a <a href="https:\/\/example\.com">link<\/a>\.<\/p><\/td>/);
+  assert.doesNotMatch(catalogue, /\*quiet\*|\[link\]/);
+
+  const home = readFileSync(join(dist, "index.html"), "utf8");
+  assert.match(home, /<div class="card-blurb"><p>A <em>quiet<\/em> game/);
 });
 
 test("the build fails when a project page is not emitted", () => {

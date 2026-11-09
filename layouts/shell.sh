@@ -25,6 +25,7 @@ page_open() {
       <header class="site-header">
         <nav aria-label="Primary">
           <a href="/">Jenny Leidig</a>
+          <a href="/work/">Work</a>
         </nav>
       </header>
       <main>
