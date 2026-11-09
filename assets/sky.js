@@ -10,7 +10,7 @@
  * gradient, so a canvas block still reads as sky.
  */
 
-import { SKY_DEFAULTS, createField, renderFrame } from "/assets/sky-core.mjs";
+import { OFFSET_Y_LIMIT, SKY_DEFAULTS, createField, renderFrame } from "/assets/sky-core.mjs";
 
 // A visit gets its own sky. The seed is chosen once per page load, so the
 // field stays put across internal navigation and is only new on a real load.
@@ -62,7 +62,14 @@ if (sky && canvas) {
 
     function draw() {
       if (!field) return;
-      renderFrame({ field, out: pixels, config, time: elapsed, offset });
+      renderFrame({
+        field,
+        out: pixels,
+        config,
+        time: elapsed,
+        offset,
+        offsetY: config.offsetY / cellPx,
+      });
       context.putImageData(image, 0, 0);
     }
 
@@ -93,7 +100,17 @@ if (sky && canvas) {
         offset *= previousCellPx / cellPx;
       }
 
-      field = createField({ cols, rows, cellPx, scale: config.scale, seed: config.seed });
+      field = createField({
+        cols,
+        rows,
+        cellPx,
+        scale: config.scale,
+        seed: config.seed,
+        evolveScale: config.evolveScale,
+        // Sky above and below the window, so the lift can pan without
+        // repeating anything.
+        margin: Math.ceil(OFFSET_Y_LIMIT / cellPx),
+      });
       image = context.createImageData(cols, rows);
       pixels = image.data;
       draw();
@@ -154,6 +171,19 @@ if (sky && canvas) {
         start();
       }, 120);
     });
+
+    // Development only. A build made with SKY_LEVERS=1 marks <body> and loads
+    // assets/sky-levers.mjs, which needs the live config and a way to repaint.
+    // Without the attribute nothing is published, so a production page has no
+    // handle on the sky at all.
+    if (document.body.hasAttribute("data-sky-levers")) {
+      globalThis.skyLevers = {
+        config,
+        redraw: draw,
+        rebuild: resize,
+        restart: start,
+      };
+    }
 
     resize();
     start();

@@ -2,8 +2,9 @@
 # Shared helpers for the build and its layouts.
 
 # The single source of truth for the values staging accepts and layouts label.
-STATUSES=(active shipped wip archived)
-CATEGORIES=(games sound hardware web articles)
+STATUSES=(active shipped wip archived study)
+CATEGORIES=(games sound hardware software articles)
+CAREER_SECTIONS=(experience volunteering education skills)
 LINK_KINDS=(live repo itch paper video)
 
 is_status() {
@@ -17,6 +18,14 @@ is_status() {
 is_link_kind() {
   local value
   for value in "${LINK_KINDS[@]}"; do
+    [[ $1 == "$value" ]] && return 0
+  done
+  return 1
+}
+
+is_career_section() {
+  local value
+  for value in "${CAREER_SECTIONS[@]}"; do
     [[ $1 == "$value" ]] && return 0
   done
   return 1
@@ -86,6 +95,7 @@ status_label() {
     active) printf 'active' ;;
     shipped) printf 'shipped' ;;
     archived) printf 'archived' ;;
+    study) printf 'study' ;;
   esac
 }
 
@@ -99,12 +109,21 @@ link_label() {
   esac
 }
 
+career_section_label() {
+  case $1 in
+    experience) printf 'Experience' ;;
+    volunteering) printf 'Volunteering' ;;
+    education) printf 'Education' ;;
+    skills) printf 'Skills' ;;
+  esac
+}
+
 category_label() {
   case $1 in
     games) printf 'Games' ;;
     sound) printf 'Sound' ;;
     hardware) printf 'Hardware' ;;
-    web) printf 'Web' ;;
+    software) printf 'Software' ;;
     articles) printf 'Articles' ;;
   esac
 }
@@ -154,27 +173,6 @@ project_records() {
         "$META_TITLE" "${META_BLURB:-}" "$href" "${META_FEATURED:-false}"
     )
   done | LC_ALL=C sort -t $'\t' -k1,1n -k2,2n -k3,3nr -k4,4
-}
-
-# Emit the CV-visible projects in chronological order, newest first: year,
-# title, CV blurb, href and category. The catalogue's pinning does not apply
-# here, because the career record is the record rather than a showcase.
-cv_project_records() {
-  local meta href
-  shopt -s nullglob
-  for meta in "$META_DIR"/*.sh; do
-    (
-      # shellcheck source=/dev/null
-      source "$meta"
-      [[ ${META_CV:-false} == true ]] || exit 0
-      href="/projects/$META_SLUG/"
-      if [[ $META_CATEGORY == articles ]]; then
-        href=$(article_href ${META_LINKS[@]+"${META_LINKS[@]}"})
-      fi
-      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$META_YEAR" "$META_TITLE" "${META_CV_BLURB:-}" "$href" "$META_CATEGORY" "$META_SLUG"
-    )
-  done | LC_ALL=C sort -t $'\t' -k1,1nr -k2,2
 }
 
 # List one career section's entry files newest first, sorted by a frontmatter
@@ -247,6 +245,47 @@ career_education_records() {
       "$(frontmatter_value "$file" end)" \
       "$(frontmatter_value "$file" note)"
   done < <(career_files "$dir" start)
+}
+
+# Emit the skills list as records: one tab-separated `category skill` line per
+# skill. Each category is a bullet of the hand-written skills.md of the form
+# `- **Category:** skill, skill, ...`; a comma inside parentheses, as in
+# `AWS (S3, EMR, DynamoDB)`, is part of one skill rather than a separator.
+career_skill_records() {
+  local file=$1
+  awk '
+    function trim(text) {
+      sub(/^[[:space:]]+/, "", text)
+      sub(/[[:space:]]+$/, "", text)
+      return text
+    }
+    # Split on commas that sit outside parentheses, so grouped skills survive.
+    function emit(items,   i, char, depth, buffer) {
+      depth = 0
+      buffer = ""
+      for (i = 1; i <= length(items); i++) {
+        char = substr(items, i, 1)
+        if (char == "(") depth++
+        if (char == ")" && depth > 0) depth--
+        if (char == "," && depth == 0) {
+          if (trim(buffer) != "") print category "\t" trim(buffer)
+          buffer = ""
+          continue
+        }
+        buffer = buffer char
+      }
+      if (trim(buffer) != "") print category "\t" trim(buffer)
+    }
+    /^- \*\*/ {
+      line = $0
+      sub(/^- \*\*/, "", line)
+      category = line
+      sub(/:\*\*.*/, "", category)
+      items = line
+      sub(/^.*:\*\*[[:space:]]*/, "", items)
+      emit(items)
+    }
+  ' "$file"
 }
 
 month_label() {

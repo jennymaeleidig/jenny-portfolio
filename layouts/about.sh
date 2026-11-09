@@ -7,7 +7,7 @@ source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 
-about="$SITE_ROOT/content/about.md"
+about=${ABOUT_FILE:-"$SITE_ROOT/content/about.md"}
 photo=$(frontmatter_value "$about" photo)
 body=$(markdown_body "$about")
 
@@ -25,10 +25,10 @@ render_links() {
   done
 }
 
-page_open "About, Jenny Leidig"
+page_open "About, Jenny Leidig" about
 cat <<EOF
         <h1>About</h1>
-        <img class="portrait" src="$(html_escape "$photo")" alt="Jenny Leidig">
+        <img class="portrait" src="$(html_escape "$photo")" alt="$(html_escape "$FULL_NAME")">
         <div class="prose">
 $body
         </div>
@@ -37,11 +37,5 @@ EOF
 render_links "${PRIMARY_LINKS[@]}"
 cat <<EOF
         </ul>
-        <ul class="links elsewhere" aria-label="Elsewhere">
-EOF
-render_links "${ELSEWHERE_LINKS[@]}"
-cat <<EOF
-        </ul>
-        <p class="contribution">I also contributed to the <a href="$(html_escape "$HOMESTUCK")">Unofficial Homestuck Collection web edition</a>, a fork that brings the archive to the browser.</p>
 EOF
 page_close

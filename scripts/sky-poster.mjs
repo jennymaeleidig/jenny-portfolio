@@ -3,7 +3,7 @@
  * Regenerate assets/sky-poster.svg from the sky core.
  *
  * The poster is a static frame at the shipped cell size: the same field, seed,
- * palette and tuned values as the canvas, rendered at time 0. It is embedded
+ * palette, tuned values and lift as the canvas, rendered at time 0. It is embedded
  * as a PNG data URI so the committed file stays text and stays inside the
  * no-binaries rule, while costing a fraction of an equivalent vector poster.
  *
@@ -20,7 +20,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 
-import { SKY_DEFAULTS, createField, renderFrame } from "../assets/sky-core.mjs";
+import { OFFSET_Y_LIMIT, SKY_DEFAULTS, createField, renderFrame } from "../assets/sky-core.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -87,8 +87,18 @@ export function posterArtifact() {
     cellPx,
     scale: SKY_DEFAULTS.scale,
     seed: SKY_DEFAULTS.seed,
+    evolveScale: SKY_DEFAULTS.evolveScale,
+    // The canvas carries sky above and below the window so the lift can pan;
+    // the poster has to be built the same way to show the shipped framing.
+    margin: Math.ceil(OFFSET_Y_LIMIT / cellPx),
   });
-  const pixels = renderFrame({ field, config: SKY_DEFAULTS, time: 0, offset: 0 });
+  const pixels = renderFrame({
+    field,
+    config: SKY_DEFAULTS,
+    time: 0,
+    offset: 0,
+    offsetY: SKY_DEFAULTS.offsetY / cellPx,
+  });
 
   const rgb = Buffer.alloc(cols * rows * 3);
   for (let i = 0, j = 0; i < pixels.length; i += 4, j += 3) {

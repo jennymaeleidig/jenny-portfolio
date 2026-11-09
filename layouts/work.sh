@@ -18,11 +18,10 @@ fi
 if [[ -n $category ]]; then
   heading=$(category_label "$category")
   title="$heading, Jenny Leidig"
-  lede="Every project in the $category category."
 else
-  heading="Work"
-  title="Work, Jenny Leidig"
-  lede="Every project in the catalogue."
+  # The route is /work/, but the tab the reader is on is Projects.
+  heading="Projects"
+  title="Projects, Jenny Leidig"
 fi
 
 rows=$(
@@ -31,20 +30,22 @@ rows=$(
       continue
     fi
     printf '            <tr>\n'
-    printf '              <td class="meta">%s<br>%s</td>\n' \
-      "$(html_escape "$item_category")" "$(html_escape "$year")"
     printf '              <td class="catalogue-title"><a href="%s">%s</a></td>\n' \
       "$(html_escape "$href")" "$(html_escape "$item_title")"
     printf '              <td class="catalogue-blurb">%s</td>\n' "$blurb"
+    if [[ -z $category ]]; then
+      printf '              <td class="catalogue-category">%s</td>\n' \
+        "$(html_escape "$(category_label "$item_category")")"
+    fi
+    printf '              <td class="meta">%s</td>\n' "$(html_escape "$year")"
     printf '            </tr>\n'
   done
 )
 
-page_open "$title"
+page_open "$title" work
 cat <<EOF
         <h1>$heading</h1>
 $(tab_bar projects)
-        <p class="lede">$lede</p>
         <nav aria-label="Categories">
           <ul class="filters">
 EOF
@@ -64,9 +65,18 @@ cat <<EOF
         <table class="catalogue">
           <thead>
             <tr>
-              <th scope="col">Category and year</th>
               <th scope="col">Project</th>
               <th scope="col">Blurb</th>
+EOF
+
+# Only the whole catalogue needs the category spelled out; on a category page
+# every row is that category already.
+if [[ -z $category ]]; then
+  printf '              <th scope="col">Category</th>\n'
+fi
+
+cat <<EOF
+              <th scope="col">Year</th>
             </tr>
           </thead>
           <tbody>

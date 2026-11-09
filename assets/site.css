@@ -169,16 +169,35 @@ body {
   margin-top: 0;
 }
 
-.site-header a {
-  color: var(--ink);
+/*
+ * Header links sit in the accent at rest and answer hover in ink, so the one
+ * ink link is the section the reader is on. The :link/:visited cases are
+ * spelled out so no other link rule in the sheet can repaint the header.
+ */
+.site-header a,
+.site-header a:link,
+.site-header a:visited {
+  color: var(--accent);
   font-weight: var(--font-weight-medium);
   text-decoration: none;
 }
 
-.site-header a:hover {
-  color: var(--accent);
+.site-header a:hover,
+.site-header a:link:hover,
+.site-header a:visited:hover {
+  color: var(--ink);
   text-decoration: underline;
   text-decoration-thickness: var(--border-thickness);
+}
+
+.site-header a[aria-current="page"],
+.site-header a[aria-current="page"]:link,
+.site-header a[aria-current="page"]:visited {
+  color: var(--ink);
+}
+
+.site-header a[aria-current="page"]:hover {
+  color: var(--ink);
 }
 
 a {
@@ -188,9 +207,11 @@ a {
   text-underline-offset: calc(var(--line-height) / 4);
 }
 
-a:visited {
-  color: var(--accent);
-}
+/*
+ * No visited state. It only ever told the reader where they had been, which
+ * the nav already does, and its equal specificity let it paint over component
+ * colours such as the header's ink.
+ */
 
 a:hover {
   text-decoration-thickness: calc(var(--border-thickness) * 2);
@@ -223,6 +244,23 @@ h1 {
   line-height: calc(2 * var(--line-height));
   margin-bottom: calc(var(--line-height) * 2);
   text-transform: uppercase;
+}
+
+/*
+ * A title that carries its own metadata — a project's category, year and
+ * status, the front page's tagline, Now's update date — keeps that metadata
+ * directly beneath it, on the half-line gap the rest of the record uses. The
+ * title drops its own bottom margin, or the two margins would collapse back to
+ * the larger one.
+ */
+h1:has(+ .meta),
+h1:has(+ .lede) {
+  margin-bottom: 0;
+}
+
+h1 + .meta,
+h1 + .lede {
+  margin-top: calc(var(--line-height) / 2);
 }
 
 h2 {
@@ -272,23 +310,6 @@ i {
   object-fit: cover;
 }
 
-.contribution {
-  max-width: 56ch;
-  font-size: 0.875rem;
-}
-
-.elsewhere {
-  border-top: 0;
-  padding-top: 0;
-  margin-top: calc(var(--line-height) / 2);
-  font-size: 0.875rem;
-}
-
-.elsewhere a {
-  font-weight: var(--font-weight-regular);
-  color: color-mix(in srgb, var(--ink) 75%, var(--paper));
-}
-
 .meta {
   font-size: 0.875rem;
   font-weight: var(--font-weight-medium);
@@ -296,6 +317,12 @@ i {
   text-transform: uppercase;
 }
 
+/*
+ * The featured cards rule off like a table: one light rule above every card,
+ * and one under each card in the last row. Cards in a row share a height, so
+ * the closing rules line up, and they keep the grid's gap between them instead
+ * of running together into a single bar.
+ */
 .featured {
   list-style: none;
   padding: 0;
@@ -307,6 +334,11 @@ i {
   flex-direction: column;
   border-top: var(--border-thickness) solid var(--sky-2);
   padding-top: calc(var(--line-height) / 2);
+}
+
+.card-last {
+  border-bottom: var(--border-thickness) solid var(--sky-2);
+  padding-bottom: calc(var(--line-height) / 2);
 }
 
 .card > * {
@@ -376,17 +408,32 @@ i {
   border-bottom-color: var(--sky-4);
 }
 
-.catalogue td:first-child,
-.catalogue th:first-child {
-  width: 14ch;
+.catalogue .meta {
+  width: 6ch;
+  white-space: nowrap;
+  font-size: 0.75rem;
 }
 
-.catalogue td:first-child {
+/* The whole catalogue names each row's category; a category page does not. */
+.catalogue-category {
+  width: 10ch;
+  white-space: nowrap;
+  font-size: 0.875rem;
+}
+
+/*
+ * Now is the same table as the catalogue, two columns wide: what the reader
+ * is doing on the left, the blurb on the right. The first column carries the
+ * short section names, so it gets the fixed width the year column has.
+ */
+.now-table th:first-child,
+.now-table td:first-child {
+  width: 14ch;
   white-space: nowrap;
 }
 
-.catalogue .meta {
-  font-size: 0.75rem;
+.now-table td:first-child {
+  font-weight: var(--font-weight-medium);
 }
 
 .catalogue-title a {
@@ -429,13 +476,44 @@ i {
   padding-top: calc(var(--line-height) / 2);
 }
 
+/*
+ * Project links close on the same rule they open on, like the About page's
+ * primary links.
+ */
+.primary-links,
+.ruled {
+  border-bottom: var(--border-thickness) solid var(--sky-2);
+  padding-bottom: calc(var(--line-height) / 2);
+}
+
 .links a {
   font-weight: var(--font-weight-medium);
+}
+
+/* The tags' own margin sets the gap under the links, not the list's. */
+article > .links {
+  margin-bottom: 0;
 }
 
 .tags {
   font-size: 0.875rem;
   color: color-mix(in srgb, var(--ink) 75%, var(--paper));
+  /*
+   * The tags close the page: the links above them are ruled top and bottom, and
+   * the tags add the third rule, so the article ends on one. The gap matches the
+   * padding inside each band, so all three rules are evenly spaced.
+   */
+  margin-top: calc(var(--line-height) / 2);
+  gap: 0;
+  /* The tags sit below the links, so they close the article on their own rule. */
+  border-bottom: var(--border-thickness) solid var(--sky-2);
+  padding-bottom: calc(var(--line-height) / 2);
+}
+
+/* The same separator the meta line uses, so the tags read as one line. */
+.tags li + li::before {
+  content: "·";
+  margin: 0 1ch;
 }
 
 .site-footer {
@@ -647,41 +725,104 @@ th {
   margin-top: var(--line-height);
 }
 
+/*
+ * A filtered section has no heading of its own, so the rule that heading would
+ * have carried sits directly above the first disclosure instead. The padding
+ * matches the gap the record already leaves between a rule and the row under
+ * it, minus the border itself, so the first row starts where every other row
+ * does.
+ */
+.career-section-ruled {
+  border-top: var(--border-thickness) solid var(--sky-2);
+  padding-top: calc(var(--line-height) / 2 - var(--border-thickness));
+}
+
 .career-section h2 {
   border-bottom: var(--border-thickness) solid var(--sky-2);
   padding-bottom: calc(var(--line-height) / 2);
   margin-bottom: calc(var(--line-height) / 2);
 }
 
-.career-group + .career-group {
-  margin-top: calc(var(--line-height) * 1.5);
-}
-
-.career-group > * + * {
-  margin-top: calc(var(--line-height) / 2);
-}
-
-.career-group h3 {
-  margin: 0;
-}
-
-.career-group .meta {
+/*
+ * The heading's own half-line sets the gap under its rule, or the section's
+ * standard paragraph gap would win and leave the first row sitting twice as
+ * far down as every row below it.
+ */
+.career-section h2 + * {
   margin-top: 0;
 }
 
-.career-entry + .career-entry {
-  margin-top: var(--line-height);
+/*
+ * The career record folds each role, each qualification and each skill group
+ * into a native <details>, the monospace-web disclosure: the summary is the
+ * index line the reader scans, and the marker is a solid triangle that turns
+ * to point down when the record opens. No JavaScript is involved, and the
+ * whole record is still in the markup and in the print output.
+ */
+.career-disclosure {
+  border-bottom: var(--border-thickness) solid var(--sky-2);
+  padding-bottom: calc(var(--line-height) / 2);
 }
 
-.career-entry > * + * {
+.career-disclosure + .career-disclosure {
+  margin-top: calc(var(--line-height) / 2);
+}
+
+.career-disclosure > summary {
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+}
+
+.career-disclosure > summary::marker {
+  content: "\25B6\00A0";
+}
+
+.career-disclosure[open] > summary::marker {
+  content: "\25BC\00A0";
+}
+
+/*
+ * One gap under every summary, whatever the record holds: 12px between the
+ * index line and the dates, the prose or the skills. The gap rides on the
+ * first child rather than the summary's margin-bottom so it does not depend
+ * on margin collapsing through the details slot.
+ */
+.career-disclosure[open] > summary {
+  margin-bottom: 0;
+}
+
+.career-disclosure > :not(summary) {
+  margin: 0;
+}
+
+.career-disclosure > summary + * {
+  margin-top: 0;
+}
+
+.career-disclosure[open] > summary + * {
+  margin-top: calc(var(--line-height) / 2);
+}
+
+.career-disclosure > * + * {
   margin-top: calc(var(--line-height) / 4);
 }
 
-.career-entry-title {
-  font-weight: var(--font-weight-bold);
+.career-meta {
+  margin: 0;
 }
 
-.career-entry-dates,
+.career-meta .meta,
+.career-meta .career-sep,
+.career-meta .career-note {
+  margin: 0;
+  color: color-mix(in srgb, var(--ink) 75%, var(--paper));
+}
+
+.career-meta .career-dates {
+  margin: 0;
+}
+
+.career-dates,
 .career-note {
   font-size: 0.875rem;
   color: color-mix(in srgb, var(--ink) 75%, var(--paper));
@@ -697,6 +838,24 @@ th {
 
 .career-body p,
 .career-body ul {
+  margin: 0;
+}
+
+/*
+ * Skills read as a list, wrapped into two columns when the sheet is wide
+ * enough for two readable ones and one when it is not.
+ */
+.skill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 2ch;
+  margin: 0;
+  padding-left: 2ch;
+  list-style-type: square;
+}
+
+.skill-list li {
+  flex: 1 1 30ch;
   margin: 0;
 }
 
@@ -751,17 +910,21 @@ th {
     display: none;
   }
 
-  .career-group + .career-group {
-    margin-top: 0.75rem;
-  }
-
-  .career-entry + .career-entry {
+  .career-disclosure + .career-disclosure {
     margin-top: 0.5rem;
   }
 
-  .career-entry,
-  .career-group {
+  .career-disclosure {
     break-inside: avoid;
+  }
+
+  /* Closed disclosures would print as bare summaries, so open them on paper. */
+  details::details-content {
+    content-visibility: visible;
+  }
+
+  details > *:not(summary) {
+    display: block;
   }
 
   h1,
@@ -844,6 +1007,11 @@ th {
   }
 
   .catalogue td:first-child {
+    width: auto;
+    white-space: normal;
+  }
+
+  .catalogue .meta {
     width: auto;
     white-space: normal;
   }

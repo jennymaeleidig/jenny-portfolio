@@ -60,6 +60,9 @@ export LAYOUT_DIR=$(printf '%q' "$root/layouts")
 export MARKDOWN_COMMAND='cmark-gfm --extension table --extension autolink'
 export SITE_ROOT=$(printf '%q' "$root")
 export META_DIR=$(printf '%q' "$meta_dir")
+# Development only: the sky's tuning levers. Empty in a normal build, so the
+# layouts emit neither the panel's script tag nor the body attribute.
+export SKY_LEVERS=$(printf '%q' "${SKY_LEVERS:-}")
 
 function post_hook() {
   "\$SITE_ROOT/scripts/post-build.sh" || exit 1

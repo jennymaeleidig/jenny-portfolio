@@ -139,8 +139,6 @@ for file in "$content_dir"/*.md; do
   cover=
   order=
   featured=
-  cv=
-  cv_blurb=
   tags=()
   links=()
 
@@ -154,8 +152,6 @@ for file in "$content_dir"/*.md; do
           cover) cover=$value ;;
           order) order=$value ;;
           featured) featured=$value ;;
-          cv) cv=$value ;;
-          cv_blurb) cv_blurb=$value ;;
           *) fail "$name" "unknown frontmatter field '$key'" ;;
         esac
         ;;
@@ -191,15 +187,6 @@ for file in "$content_dir"/*.md; do
     "" | true | false) ;;
     *) fail "$name" "'featured' must be true or false" ;;
   esac
-
-  case $cv in
-    "" | true | false) ;;
-    *) fail "$name" "'cv' must be true or false" ;;
-  esac
-
-  if [[ $cv == true && -z $cv_blurb ]]; then
-    fail "$name" "cv: true requires cv_blurb"
-  fi
 
   if [[ -n $cover ]]; then
     [[ $cover == /* ]] || fail "$name" "'cover' must be an absolute path from /"
@@ -245,8 +232,6 @@ for file in "$content_dir"/*.md; do
     printf 'META_COVER=%q\n' "$cover"
     printf 'META_ORDER=%q\n' "$order"
     printf 'META_FEATURED=%q\n' "$featured"
-    printf 'META_CV=%q\n' "$cv"
-    printf 'META_CV_BLURB=%q\n' "$cv_blurb"
     printf 'META_TAGS=('
     if ((${#tags[@]})); then
       printf '%q ' "${tags[@]}"

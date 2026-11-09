@@ -10,6 +10,7 @@ import {
   hash,
   rampIndex,
   renderFrame,
+  sampleEvolve,
   sampleField,
   thresholds,
   toneIndex,
@@ -34,17 +35,20 @@ test("the sky ships at the values that were tuned", () => {
     mode: "frame",
     cell: 2,
     tones: 4,
-    scale: 150,
-    gain: 3.55,
+    scale: 260,
+    gain: 2.1,
     speed: 20,
     falloff: 54,
-    evolve: 18,
-    evolveSpeed: 26,
-    warp: 14,
-    warpSpeed: 13,
-    dither: 75,
-    sky: 92,
-    stark: 74,
+    offsetY: -220,
+    evolve: 60,
+    evolveSpeed: 30,
+    evolveScale: 340,
+    evolveTilt: 13,
+    warp: 51,
+    warpSpeed: 9,
+    dither: 20,
+    sky: 87,
+    stark: 77,
     seed: 12,
     maxFps: 60,
   });
@@ -189,4 +193,128 @@ test("two consecutive frames differ", () => {
   });
 
   assert.notDeepEqual([...first], [...next]);
+});
+
+test("the evolution field is periodic on both axes and carries no bias", () => {
+  const field = createField({ cols: 240, rows: 140, cellPx: 2, scale: 150, seed: 12 });
+
+  for (const [x, y] of [
+    [0, 0],
+    [7, 11],
+    [133, 41],
+  ]) {
+    const here = sampleEvolve(field, x, y);
+    assert.ok(
+      Math.abs(here - sampleEvolve(field, x + field.width, y)) < 1e-12,
+      `x=${x}, y=${y} does not wrap in x`,
+    );
+    assert.ok(
+      Math.abs(here - sampleEvolve(field, x, y + field.rows)) < 1e-12,
+      `x=${x}, y=${y} does not wrap in y`,
+    );
+  }
+
+  const mean = field.evolve.reduce((sum, value) => sum + value, 0) / field.evolve.length;
+  assert.ok(Math.abs(mean) < 1e-6, `the flow must be centred, not ${mean}`);
+
+  const spread = Math.max(...field.evolve) - Math.min(...field.evolve);
+  assert.ok(spread > 0.1, `the flow must vary across the field, spread is ${spread}`);
+});
+
+test("the masses swell in different places instead of breathing in step", () => {
+  const field = createField({ cols: 240, rows: 140, cellPx: 2, scale: 150, seed: 12 });
+  const config = { ...SKY_DEFAULTS, speed: 0, warp: 0, warpSpeed: 0, dither: 0, evolveSpeed: 0 };
+  const still = new Uint8Array(field.cols * field.rows);
+  const evolved = new Uint8Array(field.cols * field.rows);
+
+  renderFrame({ field, bands: still, config: { ...config, evolve: 0 }, time: 0, offset: 0 });
+  renderFrame({ field, bands: evolved, config: { ...config, evolve: 100 }, time: 0, offset: 0 });
+
+  let grown = 0;
+  let thinned = 0;
+  for (let i = 0; i < still.length; i += 1) {
+    if (evolved[i] > still[i]) grown += 1;
+    else if (evolved[i] < still[i]) thinned += 1;
+  }
+
+  assert.ok(grown > 0, "some masses grow at this moment");
+  assert.ok(thinned > 0, "others thin at the same moment");
+});
+
+test("a margin carries the sky above and below without changing the view", () => {
+  const bare = createField({ cols: 60, rows: 40, cellPx: 2, scale: 150, seed: 12 });
+  const roomy = createField({ cols: 60, rows: 40, cellPx: 2, scale: 150, seed: 12, margin: 20 });
+
+  assert.equal(roomy.height, roomy.rows + 40, "the margin adds rows on both sides");
+
+  for (const [x, y] of [
+    [0, 0],
+    [11, 7],
+    [59, 39],
+  ]) {
+    assert.equal(
+      sampleField(roomy, x, y + 20),
+      sampleField(bare, x, y),
+      `row ${y} must be the same sky with or without a margin`,
+    );
+  }
+
+  const above = sampleField(roomy, 3, 0);
+  assert.ok(above > 0 && above < 1, "the margin holds real sky, not a flat edge");
+});
+
+test("the lift pans the sky and stops at the margin", () => {
+  const field = createField({ cols: 80, rows: 60, cellPx: 2, scale: 150, seed: 12, margin: 24 });
+  const config = { ...SKY_DEFAULTS, speed: 0, warp: 0, warpSpeed: 0, evolve: 0 };
+  const rest = renderFrame({ field, config, offsetY: 0 });
+  const up = renderFrame({ field, config, offsetY: 12 });
+  const down = renderFrame({ field, config, offsetY: -12 });
+
+  assert.notDeepEqual([...rest], [...up], "the clouds move up");
+  assert.notDeepEqual([...rest], [...down], "the clouds move down");
+
+  const pinned = renderFrame({ field, config, offsetY: 500 });
+  const pinnedSame = renderFrame({ field, config, offsetY: 200 });
+  assert.deepEqual([...pinned], [...pinnedSame], "past the margin it stops rather than wrapping");
+});
+
+test("the flow's feature size is built into the field", () => {
+  const small = createField({ cols: 240, rows: 140, cellPx: 2, scale: 150, seed: 12, evolveScale: 90 });
+  const large = createField({ cols: 240, rows: 140, cellPx: 2, scale: 150, seed: 12, evolveScale: 540 });
+
+  assert.ok(small.evolvePeriod > large.evolvePeriod, "a smaller flow sees more lattice cells");
+  assert.equal(small.evolvePeriodY > large.evolvePeriodY, true);
+  assert.notDeepEqual([...small.evolve], [...large.evolve]);
+});
+
+test("the flow's tilt decides how much of its drift is vertical", () => {
+  const field = createField({ cols: 240, rows: 140, cellPx: 2, scale: 150, seed: 12 });
+  const config = { ...SKY_DEFAULTS, speed: 0, warp: 0, warpSpeed: 0, evolveSpeed: 60 };
+
+  const sideways = renderFrame({ field, config: { ...config, evolveTilt: 0 }, time: 5, offset: 0 });
+  const upright = renderFrame({ field, config: { ...config, evolveTilt: 100 }, time: 5, offset: 0 });
+
+  assert.notDeepEqual([...sideways], [...upright], "tilt changes where the flow has got to");
+});
+
+test("with evolve off the sky holds perfectly still", () => {
+  const field = createField({ cols: 160, rows: 100, cellPx: 2, scale: 150, seed: 12 });
+  const config = { ...SKY_DEFAULTS, evolve: 0, speed: 0, warp: 0, warpSpeed: 0 };
+
+  const first = renderFrame({ field, config, time: 0, offset: 0 });
+  const later = renderFrame({ field, config, time: 30, offset: 0 });
+
+  assert.deepEqual([...first], [...later]);
+});
+
+test("the flow drifts with its own speed, independent of the sky's", () => {
+  const field = createField({ cols: 360, rows: 200, cellPx: 2, scale: 150, seed: 12 });
+  const config = { ...SKY_DEFAULTS, speed: 0, warp: 0, warpSpeed: 0 };
+
+  const still = renderFrame({ field, config: { ...config, evolveSpeed: 0 }, time: 0, offset: 0 });
+  const holding = renderFrame({ field, config: { ...config, evolveSpeed: 0 }, time: 6, offset: 0 });
+  const drifted = renderFrame({ field, config, time: 6, offset: 0 });
+
+  assert.deepEqual([...still], [...holding], "with no evolve speed the flow holds still");
+  assert.notDeepEqual([...still], [...drifted], "evolveSpeed alone moves the flow");
 });

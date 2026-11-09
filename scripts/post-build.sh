@@ -44,6 +44,12 @@ rm -f "$DIST/feed.xml"
 mkdir -p "$DIST/assets"
 cp -R "$SITE_ROOT/assets/." "$DIST/assets/"
 
+# Development only: the levers module is not emitted at all without the flag,
+# so a production tree has nothing to load and nothing pointing at it.
+if [[ ${SKY_LEVERS:-} != 1 ]]; then
+  rm -f "$DIST/assets/sky-levers.mjs"
+fi
+
 "$SITE_ROOT/layouts/home.sh" > "$DIST/index.html"
 
 if [[ ! -s $DIST/index.html ]]; then
@@ -74,6 +80,15 @@ if [[ ! -s $DIST/work/career/index.html ]]; then
   echo "error: the career tab was not emitted" >&2
   exit 1
 fi
+
+for section in "${CAREER_SECTIONS[@]}"; do
+  mkdir -p "$DIST/work/career/$section"
+  "$SITE_ROOT/layouts/career.sh" "$section" > "$DIST/work/career/$section/index.html"
+  if [[ ! -s $DIST/work/career/$section/index.html ]]; then
+    echo "error: the career $section page was not emitted" >&2
+    exit 1
+  fi
+done
 
 for page in about now; do
   mkdir -p "$DIST/$page"
