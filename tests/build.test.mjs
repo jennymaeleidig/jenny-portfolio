@@ -779,16 +779,17 @@ test("the resume defaults to exactly the selection the PDF prints", () => {
   assert.match(printHtml, new RegExp(`id="${escapeRegExp(printed[0])}"`));
 });
 
-test("the resume selector is accessible and its default matches the PDF", () => {
+test("the resume selector sits beside the section or entry it controls", () => {
   const resume = readFileSync(join(output, "resume", "index.html"), "utf8");
   const omitted = printOmittedIds();
 
+  assert.doesNotMatch(resume, /<form class="resume-selector"/, "there is no separate overview block");
+  assert.doesNotMatch(resume, /Choose what appears/, "there is no overview heading");
+  assert.equal((resume.match(/<h1\b/g) ?? []).length, 1, "the page keeps one heading");
   assert.match(
     resume,
-    /<form class="resume-selector" method="get" action="\/resume\/" data-resume-selector data-default-omitted="[^"]*">/,
+    /<p class="resume-selector-note" data-resume-selector data-default-omitted="[^"]*">/,
   );
-  assert.equal((resume.match(/<h1\b/g) ?? []).length, 1, "the page keeps one heading");
-  assert.match(resume, /<legend>Experience<\/legend>/);
 
   const sectionIds = [...resume.matchAll(/data-resume-section="([^"]+)"/g)].map(([, id]) => id);
   assert.deepEqual(sectionIds, [
@@ -806,8 +807,8 @@ test("the resume selector is accessible and its default matches the PDF", () => 
     ([, id]) => id,
   );
   const inputs = [
-    ...resume.matchAll(/<input type="checkbox" name="include" value="([^"]+)"( checked)?>/g),
-  ].map(([, id, checked]) => ({ id, checked: Boolean(checked) }));
+    ...resume.matchAll(/<input type="checkbox" name="include" value="([^"]+)"([^>]*)>/g),
+  ].map(([, id, attrs]) => ({ id, checked: /\schecked(?:\s|=|$)/.test(attrs) }));
 
   const known = new Set([...sectionIds, ...entryIds]);
   for (const input of inputs) {
@@ -819,11 +820,36 @@ test("the resume selector is accessible and its default matches the PDF", () => 
   assert.deepEqual([...checked].sort(), [...expected].sort(), "the controls start at the PDF selection");
 
   assert.equal(
-    (resume.match(/<label class="resume-selector-(?:toggle|entry)">/g) ?? []).length,
+    (resume.match(/<label class="resume-toggle"><input[^>]*aria-label="[^"]+"><\/label>/g) ?? []).length,
     inputs.length,
-    "every control has a label wrapping its input",
+    "every control is a labelled toggle wrapping its input",
   );
-  assert.match(resume, /<button type="submit"[^>]*>Apply selection<\/button>/);
+
+  for (const id of sectionIds) {
+    const section =
+      resume.match(
+        new RegExp(`<section class="resume-section" aria-labelledby="${id}"[\\s\\S]*?</section>`),
+      )?.[0] ?? "";
+    assert.match(
+      section,
+      new RegExp(
+        `<div class="resume-section-head">\\s*<label class="resume-toggle"><input[^>]*value="${id}"[^>]*></label>\\s*<h2 id="${id}">`,
+      ),
+      `${id} has its toggle beside its heading, inside that section`,
+    );
+  }
+
+  for (const id of experienceIds) {
+    const entry =
+      resume.match(new RegExp(`<div class="resume-entry" id="${id}"[^>]*>[\\s\\S]*?</div>`))?.[0] ?? "";
+    assert.match(
+      entry,
+      new RegExp(
+        `<div class="resume-entry-head">\\s*<label class="resume-toggle"><input[^>]*value="${id}"[^>]*></label>\\s*<p class="resume-entry-title">`,
+      ),
+      `${id} has its toggle beside its title, inside that entry`,
+    );
+  }
 });
 
 test("the resume selector is the site's own module and its core is emitted", () => {
@@ -836,9 +862,9 @@ test("the resume selector is the site's own module and its core is emitted", () 
   assert.doesNotMatch(browser, /https?:\/\//, "the selector fetches nothing from another origin");
 });
 
-test("print styles hide the selector and whatever the selection hides", () => {
+test("print styles hide the toggles and whatever the selection hides", () => {
   assert.match(siteCss, /\[hidden\]\s*\{[^}]*display:\s*none/s);
-  assert.match(siteCss, /@media print[\s\S]*\.resume-selector\s*\{[^}]*display:\s*none/s);
+  assert.match(siteCss, /@media print[\s\S]*\.resume-toggle,[\s\S]*?\.resume-selector-note\s*\{[^}]*display:\s*none/s);
   assert.match(siteCss, /@media print[\s\S]*\.resume-entry\[hidden\][^{]*\{[^}]*display:\s*none/s);
 });
 
@@ -1104,6 +1130,52 @@ test("the stylesheet is a light-only fork with the grid and its fallbacks", () =
   assert.doesNotMatch(siteCss, /prefers-color-scheme/);
   assert.doesNotMatch(siteCss, /\.debug/);
   assert.doesNotMatch(siteCss, /font-display:\s*swap/);
+});
+
+test("the sheet insets its content from its own border", () => {
+  assert.match(siteCss, /\.sheet\s*\{[^}]*padding:\s*0 2ch/s);
+});
+
+test("the featured grid caps at three columns and collapses on a narrow viewport", () => {
+  assert.match(siteCss, /\.grid\s*\{[^}]*--grid-cells:\s*1/s);
+  assert.match(siteCss, /\.grid:has\(> :nth-child\(3\)\)\s*\{\s*--grid-cells:\s*3/);
+  assert.doesNotMatch(siteCss, /:nth-child\([4-9]\)\)\s*\{\s*--grid-cells/);
+  assert.match(
+    siteCss,
+    /@media screen and \(max-width: 760px\)\s*\{\s*\.grid > \*\s*\{\s*flex-basis:\s*100%/s,
+  );
+});
+
+test("the catalogue and the header stay readable on a narrow viewport", () => {
+  assert.match(
+    siteCss,
+    /@media screen and \(max-width: 560px\)\s*\{[\s\S]*?\.site-header\s*\{[^}]*flex-direction:\s*column/s,
+  );
+  assert.match(
+    siteCss,
+    /@media screen and \(max-width: 640px\)\s*\{[\s\S]*?\.catalogue thead\s*\{\s*display:\s*none/s,
+  );
+  assert.match(
+    siteCss,
+    /@media screen and \(max-width: 640px\)\s*\{[\s\S]*?\.catalogue td\s*\{[^}]*display:\s*block/s,
+  );
+});
+
+test("print keeps employers and roles apart", () => {
+  const print = siteCss.slice(siteCss.indexOf("@media print"));
+  assert.match(print, /\.resume-group \+ \.resume-group\s*\{\s*margin-top:\s*0\.75rem/);
+  assert.match(print, /\.resume-entry \+ \.resume-entry\s*\{\s*margin-top:\s*0\.5rem/);
+});
+
+test("every page declares the favicon the build ships", () => {
+  assert.equal(existsSync(join(output, "assets", "favicon.svg")), true, "the icon is emitted");
+  for (const file of htmlFiles) {
+    assert.match(
+      readFileSync(file, "utf8"),
+      /<link rel="icon" href="\/assets\/favicon\.svg" type="image\/svg\+xml">/,
+      `${relative(root, file)} declares the icon`,
+    );
+  }
 });
 
 test("the palette is installed and body text and links clear 4.5:1 on the paper", () => {

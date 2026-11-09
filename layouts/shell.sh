@@ -18,6 +18,7 @@ shell_head() {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
     <title>$title</title>
+    <link rel="icon" href="$asset_base/favicon.svg" type="image/svg+xml">
     <link rel="preload" href="$asset_base/fonts/CommitMonoV143-VF.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="$asset_base/reset.css">
     <link rel="stylesheet" href="$stylesheet">

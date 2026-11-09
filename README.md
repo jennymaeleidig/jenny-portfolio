@@ -67,6 +67,15 @@ a root `404.html` for unknown paths, so the build writes the same page at both
 `/404/index.html` and `/404.html`. Its title says what it is, and it is absent
 from the sitemap.
 
+### Layout
+
+The sheet is an 80-character column on the paper, with its own `2ch` inset, so
+nothing sits against the border. The featured cards sit three to a row at most
+and one to a row below `760px`; the catalogue's three columns stack into
+category and year, title, then blurb below `640px`; and the header and category
+filters take their own lines below `560px` so no single link is left orphaned.
+Those three breakpoints are the whole responsive story.
+
 ### About and Now
 
 `content/about.md` and `content/now.md` are hand-written markdown, rendered by
@@ -90,9 +99,11 @@ no phone number, photo, image or canvas, and its one script is the same-origin
 selector, so the page reads and prints the canonical selection without
 JavaScript.
 
-A selector at the top of the page toggles whole sections and individual
-experience entries. The default selection is exactly the PDF's: entries named
-in `content/resume/print.sh` are still in the markup but start hidden. The
+Each section heading carries a checkbox for the section itself, and each
+experience entry carries one beside its title, so the control sits next to the
+thing it governs rather than in a separate panel. The default selection is
+exactly the PDF's: entries named in `content/resume/print.sh` are still in the
+markup but start hidden. The
 choice lives in the query string (`?include=...`; `?include=none` for an empty
 selection), so it survives a reload and can be sent to someone else. An absent
 or empty query means the default, and unknown ids are ignored rather than
@@ -197,6 +208,7 @@ The build empties `dist/` before generating, sets `cmark-gfm` as the markdown pa
 
 ## Assets
 
+- `assets/favicon.svg` is the site icon: a text SVG in the site tokens, declared on every page so the browser never asks for a missing `favicon.ico`.
 - `assets/reset.css` is the reset from [The Monospace Web](https://github.com/owickstrom/the-monospace-web), carried over verbatim.
 - `assets/site.css` is the grid forked once from the same project, with its attribution and MIT notice intact. It is light only, uses the site tokens, and keeps the `round(down, ...)` rules behind `@supports` fallbacks.
 - `assets/sky-core.mjs` is the sky's pure core: hash, value noise, fBm, tone bands and the ordered-dither quantiser. It is imported by both the browser layer and the tests.

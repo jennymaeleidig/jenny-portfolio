@@ -93,6 +93,7 @@ body {
 
 .sheet {
   width: 100%;
+  padding: 0 2ch;
   background: var(--paper);
   border: var(--border-thickness) solid var(--sky-2);
 }
@@ -585,7 +586,7 @@ th {
 }
 
 .grid {
-  --grid-cells: 0;
+  --grid-cells: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 1ch;
@@ -598,15 +599,8 @@ th {
   margin-top: 0;
 }
 
-.grid:has(> :last-child:nth-child(1)) { --grid-cells: 1; }
-.grid:has(> :last-child:nth-child(2)) { --grid-cells: 2; }
-.grid:has(> :last-child:nth-child(3)) { --grid-cells: 3; }
-.grid:has(> :last-child:nth-child(4)) { --grid-cells: 4; }
-.grid:has(> :last-child:nth-child(5)) { --grid-cells: 5; }
-.grid:has(> :last-child:nth-child(6)) { --grid-cells: 6; }
-.grid:has(> :last-child:nth-child(7)) { --grid-cells: 7; }
-.grid:has(> :last-child:nth-child(8)) { --grid-cells: 8; }
-.grid:has(> :last-child:nth-child(9)) { --grid-cells: 9; }
+.grid:has(> :nth-child(2)) { --grid-cells: 2; }
+.grid:has(> :nth-child(3)) { --grid-cells: 3; }
 
 @supports (width: calc(round(down, 100%, 1ch))) {
   .grid {
@@ -627,73 +621,48 @@ th {
   display: none !important;
 }
 
-.resume-selector {
-  border: var(--border-thickness) solid var(--sky-2);
-  padding: calc(var(--line-height) / 2) 2ch var(--line-height);
-  margin: calc(var(--line-height) * 2) 0 0;
+.resume-selector-note {
+  color: color-mix(in srgb, var(--ink) 75%, var(--paper));
   font-size: 0.875rem;
 }
 
-.resume-selector h2 {
-  margin-top: 0;
+/* The toggle sits beside the thing it governs, in the same row. */
+.resume-toggle {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
-.resume-selector-note {
-  color: color-mix(in srgb, var(--ink) 75%, var(--paper));
-}
-
-.resume-selector-section {
-  border: 0;
-  border-top: var(--border-thickness) solid var(--sky-2);
-  margin: 0;
-  padding: calc(var(--line-height) / 2) 0 0;
-}
-
-.resume-selector-section legend {
-  padding: 0 1ch 0 0;
-  font-weight: var(--font-weight-bold);
-}
-
-.resume-selector-toggle,
-.resume-selector-entry {
-  display: flex;
-  gap: 1ch;
-  align-items: baseline;
-}
-
-.resume-selector-toggle {
-  font-weight: var(--font-weight-medium);
-}
-
-.resume-selector-entries {
-  display: grid;
-  gap: calc(var(--line-height) / 4);
-  padding: 0;
-  margin: calc(var(--line-height) / 2) 0 0;
-  list-style: none;
-}
-
-.resume-selector input[type="checkbox"] {
+.resume-toggle input[type="checkbox"] {
   width: 1rem;
   height: 1rem;
   margin: 0;
   accent-color: var(--accent);
 }
 
-.resume-selector-apply {
-  margin-top: var(--line-height);
-  padding: calc(var(--line-height) / 4) 1ch;
-  border: var(--border-thickness) solid var(--ink);
-  background: var(--paper);
-  color: var(--ink);
-  font: inherit;
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
+.resume-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 1ch;
+  border-bottom: var(--border-thickness) solid var(--sky-2);
+  padding-bottom: calc(var(--line-height) / 2);
+  margin-bottom: calc(var(--line-height) / 2);
 }
 
-.resume-selector-apply:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+.resume-section .resume-section-head h2 {
+  margin: 0;
+  padding: 0;
+  border-bottom: 0;
+}
+
+.resume-entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 1ch;
+}
+
+.resume-entry-head > * {
+  margin: 0;
 }
 
 .resume-header {
@@ -781,7 +750,8 @@ th {
 }
 
 @media print {
-  .resume-selector {
+  .resume-toggle,
+  .resume-selector-note {
     display: none;
   }
 
@@ -858,8 +828,20 @@ th {
     border-bottom-color: #000;
   }
 
+  .resume-section-head {
+    border-bottom: 1px solid #000;
+    padding-bottom: 0.05rem;
+    margin: 0.6rem 0 0.15rem;
+  }
+
+  .resume-section .resume-section-head h2 {
+    font-size: 0.8rem;
+    margin: 0;
+    padding: 0;
+  }
+
   .resume-group + .resume-group {
-    margin-top: 0.35rem;
+    margin-top: 0.75rem;
   }
 
   .resume-group > * + * {
@@ -867,7 +849,7 @@ th {
   }
 
   .resume-entry + .resume-entry {
-    margin-top: 0.25rem;
+    margin-top: 0.5rem;
   }
 
   .resume-entry > * + * {
@@ -906,5 +888,68 @@ th {
   @page {
     size: letter;
     margin: 0.45in;
+  }
+}
+
+/*
+ * Narrow viewports. The site is one column above this, so the featured grid
+ * and the catalogue keep their reading order and simply stop sitting side by
+ * side. The header and filters move to their own lines rather than leaving a
+ * single word orphaned on a second row.
+ */
+@media screen and (max-width: 760px) {
+  .grid > * {
+    flex-basis: 100%;
+  }
+}
+
+@media screen and (max-width: 560px) {
+  .site-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(var(--line-height) / 4);
+  }
+
+  .site-header nav {
+    gap: 1ch;
+    font-size: 0.8125rem;
+  }
+
+  .filters {
+    gap: 1.5ch;
+    font-size: 0.75rem;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .catalogue,
+  .catalogue tbody,
+  .catalogue tr,
+  .catalogue td {
+    display: block;
+    width: 100%;
+  }
+
+  .catalogue thead {
+    display: none;
+  }
+
+  .catalogue tr {
+    border-bottom: var(--border-thickness) solid var(--sky-2);
+    padding: calc(var(--line-height) / 2) 0;
+  }
+
+  .catalogue td {
+    border-bottom: 0;
+    padding: 0;
+  }
+
+  .catalogue td:first-child {
+    width: auto;
+    white-space: normal;
+  }
+
+  .catalogue td + td {
+    margin-top: calc(var(--line-height) / 4);
   }
 }

@@ -47,68 +47,23 @@ checked_attr() {
   fi
 }
 
-selector_toggle() {
-  printf '              <label class="resume-selector-toggle"><input type="checkbox" name="include" value="%s"%s> %s</label>\n' \
+# A toggle sits beside the thing it governs: the section heading, or the
+# experience entry. Its value is the id of the element it shows or hides.
+toggle_html() {
+  printf '<label class="resume-toggle"><input type="checkbox" name="include" value="%s"%s aria-label="Show or hide %s"></label>' \
     "$(html_escape "$1")" "$(checked_attr "$1")" "$(html_escape "$2")"
 }
 
-selector_entry() {
-  printf '                  <li><label class="resume-selector-entry"><input type="checkbox" name="include" value="%s"%s> %s</label></li>\n' \
-    "$(html_escape "$1")" "$(checked_attr "$1")" "$(html_escape "$2")"
-}
-
-selector_section() {
-  cat <<EOF
-          <fieldset class="resume-selector-section">
-            <legend>$(html_escape "$2")</legend>
-            $(selector_toggle "$1" "Show section")
-          </fieldset>
-EOF
-}
-
-# The controls are real form controls: without JavaScript they still submit a
-# GET query, and the page itself never depends on them to carry its content.
-render_selector() {
-  local file title start end slug
-  cat <<EOF
-        <form class="resume-selector" method="get" action="/resume/" data-resume-selector data-default-omitted="$(html_escape "$default_omitted")">
-          <h2 id="resume-selector-heading">Choose what appears</h2>
-          <p class="resume-selector-note">The default is the same selection the PDF prints. Uncheck a section or an experience entry and the address bar carries the result; nothing is stored and nothing leaves this page.</p>
-EOF
-
-  selector_section resume-summary Summary
-
-  cat <<EOF
-          <fieldset class="resume-selector-section">
-            <legend>Experience</legend>
-            $(selector_toggle resume-experience "Show section")
-            <ul class="resume-selector-entries">
-EOF
-
-  while IFS= read -r file; do
-    [[ -n $file ]] || continue
-    slug=$(basename "$file" .md)
-    title=$(frontmatter_value "$file" title)
-    start=$(frontmatter_value "$file" start)
-    end=$(frontmatter_value "$file" end)
-    selector_entry "experience-$slug" "$title — $(date_range "$start" "$end")"
-  done < <(resume_files "$resume_dir/experience" start)
-
-  cat <<EOF
-            </ul>
-          </fieldset>
-EOF
-
-  selector_section resume-projects Projects
-  selector_section resume-publications Publications
-  selector_section resume-volunteering Volunteering
-  selector_section resume-education Education
-  selector_section resume-skills Skills
-
-  cat <<EOF
-          <button type="submit" class="resume-selector-apply">Apply selection</button>
-        </form>
-EOF
+# The heading row of a section: the selector toggle on the left when the
+# selector is on, and the heading itself always.
+section_heading() {
+  local id=$1 label=$2
+  printf '            <div class="resume-section-head">\n'
+  if [[ $selector == 1 ]]; then
+    printf '              %s\n' "$(toggle_html "$id" "$label")"
+  fi
+  printf '              <h2 id="%s">%s</h2>\n' "$id" "$(html_escape "$label")"
+  printf '            </div>\n'
 }
 
 # The page carries everything. The PDF selection passes the entries it leaves
@@ -169,9 +124,17 @@ render_grouped_entries() {
       end=$(frontmatter_value "$file" end)
       slug=$(basename "$file" .md)
 
+      entry_toggle=
+      if [[ $selector == 1 && $id_prefix == experience ]]; then
+        entry_toggle=$(toggle_html "$id_prefix-$slug" "$title, $(date_range "$start" "$end")")
+      fi
+
       cat <<EOF
               <div class="resume-entry" id="$id_prefix-$slug"$(hidden_attr "$id_prefix-$slug")>
-                <p class="resume-entry-title">$(html_escape "$title")</p>
+                <div class="resume-entry-head">
+                  $entry_toggle
+                  <p class="resume-entry-title">$(html_escape "$title")</p>
+                </div>
                 <p class="resume-entry-dates">$(date_range "$start" "$end")</p>
                 <div class="prose resume-body">
 $(markdown_body "$file")
@@ -213,20 +176,22 @@ cat <<EOF
 EOF
 
 if [[ $selector == 1 ]]; then
-  render_selector
+  cat <<EOF
+          <p class="resume-selector-note" data-resume-selector data-default-omitted="$(html_escape "$default_omitted")">A checkbox beside a section or an experience entry chooses what appears. The default matches the PDF, and the address bar carries the selection.</p>
+EOF
 fi
 
 cat <<EOF
 
           <section class="resume-section" aria-labelledby="resume-summary" data-resume-section="resume-summary"$(hidden_attr resume-summary)>
-            <h2 id="resume-summary">Summary</h2>
+$(section_heading resume-summary Summary)
             <div class="prose">
 $(markdown_body "$resume_dir/summary.md")
             </div>
           </section>
 
           <section class="resume-section" aria-labelledby="resume-experience" data-resume-section="resume-experience"$(hidden_attr resume-experience)>
-            <h2 id="resume-experience">Experience</h2>
+$(section_heading resume-experience Experience)
 EOF
 
 render_grouped_entries "$resume_dir/experience" employer experience
@@ -235,7 +200,7 @@ cat <<EOF
           </section>
 
           <section class="resume-section" aria-labelledby="resume-projects" data-resume-section="resume-projects"$(hidden_attr resume-projects)>
-            <h2 id="resume-projects">Projects</h2>
+$(section_heading resume-projects Projects)
 EOF
 
 while IFS=$'\t' read -r year title blurb href category project_slug; do
@@ -255,7 +220,7 @@ cat <<EOF
           </section>
 
           <section class="resume-section" aria-labelledby="resume-publications" data-resume-section="resume-publications"$(hidden_attr resume-publications)>
-            <h2 id="resume-publications">Publications</h2>
+$(section_heading resume-publications Publications)
 EOF
 
 while IFS= read -r file; do
@@ -294,7 +259,7 @@ cat <<EOF
           </section>
 
           <section class="resume-section" aria-labelledby="resume-volunteering" data-resume-section="resume-volunteering"$(hidden_attr resume-volunteering)>
-            <h2 id="resume-volunteering">Volunteering</h2>
+$(section_heading resume-volunteering Volunteering)
 EOF
 
 render_grouped_entries "$resume_dir/volunteering" organization volunteering
@@ -303,7 +268,7 @@ cat <<EOF
           </section>
 
           <section class="resume-section" aria-labelledby="resume-education" data-resume-section="resume-education"$(hidden_attr resume-education)>
-            <h2 id="resume-education">Education</h2>
+$(section_heading resume-education Education)
 EOF
 
 while IFS= read -r file; do
@@ -334,7 +299,7 @@ cat <<EOF
           </section>
 
           <section class="resume-section" aria-labelledby="resume-skills" data-resume-section="resume-skills"$(hidden_attr resume-skills)>
-            <h2 id="resume-skills">Skills</h2>
+$(section_heading resume-skills Skills)
             <div class="prose">
 $(markdown_body "$resume_dir/skills.md")
             </div>

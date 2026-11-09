@@ -5,10 +5,10 @@
 // prints the canonical selection.
 import { parseSelection, toSearch } from "/assets/resume-selector-core.mjs";
 
-const form = document.querySelector("[data-resume-selector]");
+const note = document.querySelector("[data-resume-selector]");
 
-if (form) {
-  const controls = [...form.querySelectorAll('input[name="include"]')];
+if (note) {
+  const controls = [...document.querySelectorAll('input[name="include"]')];
   const controlled = new Set(controls.map((control) => control.value));
   const sections = [...document.querySelectorAll("[data-resume-section]")];
   const entries = [...document.querySelectorAll(".resume-entry[id]")].filter((entry) =>
@@ -18,7 +18,7 @@ if (form) {
     ...sections.map((section) => section.dataset.resumeSection),
     ...entries.map((entry) => entry.id),
   ];
-  const defaultOmitted = (form.dataset.defaultOmitted ?? "").split(/\s+/).filter(Boolean);
+  const defaultOmitted = (note.dataset.defaultOmitted ?? "").split(/\s+/).filter(Boolean);
 
   function apply(selection) {
     const included = new Set(selection.included);
@@ -47,14 +47,9 @@ if (form) {
 
   apply(parseSelection(location.search, { allIds, defaultOmitted }));
 
-  form.addEventListener("change", () => {
-    const selection = selectionFromControls();
-    apply(selection);
-    syncUrl(selection);
-  });
-
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
+  document.addEventListener("change", (event) => {
+    const control = event.target.closest('input[name="include"]');
+    if (!control) return;
     const selection = selectionFromControls();
     apply(selection);
     syncUrl(selection);
