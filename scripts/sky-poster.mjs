@@ -20,12 +20,15 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 
-import { OFFSET_Y_LIMIT, SKY_DEFAULTS, createField, renderFrame } from "../assets/sky-core.mjs";
+import { SKY_DEFAULTS, createScene, frameLayout, renderFrame } from "../assets/sky-core.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-/** Same block size as the canvas. A 1440x900 viewport is 720x450 blocks. */
-export const POSTER = Object.freeze({ cols: 720, rows: 450, cellPx: 2 });
+/** The frame the canvas draws at the shipped cell size: a 1440x900 viewport. */
+const POSTER_FRAME = { width: 1440, height: 900, cell: SKY_DEFAULTS.cell };
+
+/** The poster's grid, derived the way the canvas derives its own. */
+export const POSTER = Object.freeze(frameLayout(POSTER_FRAME));
 
 const CRC_TABLE = new Uint32Array(256);
 for (let n = 0; n < 256; n += 1) {
@@ -81,23 +84,15 @@ function encodePng(cols, rows, rgb) {
 /** The poster's frame, hash and embedded PNG. Pure and deterministic. */
 export function posterArtifact() {
   const { cols, rows, cellPx } = POSTER;
-  const field = createField({
-    cols,
-    rows,
-    cellPx,
-    scale: SKY_DEFAULTS.scale,
-    seed: SKY_DEFAULTS.seed,
-    evolveScale: SKY_DEFAULTS.evolveScale,
-    // The canvas carries sky above and below the window so the lift can pan;
-    // the poster has to be built the same way to show the shipped framing.
-    margin: Math.ceil(OFFSET_Y_LIMIT / cellPx),
-  });
+  // The canvas carries sky above and below the window so the lift can pan;
+  // building the scene the same way makes the poster the shipped framing.
+  const { field, offsetY } = createScene({ config: SKY_DEFAULTS, cols, rows, cellPx });
   const pixels = renderFrame({
     field,
     config: SKY_DEFAULTS,
     time: 0,
     offset: 0,
-    offsetY: SKY_DEFAULTS.offsetY / cellPx,
+    offsetY,
   });
 
   const rgb = Buffer.alloc(cols * rows * 3);
@@ -123,7 +118,7 @@ export function posterHash() {
 export function posterSvg() {
   const { cols, rows, cellPx, hash, png } = posterArtifact();
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${cols} ${rows}" width="${cols * 2}" height="${rows * 2}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${cols} ${rows}" width="${cols * cellPx}" height="${rows * cellPx}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
   <metadata>sky-poster sha256:${hash} cell:${cellPx}</metadata>
   <image width="${cols}" height="${rows}" style="image-rendering:pixelated" href="data:image/png;base64,${png.toString("base64")}"/>
 </svg>

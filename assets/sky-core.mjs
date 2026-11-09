@@ -121,6 +121,41 @@ export function fbm(x, y, seed, periodX, octaves = 3, periodY = 0) {
 /** How far the sky may be slid up or down, in CSS px, either way. */
 export const OFFSET_Y_LIMIT = 400;
 
+/**
+ * The viewport-to-frame layout the canvas and the poster share: a block size
+ * snapped to whole device pixels, and the grid that covers the frame. A block
+ * edge therefore lands on a device pixel rather than a fraction of one.
+ */
+export function frameLayout({ width, height, dpr = 1, cell = SKY_DEFAULTS.cell }) {
+  const cellPx = Math.max(1, Math.round(cell * dpr) / dpr);
+  return {
+    cellPx,
+    cols: Math.max(1, Math.ceil(width / cellPx)),
+    rows: Math.max(1, Math.ceil(height / cellPx)),
+  };
+}
+
+/**
+ * One sky scene: the field for a frame, plus the lift in cells that goes with
+ * it. The canvas and the poster both build their frame here, so the shipped
+ * fallback is the sky the canvas would draw at time 0.
+ */
+export function createScene({ config = SKY_DEFAULTS, cols, rows, cellPx }) {
+  return {
+    field: createField({
+      cols,
+      rows,
+      cellPx,
+      scale: config.scale,
+      seed: config.seed,
+      evolveScale: config.evolveScale,
+      // Sky above and below the window, so the lift can pan without repeating.
+      margin: Math.ceil(OFFSET_Y_LIMIT / cellPx),
+    }),
+    offsetY: config.offsetY / cellPx,
+  };
+}
+
 const EVOLVE = Object.freeze({
   scaleRatio: 1.8, // × the sky's feature size, when evolveScale is not given
   octaves: 2,
