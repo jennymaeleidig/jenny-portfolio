@@ -19,9 +19,9 @@ else
 fi
 
 content_dir=${CONTENT_DIR:-"$root/content/projects"}
-resume_dir=${RESUME_DIR:-"$root/content/resume"}
+career_dir=${CAREER_DIR:-"$root/content/career"}
 identity_file=${IDENTITY_FILE:-"$root/content/identity.sh"}
-contact_file=${CONTACT_FILE:-"$resume_dir/contact.sh"}
+contact_file=${CONTACT_FILE:-"$career_dir/contact.sh"}
 
 # shellcheck source=/dev/null
 source "$identity_file"
@@ -88,7 +88,7 @@ render_grouped() {
     else
       group_files[found]+=$'\n'"$file"
     fi
-  done < <(resume_files "$dir" start)
+  done < <(career_files "$dir" start)
 
   for ((i = 0; i < ${#groups[@]}; i++)); do
     group=${groups[i]}
@@ -134,13 +134,13 @@ EOF
 
 ## Professional Summary
 
-$(markdown_source "$resume_dir/summary.md")
+$(markdown_source "$career_dir/summary.md")
 
 ## Work Experience
 
 EOF
 
-  render_grouped "$resume_dir/experience" employer
+  render_grouped "$career_dir/experience" employer
 
   cat <<EOF
 ## Projects
@@ -177,14 +177,14 @@ EOF
       printf ' %s' "$url"
     fi
     printf '\n\n'
-  done < <(resume_files "$resume_dir/publications" year)
+  done < <(career_files "$career_dir/publications" year)
 
   cat <<EOF
 ## Volunteering
 
 EOF
 
-  render_grouped "$resume_dir/volunteering" organization
+  render_grouped "$career_dir/volunteering" organization
 
   cat <<EOF
 ## Education
@@ -209,12 +209,12 @@ EOF
     if [[ -n $note ]]; then
       printf '%s\n\n' "$note"
     fi
-  done < <(resume_files "$resume_dir/education" start)
+  done < <(career_files "$career_dir/education" start)
 
   cat <<EOF
 ## Skills
 
-$(markdown_source "$resume_dir/skills.md")
+$(markdown_source "$career_dir/skills.md")
 EOF
 }
 

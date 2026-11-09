@@ -150,7 +150,7 @@ project_records() {
 
 # Emit the CV-visible projects in chronological order, newest first: year,
 # title, CV blurb, href and category. The catalogue's pinning does not apply
-# here, because the resume is the record rather than a showcase.
+# here, because the career record is the record rather than a showcase.
 cv_project_records() {
   local meta href
   shopt -s nullglob
@@ -169,10 +169,10 @@ cv_project_records() {
   done | LC_ALL=C sort -t $'\t' -k1,1nr -k2,2
 }
 
-# List one resume section's entry files newest first, sorted by a frontmatter
+# List one career section's entry files newest first, sorted by a frontmatter
 # field such as `start` or `year`. The filename breaks ties so the order is
 # stable between builds.
-resume_files() {
+career_files() {
   local dir=$1 field=$2 file key
   shopt -s nullglob
   for file in "$dir"/*.md; do
@@ -198,7 +198,7 @@ month_label() {
   esac
 }
 
-# A resume date is a year, a year and month, or `present`. Anything else is
+# A career date is a year, a year and month, or `present`. Anything else is
 # shown as it was written rather than silently dropped.
 date_label() {
   case $1 in

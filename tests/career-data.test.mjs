@@ -91,8 +91,8 @@ test("the profile candidate block carries the same identity and the live portfol
 
 test("the CV carries every resume role, grouped under its employer", () => {
   const experience = section(cv, "Work Experience");
-  for (const file of readdirSync(join(root, "content", "resume", "experience")).filter((n) => n.endsWith(".md"))) {
-    const path = join(root, "content", "resume", "experience", file);
+  for (const file of readdirSync(join(root, "content", "career", "experience")).filter((n) => n.endsWith(".md"))) {
+    const path = join(root, "content", "career", "experience", file);
     assert.ok(experience.includes(`### ${frontmatter(path, "employer")} -- ${frontmatter(path, "location")}`));
     assert.ok(experience.includes(`**${frontmatter(path, "title")}**`));
   }
@@ -107,22 +107,22 @@ test("the CV carries every resume role, grouped under its employer", () => {
 
 test("the CV carries every publication, volunteering entry, education entry and CV project", () => {
   const publications = section(cv, "Publications");
-  for (const file of readdirSync(join(root, "content", "resume", "publications")).filter((n) => n.endsWith(".md"))) {
-    const path = join(root, "content", "resume", "publications", file);
+  for (const file of readdirSync(join(root, "content", "career", "publications")).filter((n) => n.endsWith(".md"))) {
+    const path = join(root, "content", "career", "publications", file);
     assert.ok(publications.includes(frontmatter(path, "title")), `${file} title`);
     assert.ok(publications.includes(frontmatter(path, "venue")), `${file} venue`);
   }
 
   const volunteering = section(cv, "Volunteering");
-  for (const file of readdirSync(join(root, "content", "resume", "volunteering")).filter((n) => n.endsWith(".md"))) {
-    const path = join(root, "content", "resume", "volunteering", file);
+  for (const file of readdirSync(join(root, "content", "career", "volunteering")).filter((n) => n.endsWith(".md"))) {
+    const path = join(root, "content", "career", "volunteering", file);
     assert.ok(volunteering.includes(frontmatter(path, "organization")), `${file} organisation`);
     assert.ok(volunteering.includes(frontmatter(path, "title")), `${file} title`);
   }
 
   const education = section(cv, "Education");
-  for (const file of readdirSync(join(root, "content", "resume", "education")).filter((n) => n.endsWith(".md"))) {
-    const path = join(root, "content", "resume", "education", file);
+  for (const file of readdirSync(join(root, "content", "career", "education")).filter((n) => n.endsWith(".md"))) {
+    const path = join(root, "content", "career", "education", file);
     assert.ok(education.includes(frontmatter(path, "institution")), `${file} institution`);
     assert.ok(education.includes(frontmatter(path, "degree")), `${file} degree`);
   }

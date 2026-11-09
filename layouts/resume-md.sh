@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The resume as plain markdown: the same complete record as /resume, from the
-# same project sidecars and content/resume/ files.
+# same project sidecars and content/career/ files.
 set -euo pipefail
 
 # shellcheck source=/dev/null
@@ -12,7 +12,7 @@ source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/content/identity.sh"
 
-resume_dir=${RESUME_DIR:-"$SITE_ROOT/content/resume"}
+career_dir=${CAREER_DIR:-"$SITE_ROOT/content/career"}
 name=${FULL_NAME:?content/identity.sh must define FULL_NAME}
 tagline=${TAGLINE:?content/identity.sh must define TAGLINE}
 
@@ -39,7 +39,7 @@ render_grouped_entries() {
     else
       group_files[found]+=$'\n'"$file"
     fi
-  done < <(resume_files "$dir" start)
+  done < <(career_files "$dir" start)
 
   for ((i = 0; i < ${#groups[@]}; i++)); do
     group=${groups[i]}
@@ -82,13 +82,13 @@ cat <<EOF
 
 ## Summary
 
-$(markdown_source "$resume_dir/summary.md")
+$(markdown_source "$career_dir/summary.md")
 
 ## Experience
 
 EOF
 
-render_grouped_entries "$resume_dir/experience" employer
+render_grouped_entries "$career_dir/experience" employer
 
 cat <<EOF
 ## Projects
@@ -129,14 +129,14 @@ while IFS= read -r file; do
     printf '### %s\n\n' "$title"
   fi
   printf '%s\n\n' "$meta"
-done < <(resume_files "$resume_dir/publications" year)
+done < <(career_files "$career_dir/publications" year)
 
 cat <<EOF
 ## Volunteering
 
 EOF
 
-render_grouped_entries "$resume_dir/volunteering" organization
+render_grouped_entries "$career_dir/volunteering" organization
 
 cat <<EOF
 ## Education
@@ -161,10 +161,10 @@ while IFS= read -r file; do
   if [[ -n $note ]]; then
     printf '%s\n\n' "$note"
   fi
-done < <(resume_files "$resume_dir/education" start)
+done < <(career_files "$career_dir/education" start)
 
 cat <<EOF
 ## Skills
 
-$(markdown_source "$resume_dir/skills.md")
+$(markdown_source "$career_dir/skills.md")
 EOF
