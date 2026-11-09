@@ -17,9 +17,9 @@ while IFS=$'\t' read -r _group _order year _slug category title blurb href featu
   cards+=("$year"$'\t'"$category"$'\t'"$title"$'\t'"$blurb"$'\t'"$href")
 done < <(project_records)
 
-page_open "Jenny Leidig" home
+page_open "$SITE_NAME" home
 cat <<EOF
-        <h1>Jenny Leidig</h1>
+        <h1>$SITE_NAME</h1>
         <p class="lede">$(html_escape "$TAGLINE")</p>
         <ul class="grid featured">
 EOF

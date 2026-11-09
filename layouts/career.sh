@@ -140,7 +140,7 @@ else
   heading="Career"
 fi
 
-page_open "$heading, Jenny Leidig" work
+page_open "$heading, $SITE_NAME" work
 cat <<EOF
         <h1>$heading</h1>
 $(tab_bar career)

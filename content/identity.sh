@@ -1,6 +1,7 @@
 # The identity block. Every page reads this file, so changing an address here
 # changes it everywhere it appears.
 FULL_NAME="Jenny Mae Leidig"
+SITE_NAME="Jenny Leidig"
 TAGLINE="Software Engineer & Digital Experience Creator"
 LOCATION="Richmond, VA"
 PORTFOLIO=https://portfolio.jenny-page.online

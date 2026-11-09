@@ -32,7 +32,7 @@ rows=$(
   done
 )
 
-page_open "Now, Jenny Leidig" now
+page_open "Now, $SITE_NAME" now
 cat <<EOF
         <h1>Now</h1>
         <p class="meta">Last updated $(html_escape "$updated")</p>

@@ -1,6 +1,7 @@
 # The identity block the tests build against. Same shape as content/identity.sh,
 # with example values so no test depends on the real content.
 FULL_NAME="Example Name"
+SITE_NAME="Example Site"
 TAGLINE="Test Tagline"
 LOCATION="Example City, EX"
 PORTFOLIO=https://example.com
