@@ -249,9 +249,6 @@ make test    # builds into a temporary directory and checks the emitted files
 make clean
 ```
 
-`make mirror` writes the career-data mirror; `make check-mirror` runs
-career-ops' own checks against it and needs a separate checkout.
-
 ## Deployment
 
 A push to `main` runs `.github/workflows/deploy.yml`: build, test, upload the Pages artifact, deploy. The workflow does not commit a `CNAME` file; the custom domain is configured in the repository's Pages settings.

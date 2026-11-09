@@ -16,50 +16,25 @@ source "$SITE_ROOT/layouts/tabs.sh"
 
 career_dir=${CAREER_DIR:-"$SITE_ROOT/content/career"}
 
-# Render roles nested under one employer. Grouping is by identity rather than
-# adjacency, so two stints at the same employer stay together even when another
-# role is dated between them.
+# Render roles nested under one employer, in the order the shared grouping
+# helper emits them.
 render_experience() {
-  local -a groups=()
-  local -a group_files=()
-  local file group first location title start end
-  local i found
-
-  while IFS= read -r file; do
-    [[ -n $file ]] || continue
-    group=$(frontmatter_value "$file" employer)
-    found=-1
-    for ((i = 0; i < ${#groups[@]}; i++)); do
-      if [[ ${groups[i]} == "$group" ]]; then
-        found=$i
-        break
-      fi
-    done
-    if ((found < 0)); then
-      groups+=("$group")
-      group_files+=("$file")
-    else
-      group_files[found]+=$'\n'"$file"
-    fi
-  done < <(career_files "$career_dir/experience" start)
-
-  for ((i = 0; i < ${#groups[@]}; i++)); do
-    group=${groups[i]}
-    first=${group_files[i]%%$'\n'*}
-    location=$(frontmatter_value "$first" location)
-
-    printf '          <div class="career-group">\n'
-    printf '            <h3>%s</h3>\n' "$(html_escape "$group")"
-    if [[ -n $location ]]; then
-      printf '            <p class="meta">%s</p>\n' "$(html_escape "$location")"
-    fi
-
-    while IFS= read -r file; do
-      [[ -n $file ]] || continue
-      title=$(frontmatter_value "$file" title)
-      start=$(frontmatter_value "$file" start)
-      end=$(frontmatter_value "$file" end)
-      cat <<EOF
+  local kind group location file title start end
+  while IFS=$'\t' read -r kind group location; do
+    case $kind in
+      group)
+        printf '          <div class="career-group">\n'
+        printf '            <h3>%s</h3>\n' "$(html_escape "$group")"
+        if [[ -n $location ]]; then
+          printf '            <p class="meta">%s</p>\n' "$(html_escape "$location")"
+        fi
+        ;;
+      file)
+        file=$group
+        title=$(frontmatter_value "$file" title)
+        start=$(frontmatter_value "$file" start)
+        end=$(frontmatter_value "$file" end)
+        cat <<EOF
             <div class="career-entry">
               <p class="career-entry-title">$(html_escape "$title")</p>
               <p class="career-entry-dates">$(date_range "$start" "$end")</p>
@@ -68,10 +43,12 @@ $(markdown_body "$file")
               </div>
             </div>
 EOF
-    done <<< "${group_files[i]}"
-
-    printf '          </div>\n'
-  done
+        ;;
+      end)
+        printf '          </div>\n'
+        ;;
+    esac
+  done < <(career_group_records "$career_dir/experience" employer)
 }
 
 page_open "Career, Jenny Leidig"
@@ -92,15 +69,7 @@ cat <<EOF
           <h2 id="career-education">Education</h2>
 EOF
 
-while IFS= read -r file; do
-  [[ -n $file ]] || continue
-  institution=$(frontmatter_value "$file" institution)
-  location=$(frontmatter_value "$file" location)
-  degree=$(frontmatter_value "$file" degree)
-  start=$(frontmatter_value "$file" start)
-  end=$(frontmatter_value "$file" end)
-  note=$(frontmatter_value "$file" note)
-
+while IFS=$'\t' read -r institution location degree start end note; do
   cat <<EOF
           <div class="career-entry">
             <h3>$(html_escape "$institution")</h3>
@@ -112,7 +81,7 @@ EOF
     printf '            <p class="career-note">%s</p>\n' "$(html_escape "$note")"
   fi
   printf '          </div>\n'
-done < <(career_files "$career_dir/education" start)
+done < <(career_education_records "$career_dir/education")
 
 cat <<EOF
         </section>

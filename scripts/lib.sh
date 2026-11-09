@@ -38,6 +38,14 @@ html_escape() {
     -e 's/"/\&quot;/g'
 }
 
+# The attribute marking the current page in a link bar, or nothing when the
+# link is not the current one.
+current_page_attr() {
+  if [[ $1 == "$2" ]]; then
+    printf ' aria-current="page"'
+  fi
+}
+
 # A frontmatter scalar from a hand-written page, e.g. its photo or update date.
 frontmatter_value() {
   awk -v want="$2" '
@@ -179,6 +187,66 @@ career_files() {
     key=$(frontmatter_value "$file" "$field")
     printf '%s\t%s\n' "${key:-0000}" "$file"
   done | LC_ALL=C sort -t $'\t' -k1,1r -k2,2 | cut -f2-
+}
+
+# Emit the entries of a career section grouped by one frontmatter field, newest
+# first within each group, as a record stream: a `group` record naming the
+# employer or organisation and its location, then one `file` record per entry,
+# then an `end` record. Grouping is by identity rather than adjacency, so two
+# stints at the same employer stay together even when another role is dated
+# between them.
+career_group_records() {
+  local dir=$1 field=$2
+  local -a groups=()
+  local -a group_files=()
+  local file group first location
+  local i found
+
+  while IFS= read -r file; do
+    [[ -n $file ]] || continue
+    group=$(frontmatter_value "$file" "$field")
+    found=-1
+    for ((i = 0; i < ${#groups[@]}; i++)); do
+      if [[ ${groups[i]} == "$group" ]]; then
+        found=$i
+        break
+      fi
+    done
+    if ((found < 0)); then
+      groups+=("$group")
+      group_files+=("$file")
+    else
+      group_files[found]+=$'\n'"$file"
+    fi
+  done < <(career_files "$dir" start)
+
+  for ((i = 0; i < ${#groups[@]}; i++)); do
+    group=${groups[i]}
+    first=${group_files[i]%%$'\n'*}
+    location=$(frontmatter_value "$first" location)
+    printf 'group\t%s\t%s\n' "$group" "$location"
+    while IFS= read -r file; do
+      [[ -n $file ]] || continue
+      printf 'file\t%s\n' "$file"
+    done <<< "${group_files[i]}"
+    printf 'end\n'
+  done
+}
+
+# Emit education entries newest first, one tab-separated record per entry:
+# institution, location, degree, start, end, note.
+career_education_records() {
+  local dir=$1 file
+  while IFS= read -r file; do
+    [[ -n $file ]] || continue
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "$(frontmatter_value "$file" institution)" \
+      "$(frontmatter_value "$file" location)" \
+      "$(frontmatter_value "$file" degree)" \
+      "$(frontmatter_value "$file" start)" \
+      "$(frontmatter_value "$file" end)" \
+      "$(frontmatter_value "$file" note)"
+  done < <(career_files "$dir" start)
 }
 
 month_label() {

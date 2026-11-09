@@ -9,9 +9,9 @@ tab_bar() {
   printf '        <nav class="tab-bar" aria-label="Work sections">\n'
   printf '          <ul>\n'
   printf '            <li><a href="/work/"%s>Projects</a></li>\n' \
-    "$([[ $current == projects ]] && printf ' aria-current="page"')"
+    "$(current_page_attr "$current" projects)"
   printf '            <li><a href="/work/career/"%s>Career</a></li>\n' \
-    "$([[ $current == career ]] && printf ' aria-current="page"')"
+    "$(current_page_attr "$current" career)"
   printf '          </ul>\n'
   printf '        </nav>\n'
 }
