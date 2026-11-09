@@ -30,4 +30,4 @@ cat <<EOF
 $POST_CONTENTS
         </article>
 EOF
-page_close '<a href="/">Back to all work</a>'
+page_close

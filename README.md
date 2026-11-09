@@ -32,6 +32,12 @@ The build empties `dist/` before generating, sets `cmark-gfm` as the markdown pa
 
 `vendor/jenny/` is `hmngwy/jenny` v1.2.5, unmodified, with its MIT licence. Its version and upstream commit are in `vendor/jenny/VERSION`.
 
+## Assets
+
+- `assets/reset.css` is the reset from [The Monospace Web](https://github.com/owickstrom/the-monospace-web), carried over verbatim.
+- `assets/site.css` is the grid forked once from the same project, with its attribution and MIT notice intact. It is light only, uses the site tokens, and keeps the `round(down, ...)` rules behind `@supports` fallbacks.
+- `assets/fonts/CommitMonoV143-VF.woff2` is Commit Mono v1.143, the `wght 200-700`, `ital 0-1` variable font, self-hosted and preloaded. Its SIL Open Font License sits beside it as `LICENSE-FONT`. It is the one binary file committed to the repo.
+
 ## Local development
 
 Install the build dependencies:
