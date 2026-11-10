@@ -10,14 +10,17 @@ tags:
   - c++
   - narrative
 links:
-  Itch.io: https://jennyl.itch.io/broadcast
-  Repo: https://github.com/jennymaeleidig/intro-game-engine-final
-  Video: https://youtu.be/H1onwPht8JU
+  - title: "Itch.io"
+    url: "https://jennyl.itch.io/broadcast"
+  - title: "Repo"
+    url: "https://github.com/jennymaeleidig/intro-game-engine-final"
+  - title: "Video"
+    url: "https://youtu.be/H1onwPht8JU"
 ---
 
 # Broadcast
 
-A desert, scattered with radio towers no longer transmitting.
+A desert scattered with radio towers no longer transmitting.
 
 I built it solo for the final project of _Game Engine Techniques_, my first Unity and C# class.
 

@@ -47,13 +47,6 @@ test("an unknown word is rejected and carries no label", () => {
   }
 });
 
-test("a link label is its key, with a lowercase first letter capitalised", () => {
-  assert.equal(shell("link_label Repo"), "Repo\n", "a written label is kept as written");
-  assert.equal(shell("link_label repo"), "Repo\n", "a lowercase key is capitalised for the writer");
-  assert.equal(shell("link_label itch.io"), "Itch.io\n", "the rest of the key is untouched");
-  assert.equal(shell("link_label 'Program doc'"), "Program doc\n");
-});
-
 test("only http and https are links", () => {
   assert.equal(shell("is_http_url https://example.com/a && echo yes"), "yes\n");
   assert.equal(shell("is_http_url http://example.com && echo yes"), "yes\n");
@@ -112,6 +105,101 @@ test("one scalar is read by name, and a missing key is empty", () => {
 test("a trailing carriage return never reaches a value", () => {
   const file = page("---\nkey: value\r\n---\n");
   assert.equal(shell(`frontmatter_value "${file}" key`), "value\n");
+});
+
+test("a links list yields a title and url record per link", () => {
+  const file = page(
+    [
+      "---",
+      "links:",
+      "  - title: 'Dreamcast: Repair'",
+      "    url: 'https://example.com/dreamcast'",
+      "  - title: 'Jenny''s Build'",
+      "    url: 'https://example.com/build'",
+      "---",
+    ].join("\n"),
+  );
+  assert.equal(
+    shell(`frontmatter_records "${file}"`),
+    "link\tlinks\tDreamcast: Repair\thttps://example.com/dreamcast\n" +
+      "link\tlinks\tJenny's Build\thttps://example.com/build\n",
+  );
+});
+
+test("a link title may carry any single-line text, and a quote is doubled", () => {
+  const file = page(
+    [
+      "---",
+      "links:",
+      "  - title: 'Jenny''s \"Final\" Cut (#1) = C++ 🎮'",
+      "    url: 'https://example.com/final?x=1&y=2#top'",
+      "---",
+    ].join("\n"),
+  );
+  assert.equal(
+    shell(`frontmatter_records "${file}"`),
+    "link\tlinks\tJenny's \"Final\" Cut (#1) = C++ 🎮\thttps://example.com/final?x=1&y=2#top\n",
+  );
+});
+
+test("links must be quoted, paired title and url records", () => {
+  const cases = [
+    ["unquoted title", ["links:", "  - title: Repo", "    url: 'https://example.com'"], "invalid\t  - title: Repo\ninvalid\t    url: 'https://example.com'\n"],
+    ["unquoted url", ["links:", "  - title: 'Repo'", "    url: https://example.com"], "invalid\t    url: https://example.com\n"],
+    ["url without title", ["links:", "    url: 'https://example.com'"], "invalid\t    url: 'https://example.com'\n"],
+    ["title without url", ["links:", "  - title: 'Repo'"], "invalid\t  - title: 'Repo'\n"],
+    ["unpaired quote", ["links:", "  - title: 'Jenny's Build'", "    url: 'https://example.com'"], "invalid\t  - title: 'Jenny's Build'\ninvalid\t    url: 'https://example.com'\n"],
+    ["tab in title", ["links:", "  - title: 'two\twords'", "    url: 'https://example.com'"], "invalid\t  - title: 'two\twords'\ninvalid\t    url: 'https://example.com'\n"],
+    ["no space after title colon", ["links:", "  - title:'Repo'", "    url: 'https://example.com'"], "invalid\t  - title:'Repo'\ninvalid\t    url: 'https://example.com'\n"],
+    ["tab indentation", ["links:", "\t- title: 'Repo'", "\t  url: 'https://example.com'"], "invalid\t\t- title: 'Repo'\ninvalid\t\t  url: 'https://example.com'\n"],
+    ["control character", ["links:", "  - title: 'two\x01words'", "    url: 'https://example.com'"], "invalid\t  - title: 'two\x01words'\ninvalid\t    url: 'https://example.com'\n"],
+  ];
+  for (const [name, lines, expected] of cases) {
+    const file = page(["---", ...lines, "---"].join("\n"));
+    assert.equal(shell(`frontmatter_records "${file}"`), expected, name);
+  }
+});
+
+test("a title missing its url blames the title line, not the next link", () => {
+  const file = page(
+    [
+      "---",
+      "links:",
+      "  - title: 'First'",
+      "  - title: 'Second'",
+      "    url: 'https://example.com/second'",
+      "---",
+    ].join("\n"),
+  );
+  assert.equal(
+    shell(`frontmatter_records "${file}"`),
+    "invalid\t  - title: 'First'\nlink\tlinks\tSecond\thttps://example.com/second\n",
+  );
+});
+
+test("a sidecar value is shell-quoted so a leading tilde cannot expand", () => {
+  assert.equal(
+    shell(`value=$(shell_quote "a'b ~/notes"); eval "result=$value"; printf '%s' "$result"`),
+    "a'b ~/notes",
+  );
+  assert.equal(shell(`shell_quote '~'`), "'~'");
+});
+
+const bash32 = (() => {
+  try {
+    return execFileSync("/bin/bash", ["--version"], { encoding: "utf8" }).includes("version 3.2");
+  } catch {
+    return false;
+  }
+})();
+
+test("a sidecar value survives the bash 3.2 quoting floor", { skip: bash32 ? false : "/bin/bash is not bash 3.2" }, () => {
+  const output = execFileSync(
+    "/bin/bash",
+    ["-c", `source "$1"\nvalue=$(shell_quote "a'b ~/notes")\neval "result=$value"\nprintf '%s' "$result"`, "modules-test", lib],
+    { cwd: root, encoding: "utf8" },
+  );
+  assert.equal(output, "a'b ~/notes");
 });
 
 test("lists, mappings and unparseable lines keep their record shapes", () => {

@@ -10,7 +10,8 @@ tags:
   - circuit bending
   - dj
 links:
-  Article: https://www.lazysundays.net/articles/retro-telephone-handset-mic
+  - title: 'Article'
+    url: 'https://www.lazysundays.net/articles/retro-telephone-handset-mic'
 ---
 
 # Telephone Handset Mic

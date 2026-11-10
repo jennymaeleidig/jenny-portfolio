@@ -12,8 +12,10 @@ tags:
   - "56 kbit/s"
   - DJ x86
 links:
-  Live: https://dj-x86.straw.page/
-  Video: https://www.youtube.com/@dj.x86
+  - title: 'Live'
+    url: 'https://dj-x86.straw.page/'
+  - title: 'Video'
+    url: 'https://www.youtube.com/@dj.x86'
 featured: true
 ---
 

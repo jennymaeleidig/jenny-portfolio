@@ -10,7 +10,8 @@ tags:
   - vaporwave
   - sound collage
 links:
-  Article: https://www.lazysundays.net/articles/an-exploration-in-tape
+  - title: 'Article'
+    url: 'https://www.lazysundays.net/articles/an-exploration-in-tape'
 ---
 
 # An Exploration in Tape

@@ -7,8 +7,10 @@ tags:
   - alpha
   - beta
 links:
-  Itch.io: https://example.com/itch
-  Repo: https://example.com/repo
+  - title: 'Itch.io'
+    url: 'https://example.com/itch'
+  - title: 'Repo'
+    url: 'https://example.com/repo'
 featured: true
 ---
 # Example Project

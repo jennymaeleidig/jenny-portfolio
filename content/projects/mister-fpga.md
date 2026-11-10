@@ -10,7 +10,8 @@ tags:
   - crt
   - de10-nano
 links:
-  Article: https://www.lazysundays.net/articles/mister-fpga
+  - title: 'Article'
+    url: 'https://www.lazysundays.net/articles/mister-fpga'
 ---
 
 # MiSTer FPGA

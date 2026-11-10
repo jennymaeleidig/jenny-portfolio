@@ -9,8 +9,10 @@ tags:
   - horizon
   - diy
 links:
-  Article: https://www.lazysundays.net/articles/jenny-tinker-update-06-26
-  Design: https://github.com/skarrmann/horizon
+  - title: 'Article'
+    url: 'https://www.lazysundays.net/articles/jenny-tinker-update-06-26'
+  - title: 'Design'
+    url: 'https://github.com/skarrmann/horizon'
 ---
 
 # Horizon Keyboard

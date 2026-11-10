@@ -10,8 +10,10 @@ tags:
   - physics
   - game jam
 links:
-  Itch.io: https://gbreadfish.itch.io/yolked
-  Repo: https://github.com/lazy-sundays/fracture-game
+  - title: 'Itch.io'
+    url: 'https://gbreadfish.itch.io/yolked'
+  - title: 'Repo'
+    url: 'https://github.com/lazy-sundays/fracture-game'
 ---
 
 # Yolked

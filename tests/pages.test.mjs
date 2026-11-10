@@ -39,32 +39,45 @@ test("a project page renders its title, year, status, links and prose from one f
   assert.match(page, /a cover, two tags, two links/i);
 });
 
-test("a link prints its own key, so a project can carry two of the same sort", () => {
-  const content = mkdtempSync(join(tmpdir(), "portfolio-link-labels-"));
-  const dist = mkdtempSync(join(tmpdir(), "portfolio-link-labels-dist-"));
+test("a link prints its title verbatim, so a project can title any link", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-link-titles-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-link-titles-dist-"));
   writeProject(
     content,
-    "two-repos",
+    "titled-links",
     `year: 2026
 status: active
 category: software
 links:
-  live: https://example.com/site
-  Frontend: https://example.com/frontend
-  Backend: https://example.com/backend
-  itch.io: https://example.com/itch`,
+  - title: 'Live'
+    url: 'https://example.com/site'
+  - title: 'itch.io'
+    url: 'https://example.com/itch'
+  - title: 'Jenny''s "Final" Cut (#1) = C++ 🎮'
+    url: 'https://example.com/final?x=1&y=2#top'
+  - title: 'Live'
+    url: 'https://example.com/live-again'
+  - title: '~ notes'
+    url: 'https://example.com/notes'`,
   );
 
   buildFixture(content, dist);
 
-  const page = readFileSync(join(dist, "projects", "two-repos", "index.html"), "utf8");
+  const page = readFileSync(join(dist, "projects", "titled-links", "index.html"), "utf8");
   const links = [...page.matchAll(/<li><a href="([^"]+)">([^<]+)<\/a><\/li>/g)].map(([, href, label]) => [label, href]);
   assert.deepEqual(links, [
     ["Live", "https://example.com/site"],
-    ["Frontend", "https://example.com/frontend"],
-    ["Backend", "https://example.com/backend"],
-    ["Itch.io", "https://example.com/itch"],
-  ], "a lowercase key is capitalised, the rest is printed as written, punctuation included");
+    ["itch.io", "https://example.com/itch"],
+    ["Jenny's &quot;Final&quot; Cut (#1) = C++ 🎮", "https://example.com/final?x=1&amp;y=2#top"],
+    ["Live", "https://example.com/live-again"],
+    ["~ notes", "https://example.com/notes"],
+  ], "titles keep their text and casing, duplicates stay in order, and markup is escaped");
+});
+
+test("a project with no links leaves the link list out", () => {
+  const page = readFileSync(join(output, "projects", "second-project", "index.html"), "utf8");
+
+  assert.doesNotMatch(page, /class="links ruled"/, "no links means no link list");
 });
 
 test("every page declares the favicon the build ships", () => {

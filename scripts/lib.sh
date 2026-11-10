@@ -33,6 +33,23 @@ vocabulary_label() {
   vocabulary_entries "$1" | awk -F= -v word="$2" '$1 == word { sub(/^[^=]*=/, ""); print; exit }'
 }
 
+# Quote one value for a sourceable sidecar. printf's %q leaves a leading
+# tilde bare in bash 3.2, so a title beginning with ~ would expand when the
+# sidecar is sourced; single quotes stop every expansion. A quote inside is
+# written as the usual close/escape/reopen sequence.
+shell_quote() {
+  local text=$1 out="'" c i
+  for ((i = 0; i < ${#text}; i++)); do
+    c=${text:i:1}
+    if [[ $c == "'" ]]; then
+      out+="'\\''"
+    else
+      out+=$c
+    fi
+  done
+  printf "%s'" "$out"
+}
+
 html_escape() {
   printf '%s' "$1" | sed \
     -e 's/&/\&amp;/g' \
@@ -47,16 +64,6 @@ current_page_attr() {
   if [[ $1 == "$2" ]]; then
     printf ' aria-current="page"'
   fi
-}
-
-# The text a link prints as. Its key is the label, and a lowercase one is
-# capitalised for the writer, since a label starts a line of prose. This is the
-# whole link vocabulary: nothing between a key and its text but this.
-link_label() {
-  local first rest
-  first=$(printf '%s' "${1:0:1}" | tr '[:lower:]' '[:upper:]')
-  rest=${1:1}
-  printf '%s%s\n' "$first" "$rest"
 }
 
 # Whether a string is an http(s) URL, the only thing a link may point at.

@@ -10,8 +10,10 @@ tags:
   - self-hosting
   - foss
 links:
-  Article: https://www.lazysundays.net/articles/internet-radio-like-it-s-2005
-  Repo: https://github.com/jennymaeleidig/x86-soundscape
+  - title: 'Article'
+    url: 'https://www.lazysundays.net/articles/internet-radio-like-it-s-2005'
+  - title: 'Repo'
+    url: 'https://github.com/jennymaeleidig/x86-soundscape'
 ---
 
 # x86 Soundscape Radio

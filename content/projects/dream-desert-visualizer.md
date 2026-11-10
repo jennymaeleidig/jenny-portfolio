@@ -9,8 +9,10 @@ tags:
   - howler
   - audio visualization
 links:
-  Live: https://dream-desert-visualizer.vercel.app/
-  Repo: https://github.com/jennymaeleidig/dream-desert-visualizer
+  - title: 'Live'
+    url: 'https://dream-desert-visualizer.vercel.app/'
+  - title: 'Repo'
+    url: 'https://github.com/jennymaeleidig/dream-desert-visualizer'
 featured: true
 ---
 

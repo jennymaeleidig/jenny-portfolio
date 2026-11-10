@@ -75,13 +75,19 @@ for file in "$content_dir"/*.md; do
         [[ -n $value ]] || fail "$name" "empty tag in 'tags'"
         tags+=("$value")
         ;;
-      pair)
-        [[ $key == links ]] || fail "$name" "unexpected mapping under '$key'"
+      link)
         is_http_url "$extra" || fail "$name" "link '$value' must be an http(s) URL"
-        # A link's key is the text it prints as, so the build has nothing to
+        # The title is the text the page prints, so there is nothing to
         # translate and no vocabulary to keep. frontmatter.sh has already
-        # refused any key that is not a plain label.
-        links+=("$value=$extra")
+        # refused a title that is not one quoted YAML line. A tab separates
+        # the two fields in the sidecar; the parser refuses tabs in a title.
+        links+=("$value"$'\t'"$extra")
+        ;;
+      pair)
+        if [[ $key == links ]]; then
+          fail "$name" "links are a list of title/url records now; see docs/project.md"
+        fi
+        fail "$name" "unexpected mapping under '$key'"
         ;;
       invalid)
         fail "$name" "cannot parse frontmatter line: $key"
@@ -139,25 +145,29 @@ for file in "$content_dir"/*.md; do
 
   mkdir -p "$meta_dir"
   {
-    printf 'META_SLUG=%q\n' "$slug"
-    printf 'META_TITLE=%q\n' "$title"
-    printf 'META_BLURB=%q\n' "$blurb_html"
-    printf 'META_YEAR=%q\n' "$year"
-    printf 'META_STATUS=%q\n' "$status"
-    printf 'META_CATEGORY=%q\n' "$category"
-    printf 'META_COVER=%q\n' "$cover"
-    printf 'META_ORDER=%q\n' "$order"
-    printf 'META_HREF=%q\n' "$href"
-    printf 'META_PUBLICATION=%q\n' "$publication"
-    printf 'META_FEATURED=%q\n' "$featured"
+    printf 'META_SLUG=%s\n' "$(shell_quote "$slug")"
+    printf 'META_TITLE=%s\n' "$(shell_quote "$title")"
+    printf 'META_BLURB=%s\n' "$(shell_quote "$blurb_html")"
+    printf 'META_YEAR=%s\n' "$(shell_quote "$year")"
+    printf 'META_STATUS=%s\n' "$(shell_quote "$status")"
+    printf 'META_CATEGORY=%s\n' "$(shell_quote "$category")"
+    printf 'META_COVER=%s\n' "$(shell_quote "$cover")"
+    printf 'META_ORDER=%s\n' "$(shell_quote "$order")"
+    printf 'META_HREF=%s\n' "$(shell_quote "$href")"
+    printf 'META_PUBLICATION=%s\n' "$(shell_quote "$publication")"
+    printf 'META_FEATURED=%s\n' "$(shell_quote "$featured")"
     printf 'META_TAGS=('
     if ((${#tags[@]})); then
-      printf '%q ' "${tags[@]}"
+      for entry in "${tags[@]}"; do
+        printf '%s ' "$(shell_quote "$entry")"
+      done
     fi
     printf ')\n'
     printf 'META_LINKS=('
     if ((${#links[@]})); then
-      printf '%q ' "${links[@]}"
+      for entry in "${links[@]}"; do
+        printf '%s ' "$(shell_quote "$entry")"
+      done
     fi
     printf ')\n'
   } > "$meta_dir/$slug.sh"

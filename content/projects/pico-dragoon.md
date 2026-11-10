@@ -10,7 +10,8 @@ tags:
   - sprite animation
   - demake
 links:
-  Repo: https://github.com/jennymaeleidig/pico-dragoon
+  - title: 'Repo'
+    url: 'https://github.com/jennymaeleidig/pico-dragoon'
 ---
 
 # Pico Dragoon Mini

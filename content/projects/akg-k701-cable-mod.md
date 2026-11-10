@@ -10,7 +10,8 @@ tags:
   - repair
   - 3d printing
 links:
-  Article: https://www.lazysundays.net/articles/jenny-tinker-update-06-26
+  - title: 'Article'
+    url: 'https://www.lazysundays.net/articles/jenny-tinker-update-06-26'
 ---
 
 # AKG K701 Cable Mod

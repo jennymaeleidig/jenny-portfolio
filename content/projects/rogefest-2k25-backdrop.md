@@ -10,7 +10,8 @@ tags:
   - video synthesis
   - retro gaming
 links:
-  Video: https://youtu.be/SIZMEvAi798
+  - title: 'Video'
+    url: 'https://youtu.be/SIZMEvAi798'
 ---
 
 # ROGEFEST 2k25 Intermission Backdrop

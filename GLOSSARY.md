@@ -13,12 +13,17 @@ _Avoid_: post, entry, item, work (for one project)
 **Article**:
 A project whose category is `articles`: writing published elsewhere, linked out
 to rather than given a page.
-_Avoid_: paper (that is how the link to it may be labelled), external project
+_Avoid_: paper (that is how the link to it may be titled), external project
 
 **Publication**:
 Where an article was published: the `publication` field, and the whole of the
 article's catalogue row, since an article has no page to link to.
-_Avoid_: paper (a link label), source
+_Avoid_: paper (a link title), source
+
+**Link title**:
+The text a project link prints as: the `title` of one `links:` record. It is
+printed verbatim, with no vocabulary and no capitalisation.
+_Avoid_: label, key, kind
 
 **Catalogue**:
 The `/work/` table of every project in canonical order, and the per-category

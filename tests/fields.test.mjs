@@ -4,26 +4,57 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { build, buildFixture, writeProject } from "./support/site.mjs";
+import { buildFixture, writeProject } from "./support/site.mjs";
 
-test("the build fails, naming the file, when a link key is not a plain label", () => {
-  const content = mkdtempSync(join(tmpdir(), "portfolio-bad-link-"));
-  const dist = mkdtempSync(join(tmpdir(), "portfolio-bad-link-dist-"));
+test("the build refuses the old links mapping and points at the new form", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-old-links-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-old-links-dist-"));
   writeProject(
     content,
-    "bad-link",
+    "old-links",
     `year: 2026
 status: active
 category: software
 links:
-  repo/x: https://example.com/typo`,
+  Repo: https://example.com/repo`,
   );
 
   const result = buildFixture(content, dist);
 
   assert.notEqual(result.status, 0, "the build must fail");
-  assert.match(result.stderr, /bad-link\.md/);
-  assert.match(result.stderr, /cannot parse frontmatter line/);
+  assert.match(result.stderr, /old-links\.md/);
+  assert.match(result.stderr, /links are a list of title\/url records now/);
+  assert.match(result.stderr, /docs\/project\.md/);
+});
+
+test("the build refuses a link without a valid title or http url", () => {
+  const cases = [
+    ["no-url", "  - title: 'Repo'", /cannot parse frontmatter line/],
+    ["bad-url", "  - title: 'Repo'\n    url: 'ftp://example.com/repo'", /link 'Repo' must be an http\(s\) URL/],
+    ["empty-title", "  - title: ''\n    url: 'https://example.com/repo'", /cannot parse frontmatter line/],
+    ["unquoted-title", "  - title: Repo\n    url: 'https://example.com/repo'", /cannot parse frontmatter line/],
+    ["tab-title", "  - title: 'two\twords'\n    url: 'https://example.com/repo'", /cannot parse frontmatter line/],
+  ];
+
+  for (const [slug, links, expected] of cases) {
+    const content = mkdtempSync(join(tmpdir(), `portfolio-${slug}-`));
+    const dist = mkdtempSync(join(tmpdir(), `portfolio-${slug}-dist-`));
+    writeProject(
+      content,
+      slug,
+      `year: 2026
+status: active
+category: software
+links:
+${links}`,
+    );
+
+    const result = buildFixture(content, dist);
+
+    assert.notEqual(result.status, 0, `${slug} must fail`);
+    assert.match(result.stderr, new RegExp(`${slug}\\.md`), `${slug} names the file`);
+    assert.match(result.stderr, expected, slug);
+  }
 });
 
 test("a project marked wip says so on its page", () => {

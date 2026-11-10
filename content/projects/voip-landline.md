@@ -10,8 +10,10 @@ tags:
   - telephone
   - retro
 links:
-  Article: https://www.lazysundays.net/articles/jenny-tinker-update-06-26
-  Guide: https://wiki.voip.ms/article/Grandstream_HandyTone_802_-_HT802
+  - title: 'Article'
+    url: 'https://www.lazysundays.net/articles/jenny-tinker-update-06-26'
+  - title: 'Guide'
+    url: 'https://wiki.voip.ms/article/Grandstream_HandyTone_802_-_HT802'
 ---
 
 # VoIP Landline

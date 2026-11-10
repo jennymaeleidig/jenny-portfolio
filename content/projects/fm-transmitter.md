@@ -10,8 +10,10 @@ tags:
   - sound art
   - field recording
 links:
-  Article: https://www.lazysundays.net/articles/jenny-tinker-update-06-26
-  Set: https://files.catbox.moe/lu7p0i.mp4
+  - title: 'Article'
+    url: 'https://www.lazysundays.net/articles/jenny-tinker-update-06-26'
+  - title: 'Set'
+    url: 'https://files.catbox.moe/lu7p0i.mp4'
 ---
 
 # FM Transmitter

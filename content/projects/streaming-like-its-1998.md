@@ -11,7 +11,8 @@ tags:
   - plex
   - retro
 links:
-  Article: https://www.lazysundays.net/articles/streaming-like-its-1998
+  - title: 'Article'
+    url: 'https://www.lazysundays.net/articles/streaming-like-its-1998'
 ---
 
 # Streaming Like It's 1998
