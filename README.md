@@ -33,6 +33,13 @@ make test    # builds into a temporary directory and checks the emitted files
 make clean
 ```
 
+The tests are split by what they are about — project pages, fields, the
+catalogue, the record, the front page, reading the site, its assets, and the
+build's guards — so `node --test` runs the files side by side. Each file builds
+only the content it needs; the fixture site is built once for the whole run and
+reused, keyed by a fingerprint of the scripts, layouts, assets and fixtures it
+was built from.
+
 ### Build modes
 
 There are two ways to build, and the only difference is the sky's tuning
