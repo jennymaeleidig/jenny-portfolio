@@ -49,6 +49,21 @@ current_page_attr() {
   fi
 }
 
+# The text a link prints as. Its key is the label, and a lowercase one is
+# capitalised for the writer, since a label starts a line of prose. This is the
+# whole link vocabulary: nothing between a key and its text but this.
+link_label() {
+  local first rest
+  first=$(printf '%s' "${1:0:1}" | tr '[:lower:]' '[:upper:]')
+  rest=${1:1}
+  printf '%s%s\n' "$first" "$rest"
+}
+
+# Whether a string is an http(s) URL, the only thing a link may point at.
+is_http_url() {
+  [[ $1 =~ ^https?://[^[:space:]]+$ ]]
+}
+
 # Render a hand-written markdown page, dropping its frontmatter.
 markdown_body() {
   frontmatter_body "$1" | cmark-gfm --extension table --extension autolink

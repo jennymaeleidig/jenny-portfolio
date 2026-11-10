@@ -1,12 +1,9 @@
 // The build's guards: the failures that must name their file
-
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { join } from "node:path";
 import { build, buildFixture, root, sharedSite, tracked, writeProject } from "./support/site.mjs";
 
 const { output, htmlFiles, siteCss } = await sharedSite();

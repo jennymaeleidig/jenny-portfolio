@@ -77,7 +77,7 @@ for file in "$content_dir"/*.md; do
         ;;
       pair)
         [[ $key == links ]] || fail "$name" "unexpected mapping under '$key'"
-        [[ $extra =~ ^https?://[^[:space:]]+$ ]] || fail "$name" "link '$value' must be an http(s) URL"
+        is_http_url "$extra" || fail "$name" "link '$value' must be an http(s) URL"
         # A link's key is the text it prints as, so the build has nothing to
         # translate and no vocabulary to keep. frontmatter.sh has already
         # refused any key that is not a plain label.
@@ -117,7 +117,7 @@ for file in "$content_dir"/*.md; do
   href="/projects/$slug/"
   if [[ $category == articles ]]; then
     [[ -n $publication ]] || fail "$name" "articles need a 'publication' link"
-    [[ $publication =~ ^https?://[^[:space:]]+$ ]] || fail "$name" "'publication' must be an http(s) URL"
+    is_http_url "$publication" || fail "$name" "'publication' must be an http(s) URL"
     href=$publication
   elif [[ -n $publication ]]; then
     fail "$name" "'publication' is for articles; give this project a link instead"

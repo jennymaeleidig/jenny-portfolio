@@ -1,12 +1,9 @@
 // Project pages: one markdown file becomes one page
-
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { join, relative } from "node:path";
 import { build, buildFixture, root, sharedSite, writeProject } from "./support/site.mjs";
 
 const { output, htmlFiles, siteCss } = await sharedSite();
@@ -52,10 +49,10 @@ test("a link prints its own key, so a project can carry two of the same sort", (
 status: active
 category: software
 links:
-  Live: https://example.com/site
+  live: https://example.com/site
   Frontend: https://example.com/frontend
   Backend: https://example.com/backend
-  Itch.io: https://example.com/itch`,
+  itch.io: https://example.com/itch`,
   );
 
   buildFixture(content, dist);
@@ -67,7 +64,7 @@ links:
     ["Frontend", "https://example.com/frontend"],
     ["Backend", "https://example.com/backend"],
     ["Itch.io", "https://example.com/itch"],
-  ], "no vocabulary sits between the key and the text, punctuation included");
+  ], "a lowercase key is capitalised, the rest is printed as written, punctuation included");
 });
 
 test("every page declares the favicon the build ships", () => {

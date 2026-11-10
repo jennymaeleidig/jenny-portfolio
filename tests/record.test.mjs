@@ -1,12 +1,9 @@
 // The record: catalogue rows, blurbs and articles that link out
-
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { join } from "node:path";
 import { build, buildFixture, catalogueRows, writeProject } from "./support/site.mjs";
 
 test("the catalogue is a three-column table with a header for each column", () => {

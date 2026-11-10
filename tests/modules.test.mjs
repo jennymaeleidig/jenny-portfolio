@@ -7,8 +7,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // The shell modules are tested through the same interface a layout crosses:
-// source lib.sh, call the accessor, read the output. Nothing here knows how a
-// vocabulary table or a record stream is represented.
+// source lib.sh, call the accessor, read the output. Nothing here knows whether
+// vocabulary is a file or a table, or how a record stream is represented.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const lib = join(root, "scripts", "lib.sh");
 
@@ -45,6 +45,21 @@ test("an unknown word is rejected and carries no label", () => {
     assert.equal(shell(`vocabulary_has ${vocabulary.domain} nonsense || echo no`), "no\n", vocabulary.domain);
     assert.equal(shell(`vocabulary_label ${vocabulary.domain} nonsense`), "", vocabulary.domain);
   }
+});
+
+test("a link label is its key, with a lowercase first letter capitalised", () => {
+  assert.equal(shell("link_label Repo"), "Repo\n", "a written label is kept as written");
+  assert.equal(shell("link_label repo"), "Repo\n", "a lowercase key is capitalised for the writer");
+  assert.equal(shell("link_label itch.io"), "Itch.io\n", "the rest of the key is untouched");
+  assert.equal(shell("link_label 'Program doc'"), "Program doc\n");
+});
+
+test("only http and https are links", () => {
+  assert.equal(shell("is_http_url https://example.com/a && echo yes"), "yes\n");
+  assert.equal(shell("is_http_url http://example.com && echo yes"), "yes\n");
+  assert.equal(shell("is_http_url ftp://example.com || echo no"), "no\n", "another scheme is not");
+  assert.equal(shell("is_http_url example.com || echo no"), "no\n", "a bare host is not");
+  assert.equal(shell("is_http_url 'https://example.com/a b' || echo no"), "no\n", "a space is not");
 });
 
 test("a label may differ from its word, and a comment or blank line is not an entry", () => {

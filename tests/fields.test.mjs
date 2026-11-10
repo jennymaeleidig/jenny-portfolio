@@ -1,12 +1,9 @@
 // Project fields: links, tags, covers and status
-
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { join } from "node:path";
 import { build, buildFixture, writeProject } from "./support/site.mjs";
 
 test("the build fails, naming the file, when a link key is not a plain label", () => {

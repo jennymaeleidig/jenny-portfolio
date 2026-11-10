@@ -1,12 +1,9 @@
 // Reading the site: no JavaScript, no legacy routes, 404 and the sitemap
-
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { join, relative } from "node:path";
 import { SITE_HOST, articleSlugs, build, currentNavLinks, emittedRoutes, escapeRegExp, root, sharedSite, sitemapLocs } from "./support/site.mjs";
 
 const { output, htmlFiles, siteCss } = await sharedSite();

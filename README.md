@@ -35,10 +35,11 @@ make clean
 
 The tests are split by what they are about — project pages, fields, the
 catalogue, the record, the front page, reading the site, its assets, and the
-build's guards — so `node --test` runs the files side by side. Each file builds
-only the content it needs; the fixture site is built once for the whole run and
-reused, keyed by a fingerprint of the scripts, layouts, assets and fixtures it
-was built from.
+build's guards, alongside `modules` and `sky` for the shell and JavaScript —
+so `node --test` runs the files side by side. Each file builds only the content
+it needs; the fixture site is built once for the whole run and reused, keyed by
+a fingerprint (path, size and mtime) of the scripts, layouts, assets, vendored
+generator and fixtures it was built from.
 
 ### Build modes
 

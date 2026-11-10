@@ -1,12 +1,10 @@
 // The paper and the sky: CSS, palette, font and the built assets
-
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { join, relative } from "node:path";
 import { POSTER, RESET_SHA256, SKY_TOKENS, TOKENS, build, contrast, posterHash, root, sharedSite, walk } from "./support/site.mjs";
 
 const { output, htmlFiles, siteCss } = await sharedSite();
@@ -213,10 +211,12 @@ test("every page runs the palette strip in its header and its footer", () => {
     /\.swatches > \*\s*\{[^}]*width:\s*var\(--swatch-size\)[^}]*height:\s*var\(--swatch-size\)/s,
     "every square is 1x1",
   );
-  assert.match(
-    siteCss,
-    /\.sheet\s*\{[^}]*--sheet-font-size:[^}]*font-size:\s*var\(--sheet-font-size\)/s,
-    "the sheet names its own font size",
+  const sheetBlock = siteCss.match(/\.sheet\s*\{([^}]*)\}/s)?.[1] ?? "";
+  assert.match(sheetBlock, /--sheet-font-size:/, "the sheet names its own font size");
+  assert.doesNotMatch(
+    sheetBlock,
+    /(^|;|\s)font-size:/,
+    "the sheet does not set its size, so print's 8pt still reaches it",
   );
   assert.match(
     siteCss,

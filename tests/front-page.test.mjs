@@ -1,12 +1,9 @@
 // The front page, About and Now: what a visitor meets
-
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { join, relative } from "node:path";
 import { build, escapeRegExp, fixtureSite, root, sharedSite, writeProject } from "./support/site.mjs";
 
 const { output, htmlFiles, siteCss } = await sharedSite();

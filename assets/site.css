@@ -123,7 +123,6 @@ body {
   --sheet-pad-x: 3ch;
   --swatch-size: 1.25rem;
   --sheet-pad-y: var(--line-height);
-  font-size: var(--sheet-font-size);
   position: relative;
   width: 100%;
   padding: var(--sheet-pad-y) var(--sheet-pad-x);
@@ -204,9 +203,25 @@ body {
 
 /* The strip is paper furniture, so the menu and the footer draw over it. */
 .site-header nav,
+.site-header nav a,
 .site-footer a {
   position: relative;
   z-index: 1;
+}
+
+/*
+ * The strip is printed behind the type, so a link that crosses a square paints
+ * its own backing in paper: invisible on the paper, a highlight over a square.
+ * The shadow widens the backing by a hair without the layout shift padding
+ * would cause. The nav's own box stays unpainted, so squares between its links
+ * show through.
+ */
+.site-header nav a,
+.site-footer a {
+  background-color: var(--paper);
+  box-shadow: 0 0 0 0.1em var(--paper);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 /*
@@ -220,21 +235,6 @@ body {
   color: var(--accent);
   font-weight: var(--font-weight-medium);
   text-decoration: none;
-}
-
-/*
- * The palette strip is printed on the paper, behind everything, so type that
- * crosses it would otherwise sit on a square. Painting the type's own backing
- * in paper keeps it legible: on the paper it is invisible, and over a square it
- * reads as a highlight. The shadow widens that backing by a hair without
- * touching the layout the way padding would.
- */
-.site-header nav a,
-.site-footer a {
-  background-color: var(--paper);
-  box-shadow: 0 0 0 0.1em var(--paper);
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
 }
 
 .site-header a:hover,
