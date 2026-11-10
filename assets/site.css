@@ -114,8 +114,12 @@ body {
 }
 
 .sheet {
+  --sheet-pad-x: 3ch;
+  --swatch-size: 1.25rem;
+  --sheet-pad-y: var(--line-height);
+  position: relative;
   width: 100%;
-  padding: var(--line-height) 3ch;
+  padding: var(--sheet-pad-y) var(--sheet-pad-x);
   background: var(--paper);
   border: var(--border-thickness) solid var(--sky-2);
 }
@@ -191,6 +195,13 @@ body {
   margin-top: 0;
 }
 
+/* The strip is paper furniture, so the menu and the footer draw over it. */
+.site-header nav,
+.site-footer a {
+  position: relative;
+  z-index: 1;
+}
+
 /*
  * Header links sit in the accent at rest and answer hover in ink, so the one
  * ink link is the section the reader is on. The :link/:visited cases are
@@ -202,6 +213,21 @@ body {
   color: var(--accent);
   font-weight: var(--font-weight-medium);
   text-decoration: none;
+}
+
+/*
+ * The palette strip is printed on the paper, behind everything, so type that
+ * crosses it would otherwise sit on a square. Painting the type's own backing
+ * in paper keeps it legible: on the paper it is invisible, and over a square it
+ * reads as a highlight. The shadow widens that backing by a hair without
+ * touching the layout the way padding would.
+ */
+.site-header nav a,
+.site-footer a {
+  background-color: var(--paper);
+  box-shadow: 0 0 0 0.1em var(--paper);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .site-header a:hover,
@@ -235,7 +261,12 @@ a {
  * colours such as the header's ink.
  */
 
+/*
+ * Links answer hover the way the nav does, in ink, so the two read as one
+ * behaviour across the site.
+ */
 a:hover {
+  color: var(--ink);
   text-decoration-thickness: calc(var(--border-thickness) * 2);
 }
 
@@ -565,11 +596,71 @@ main > :last-child > :last-child {
 }
 
 .site-footer a {
+  margin-left: auto;
   font-weight: inherit;
 }
 
 .site-footer > * + * {
   margin-top: 0;
+}
+
+/*
+ * The palette strip: the eight tokens as 1x1 squares, butted edge to edge with
+ * no gap, in one row that never wraps and never shrinks. It is taken out of
+ * flow and set into the paper, so it is furniture printed on the sheet rather
+ * than content: the header and the footer wrap and measure as though it were
+ * not there, and anything that needs the space draws over it. Vertically it
+ * sits on the text line it belongs to, so it reads as part of that line.
+ * Colours are assigned in token order, so the palette lives in one place.
+ */
+.swatches {
+  /*
+   * The squares inherit --swatch-size from the sheet, so the strip and the
+   * paper's own inset stay one number. The strip never takes room from the
+   * flow: the header and the footer lay out as if it were not there.
+   */
+  --swatch-inset-y: calc(var(--sheet-pad-y) + (var(--line-height) - var(--swatch-size)) / 2);
+  position: absolute;
+  right: var(--sheet-pad-x);
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.swatches > * {
+  display: block;
+  flex: 0 0 var(--swatch-size);
+  width: var(--swatch-size);
+  height: var(--swatch-size);
+}
+
+.swatches > * + * {
+  margin-top: 0;
+}
+
+.swatches > :nth-child(1) { background: var(--paper); }
+.swatches > :nth-child(2) { background: var(--ink); }
+.swatches > :nth-child(3) { background: var(--accent); }
+.swatches > :nth-child(4) { background: var(--accent-bright); }
+.swatches > :nth-child(5) { background: var(--sky-1); }
+.swatches > :nth-child(6) { background: var(--sky-2); }
+.swatches > :nth-child(7) { background: var(--sky-3); }
+.swatches > :nth-child(8) { background: var(--sky-4); }
+
+.site-header .swatches {
+  top: var(--swatch-inset-y);
+}
+
+/*
+ * The footer strip runs the other way, deep blue to paper, and hangs off the
+ * left edge so the palette closes the sheet the way the header opens it.
+ */
+.site-footer .swatches {
+  right: auto;
+  bottom: var(--swatch-inset-y);
+  left: var(--sheet-pad-x);
+  flex-direction: row-reverse;
 }
 
 hr {
@@ -1009,7 +1100,9 @@ th {
 
 @media screen and (max-width: 560px) {
   .sheet {
-    padding: calc(var(--line-height) / 2) 2ch;
+    --sheet-pad-x: 2ch;
+    --sheet-pad-y: calc(var(--line-height) / 2);
+    --swatch-size: 1rem;
   }
 
   .site-header {

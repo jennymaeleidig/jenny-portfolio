@@ -67,6 +67,15 @@ vocabulary_label() {
   done
 }
 
+# A titled link lets a project carry two of the same sort — two repos, say —
+# by naming each one instead of repeating a kind. Titles start with a capital,
+# which keeps a lowercase misspelling of a kind an error rather than a label.
+# The grammar is the one frontmatter.sh scans keys with: no punctuation, since
+# the colon closing the key is the delimiter.
+is_link_title() {
+  [[ $1 =~ ^[A-Z][A-Za-z0-9_-]*(\ [A-Za-z0-9_-]+)*$ ]]
+}
+
 is_status() { vocabulary_has "$1" "${STATUSES[@]}"; }
 is_link_kind() { vocabulary_has "$1" "${LINK_KINDS[@]}"; }
 is_career_section() { vocabulary_has "$1" "${CAREER_SECTIONS[@]}"; }

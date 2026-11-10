@@ -34,8 +34,14 @@ order: <n>
   under `assets/projects/<slug>/`. Export them by hand; the build does no image
   processing.
 - `tags` — free-form. The only place tools and techniques are named.
-- `links` — `live`, `repo`, `itch`, `paper`, `video`, each an `http(s)` URL.
-  Page order follows that list, not the order written.
+- `links` — `live`, `repo`, `itch`, `paper`, `video`, each an `http(s)` URL,
+  printed in the order written. When a project carries two links of the same
+  sort, title the extras instead of repeating a kind: a key that starts with a
+  capital is the link's own text, so `Frontend:` and `Backend:` can sit
+  alongside `live:`. A title is capitalised words of letters, digits, spaces,
+  hyphens and underscores — no punctuation, since the colon that ends the key
+  is the delimiter. Lowercase typos (`rep:`) stay an error; a capitalised one
+  (`Repo:`) reads as a title, so the label is printed as written.
 - `order` — integer. Pins the project above the catalogue, lowest first.
 - `featured` — `true` puts it on the front page as a card. Six is the number
   the page is designed around.

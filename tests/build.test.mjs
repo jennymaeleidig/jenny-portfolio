@@ -166,6 +166,52 @@ test("a project page renders its title, year, status, links and prose from one f
   assert.match(page, /a cover, two tags, two links/i);
 });
 
+test("a project can title links, so two repos fit on one page", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-titled-links-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-titled-links-dist-"));
+  writeProject(
+    content,
+    "two-repos",
+    `year: 2026
+status: active
+category: software
+links:
+  live: https://example.com/site
+  Frontend: https://example.com/frontend
+  Backend: https://example.com/backend`,
+  );
+
+  buildFixture(content, dist);
+
+  const page = readFileSync(join(dist, "projects", "two-repos", "index.html"), "utf8");
+  const links = [...page.matchAll(/<li><a href="([^"]+)">([^<]+)<\/a><\/li>/g)].map(([, href, label]) => [label, href]);
+  assert.deepEqual(links, [
+    ["Live", "https://example.com/site"],
+    ["Frontend", "https://example.com/frontend"],
+    ["Backend", "https://example.com/backend"],
+  ]);
+});
+
+test("the build fails, naming the file, when a link is neither a kind nor a title", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-bad-link-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-bad-link-dist-"));
+  writeProject(
+    content,
+    "bad-link",
+    `year: 2026
+status: active
+category: software
+links:
+  rep: https://example.com/typo`,
+  );
+
+  const result = buildFixture(content, dist);
+
+  assert.notEqual(result.status, 0, "the build must fail");
+  assert.match(result.stderr, /bad-link\.md/);
+  assert.match(result.stderr, /capital/);
+});
+
 test("a project marked wip says so on its page", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-wip-"));
   const dist = mkdtempSync(join(tmpdir(), "portfolio-wip-dist-"));
@@ -644,6 +690,11 @@ test("the page header marks the current section, and current links stay ink", ()
     /\.site-header a:hover,[^{]*\{[^}]*color:\s*var\(--ink\)/s,
     "header links answer hover in ink",
   );
+  assert.match(
+    siteCss,
+    /\na:hover\s*\{[^}]*color:\s*var\(--ink\)/s,
+    "every link answers hover in ink, the way the nav does",
+  );
 });
 
 test("/work/career is a normal-shell career page with one heading and only the narrow record", () => {
@@ -1111,7 +1162,8 @@ test("the stylesheet is a light-only fork with the grid and its fallbacks", () =
 });
 
 test("the sheet insets its content from its own border", () => {
-  assert.match(siteCss, /\.sheet\s*\{[^}]*padding:\s*var\(--line-height\) 3ch/s);
+  assert.match(siteCss, /\.sheet\s*\{[^}]*padding:\s*var\(--sheet-pad-y\) var\(--sheet-pad-x\)/s);
+  assert.match(siteCss, /\.sheet\s*\{[^}]*--sheet-pad-x:\s*3ch/s);
   const print = siteCss.slice(siteCss.indexOf("@media print"));
   assert.match(print, /\.sheet\s*\{[^}]*padding:\s*0/s, "print drops the sheet padding");
 });
@@ -1164,6 +1216,62 @@ test("every page declares the favicon the build ships", () => {
       readFileSync(file, "utf8"),
       /<link rel="icon" href="\/assets\/favicon\.svg" type="image\/svg\+xml">/,
       `${relative(root, file)} declares the icon`,
+    );
+  }
+});
+
+test("every page runs the palette strip in its header and its footer", () => {
+  const strip = /<div class="swatches" aria-hidden="true">((?:<span><\/span>){8})<\/div>/;
+
+  for (const file of htmlFiles) {
+    const html = readFileSync(file, "utf8");
+    const header = html.match(/<header class="site-header">[\s\S]*?<\/header>/)?.[0] ?? "";
+    const footer = html.match(/<footer class="site-footer">[\s\S]*?<\/footer>/)?.[0] ?? "";
+    assert.match(header, strip, `${relative(root, file)} header runs the strip`);
+    assert.match(footer, strip, `${relative(root, file)} footer runs the strip`);
+  }
+
+  assert.match(
+    siteCss,
+    /\.swatches\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*nowrap/s,
+    "the strip is one row that never wraps",
+  );
+  assert.match(
+    siteCss,
+    /\.swatches\s*\{[^}]*position:\s*absolute[^}]*right:\s*var\(--sheet-pad-x\)/s,
+    "the strip is set into the paper, inset the same as the header and footer",
+  );
+  assert.match(siteCss, /\.sheet\s*\{[^}]*position:\s*relative/s, "the sheet anchors the strip");
+  assert.match(
+    siteCss,
+    /\.site-header \.swatches\s*\{\s*top:\s*var\(--swatch-inset-y\)/s,
+    "the header strip sits on the header's text line",
+  );
+  assert.match(
+    siteCss,
+    /\.site-footer \.swatches\s*\{[^}]*bottom:\s*var\(--swatch-inset-y\)/s,
+    "the footer strip sits on the footer's text line",
+  );
+  assert.match(
+    siteCss,
+    /\.site-footer \.swatches\s*\{[^}]*left:\s*var\(--sheet-pad-x\)[^}]*flex-direction:\s*row-reverse/s,
+    "the footer strip hangs off the left edge, deep blue first",
+  );
+  assert.match(
+    siteCss,
+    /\.swatches > \*\s*\{[^}]*width:\s*var\(--swatch-size\)[^}]*height:\s*var\(--swatch-size\)/s,
+    "every square is 1x1",
+  );
+  assert.match(
+    siteCss,
+    /\.site-header nav a,\s*\n\.site-footer a\s*\{[^}]*background-color:\s*var\(--paper\)/s,
+    "type over the strip carries its own paper backing, so it stays legible",
+  );
+  for (const [index, name] of TOKENS.entries()) {
+    assert.match(
+      siteCss,
+      new RegExp(`\\.swatches > :nth-child\\(${index + 1}\\)\\s*\\{\\s*background:\\s*var\\(--${name}\\)`),
+      `square ${index + 1} is --${name}`,
     );
   }
 });

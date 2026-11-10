@@ -46,6 +46,7 @@ shell_sheet_open() {
           <a href="/about/"$(current_page_attr "$section" about)>About</a>
           <a href="/now/"$(current_page_attr "$section" now)>Now</a>
         </nav>
+        $(swatch_strip)
       </header>
       <main>
 EOF
@@ -62,9 +63,21 @@ shell_main_close() {
   # Applied here: no page lists its sources yet, so a claim that rests on data
   # has nowhere to point. When one is added, it names the data and its locator.
   cat <<EOF
-      <footer class="site-footer"><a href="mailto:$(html_escape "$EMAIL")">$(html_escape "$EMAIL")</a></footer>
+      <footer class="site-footer"><a href="mailto:$(html_escape "$EMAIL")">$(html_escape "$EMAIL")</a>$(swatch_strip)</footer>
     </div>
 EOF
+}
+
+# The palette strip: eight empty squares. site.css paints them in token
+# order, so the colours stay in one place and the markup carries none. The
+# strip is decoration, so it is hidden from assistive technology.
+swatch_strip() {
+  local i
+  printf '<div class="swatches" aria-hidden="true">'
+  for i in 1 2 3 4 5 6 7 8; do
+    printf '<span></span>'
+  done
+  printf '</div>'
 }
 
 page_open() {

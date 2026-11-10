@@ -49,7 +49,12 @@ EOF
   for entry in "${META_LINKS[@]}"; do
     key=${entry%%=*}
     url=${entry#*=}
-    printf '            <li><a href="%s">%s</a></li>\n' "$(html_escape "$url")" "$(link_label "$key")"
+    if is_link_kind "$key"; then
+      label=$(link_label "$key")
+    else
+      label=$key
+    fi
+    printf '            <li><a href="%s">%s</a></li>\n' "$(html_escape "$url")" "$(html_escape "$label")"
   done
   printf '          </ul>\n'
 fi

@@ -77,13 +77,18 @@ for file in "$content_dir"/*.md; do
         ;;
       pair)
         [[ $key == links ]] || fail "$name" "unexpected mapping under '$key'"
-        is_link_kind "$value" || fail "$name" "unknown link kind '$value'"
         [[ $extra =~ ^https?://[^[:space:]]+$ ]] || fail "$name" "link '$value' must be an http(s) URL"
-        links+=("$value=$extra")
-        case $value in
-          paper) paper=$extra ;;
-          live) live=$extra ;;
-        esac
+        if is_link_kind "$value"; then
+          links+=("$value=$extra")
+          case $value in
+            paper) paper=$extra ;;
+            live) live=$extra ;;
+          esac
+        elif is_link_title "$value"; then
+          links+=("$value=$extra")
+        else
+          fail "$name" "'$value' is not a link kind, and a link title must start with a capital"
+        fi
         ;;
       invalid)
         fail "$name" "cannot parse frontmatter line: $key"

@@ -64,7 +64,7 @@ frontmatter_records() {
         next
       }
 
-      if (section != "" && line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*:[[:space:]]/) {
+      if (section != "" && line ~ /^[[:space:]]+[A-Za-z][A-Za-z0-9 _-]*:[[:space:]]/) {
         subkey = line
         sub(/^[[:space:]]+/, "", subkey)
         sub(/:.*/, "", subkey)
