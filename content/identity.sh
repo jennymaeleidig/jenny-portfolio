@@ -2,7 +2,7 @@
 # changes it everywhere it appears.
 FULL_NAME="Jenny Mae Leidig"
 SITE_NAME="Jenny Leidig"
-TAGLINE="Software Engineer & Digital Experience Creator"
+TAGLINE="Software Engineer & Experience Designer"
 LOCATION="Richmond, VA"
 PORTFOLIO=https://portfolio.jenny-page.online
 EMAIL=jennymaeleidig@gmail.com
