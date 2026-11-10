@@ -22,10 +22,10 @@ cards=$(
   done < <(project_records href title blurb category year featured)
 )
 
-PAGE_DESCRIPTION="$FULL_NAME — $TAGLINE."
-page_open "$SITE_NAME" home
+route=${PAGE_ROUTE:?PAGE_ROUTE is required}
+page_open "$SITE_NAME" home "$FULL_NAME — $TAGLINE." "$route" true
 cat <<EOF
-        <h1>$SITE_NAME</h1>
+        <h1>$(html_escape "$SITE_NAME")</h1>
         <p class="lede">$(html_escape "$TAGLINE")</p>
         <ul class="grid featured">
 EOF

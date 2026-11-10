@@ -32,8 +32,8 @@ rows=$(
   done
 )
 
-PAGE_DESCRIPTION="What $SITE_NAME is doing now. Last updated $updated."
-page_open "Now, $SITE_NAME" now
+route=${PAGE_ROUTE:?PAGE_ROUTE is required}
+page_open "Now" now "What $SITE_NAME is doing now. Last updated $updated." "$route" true
 cat <<EOF
         <h1>Now</h1>
         <p class="meta">Last updated $(html_escape "$updated")</p>

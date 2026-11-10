@@ -4,11 +4,19 @@
 identity_file=${IDENTITY_FILE:-"$SITE_ROOT/content/identity.sh"}
 asset_base=${ASSET_BASE:-/assets}
 stylesheet=${STYLESHEET:-$asset_base/site.css}
+# The shell escapes and composes with the shared helpers, so it reads them
+# itself rather than relying on every caller to source lib.sh first.
+# shellcheck source=/dev/null
+source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
 source "$identity_file"
 
+# The page head takes raw text: the title and description are composed and
+# escaped here, once, and the route the build emitted the page at is an
+# argument rather than ambient state. A layout never pre-escapes a title,
+# appends the site suffix, or un-renders prose for a meta tag.
 shell_head() {
-  local title=$1
+  local raw_title=$1 raw_description=$2 route=$3 indexable=$4
   # The host the sitemap writes against, so a page's canonical URL and its
   # sitemap entry cannot disagree. A page with nowhere to point is a build
   # error, the same as a build with no host to write a sitemap for.
@@ -18,23 +26,43 @@ shell_head() {
     exit 1
   fi
   site=${site%/}
-  # PAGE_ROUTE is the address the page is being emitted at: post-build.sh knows
-  # it for every route it renders, and post.sh names its own. With no route the
-  # page declares no canonical URL rather than guessing one.
-  local route=${PAGE_ROUTE:-}
+  if [[ -z $raw_title ]]; then
+    echo "error: a page needs a title" >&2
+    exit 1
+  fi
+  if [[ -z $raw_description ]]; then
+    echo "error: a page needs a description" >&2
+    exit 1
+  fi
+  if [[ -z $route ]]; then
+    echo "error: a page needs the route it was emitted at" >&2
+    exit 1
+  fi
+  case $indexable in
+    true | false) ;;
+    *)
+      echo "error: indexable must be true or false, not '$indexable'" >&2
+      exit 1
+      ;;
+  esac
+  # The front page's title is the site name, so it stands alone; every other
+  # page carries the site suffix. The share card shows the page's own title,
+  # since og:site_name already names the site.
+  local title
+  if [[ $raw_title == "$SITE_NAME" ]]; then
+    title=$raw_title
+  else
+    title="$raw_title, $SITE_NAME"
+  fi
+  title=$(html_escape "$title")
+  local share_title
+  share_title=$(html_escape "$raw_title")
   # A page's description is one line of prose — the tagline, an opening
-  # paragraph, a project's blurb — handed over raw. This is the one place it is
-  # escaped, so a layout never has to think about markup.
+  # paragraph, a project's blurb — handed over raw and escaped once here.
   local description
-  description=$(html_escape "${PAGE_DESCRIPTION:-$TAGLINE}")
-  # The title arrives ready for markup: a project layout has already escaped the
-  # one field that comes from content, and the rest are built from vocabulary
-  # labels. Escaping it here as well would double it.
+  description=$(html_escape "$raw_description")
   local site_name
   site_name=$(html_escape "$SITE_NAME")
-  # A preview names the page, and og:site_name already names the site, so the
-  # title a card shows is the composed title without its site suffix.
-  local share_title=${title%", $SITE_NAME"}
   # The share card is the poster's pixels as a PNG, at the poster frame's size;
   # see scripts/post-build.sh. tests/assets.test.mjs reads the emitted PNG and
   # fails if these numbers drift from it.
@@ -46,7 +74,7 @@ shell_head() {
 
   # The 404 answers a URL that has no page, so it claims no address of its own
   # and asks not to be indexed instead.
-  if [[ -n $route && $route != /404/ ]]; then
+  if [[ $indexable == true ]]; then
     canonical="$site$route"
   fi
 
@@ -68,7 +96,7 @@ EOF
   if [[ -n $canonical ]]; then
     printf '    <link rel="canonical" href="%s">\n' "$canonical"
     printf '    <meta property="og:url" content="%s">\n' "$canonical"
-  elif [[ $route == /404/ ]]; then
+  else
     printf '    <meta name="robots" content="noindex">\n'
   fi
 
@@ -146,8 +174,8 @@ swatch_strip() {
 }
 
 page_open() {
-  shell_head "$1"
-  local section=${2:-}
+  local title=$1 section=${2:-} description=${3:-} route=${4:-} indexable=${5:-true}
+  shell_head "$title" "$description" "$route" "$indexable"
   cat <<EOF
     <div class="sky" aria-hidden="true">
       <noscript><img class="sky-poster" src="$asset_base/sky-poster.svg" alt="" width="1600" height="1000"></noscript>

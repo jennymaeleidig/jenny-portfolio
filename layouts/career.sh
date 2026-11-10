@@ -120,15 +120,17 @@ EOF
 
 if [[ -n $section ]]; then
   heading=$(vocabulary_label career-sections "$section")
-  PAGE_DESCRIPTION="The $heading section of the career record."
+  description="The $heading section of the career record."
 else
   heading="Career"
-  PAGE_DESCRIPTION="The career record: experience, volunteering, education and skills."
+  description="The career record: experience, volunteering, education and skills."
 fi
 
-page_open "$heading, $SITE_NAME" work
+route=${PAGE_ROUTE:?PAGE_ROUTE is required}
+heading_html=$(html_escape "$heading")
+page_open "$heading" work "$description" "$route" true
 cat <<EOF
-        <h1>$heading</h1>
+        <h1>$heading_html</h1>
 $(tab_bar career)
 
         <nav aria-label="Career sections">

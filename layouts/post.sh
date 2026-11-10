@@ -21,12 +21,11 @@ status=$(html_escape "$(vocabulary_label statuses "$raw_status")")
 
 # A project page is the one route jenny renders rather than post-build.sh, so
 # it names its own address: the link and the sitemap must agree.
-PAGE_ROUTE="/projects/$slug/"
+route="/projects/$slug/"
 # The record hands over the blurb as plain text, so the layout never has to
 # un-render the markup an earlier step produced.
-PAGE_DESCRIPTION=$blurb_text
+page_open "$raw_title" work "$blurb_text" "$route" true
 
-page_open "$title, $SITE_NAME" work
 cat <<EOF
         <article>
           <h1>$title</h1>

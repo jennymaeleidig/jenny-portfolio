@@ -25,8 +25,9 @@ render_links() {
   done
 }
 
-PAGE_DESCRIPTION=$(lead_paragraph "$about")
-page_open "About, $SITE_NAME" about
+route=${PAGE_ROUTE:?PAGE_ROUTE is required}
+description=$(lead_paragraph "$about")
+page_open "About" about "$description" "$route" true
 cat <<EOF
         <h1>About</h1>
         <img class="portrait" src="$(html_escape "$photo")" alt="$(html_escape "$FULL_NAME")">

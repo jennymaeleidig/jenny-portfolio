@@ -22,12 +22,12 @@ source "$SITE_ROOT/scripts/routes.sh"
 # every layout having to spell it out again. An empty page fails the build
 # rather than shipping.
 render_route() {
-  local address=$1 output=$2 layout=$3 argument=${4:-}
+  local address=$1 output=$2 layout=$3 argument=${4:-} indexable=$5
   mkdir -p "$(dirname "$output")"
   if [[ -n $argument ]]; then
-    PAGE_ROUTE=$address "$SITE_ROOT/layouts/$layout.sh" "$argument" > "$output"
+    PAGE_ROUTE=$address PAGE_INDEXABLE=$indexable "$SITE_ROOT/layouts/$layout.sh" "$argument" > "$output"
   else
-    PAGE_ROUTE=$address "$SITE_ROOT/layouts/$layout.sh" > "$output"
+    PAGE_ROUTE=$address PAGE_INDEXABLE=$indexable "$SITE_ROOT/layouts/$layout.sh" > "$output"
   fi
   if [[ ! -s $output ]]; then
     echo "error: the $address route was not emitted" >&2
@@ -75,9 +75,9 @@ fi
 # One route table drives both jobs: a layout route is rendered here, and a
 # project route is the page jenny already rendered, moved to the address the
 # record names. An article has no page, so it has no route to move.
-while IFS=$'\037' read -r kind address output layout argument source; do
+while IFS=$'\037' read -r kind address output indexable layout argument source; do
   case $kind in
-    layout) render_route "$address" "$output" "$layout" "$argument" ;;
+    layout) render_route "$address" "$output" "$layout" "$argument" "$indexable" ;;
     project)
       if [[ ! -s $source ]]; then
         echo "error: jenny did not emit a page for $address" >&2
@@ -87,7 +87,7 @@ while IFS=$'\037' read -r kind address output layout argument source; do
       mv "$source" "$output"
       ;;
   esac
-done < <(route_records kind address output layout argument source)
+done < <(route_records kind address output indexable layout argument source)
 
 # Nothing outside the route table survives the post-build step.
 rm -rf "$DIST/post" "$DIST/page" "$DIST/tag"

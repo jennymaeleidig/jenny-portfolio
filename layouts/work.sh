@@ -20,12 +20,12 @@ fi
 if [[ -n $category ]]; then
   heading=$(vocabulary_label categories "$category")
   title="$heading, $SITE_NAME"
-  PAGE_DESCRIPTION="Every project in the catalogue filed under $heading."
+  description="Every project in the catalogue filed under $heading."
 else
   # The route is /work/, but the tab the reader is on is Projects.
   heading="Projects"
   title="Projects, $SITE_NAME"
-  PAGE_DESCRIPTION="The catalogue: every project, newest first, with its blurb, category and year."
+  description="The catalogue: every project, newest first, with its blurb, category and year."
 fi
 
 rows=$(
@@ -46,9 +46,11 @@ rows=$(
   done < <(project_records href title blurb category year)
 )
 
-page_open "$title" work
+route=${PAGE_ROUTE:?PAGE_ROUTE is required}
+heading_html=$(html_escape "$heading")
+page_open "$heading" work "$description" "$route" true
 cat <<EOF
-        <h1>$heading</h1>
+        <h1>$heading_html</h1>
 $(tab_bar projects)
         <nav aria-label="Categories">
           <ul class="filters">

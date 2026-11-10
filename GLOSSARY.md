@@ -97,6 +97,11 @@ The one line of prose a page hands to a link preview. On a project page it is
 the blurb; every other page writes its own.
 _Avoid_: summary, meta text, excerpt
 
+**Route**:
+The address a page is emitted at, as a directory with an `index.html`.
+Distinct from its **Canonical URL**, which the page declares for itself.
+_Avoid_: path, file location, permalink
+
 **Canonical URL**:
 The one address a page declares for itself: the site host and the route the
 build emitted it at, which is also the address in the sitemap.

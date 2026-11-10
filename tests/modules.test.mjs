@@ -15,6 +15,7 @@ const lib = join(root, "scripts", "lib.sh");
 const projects = join(root, "scripts", "projects.sh");
 const career = join(root, "scripts", "career.sh");
 const routes = join(root, "scripts", "routes.sh");
+const shellModule = join(root, "layouts", "shell.sh");
 
 function shellIn(module, script, env = {}) {
   return execFileSync("bash", ["-c", `source "$1"\n${script}`, "modules-test", module], {
@@ -488,4 +489,33 @@ test("a route's output is its address under the dist tree", () => {
       `/projects/alpha/\u001f${join(dist, "projects", "alpha", "index.html")}`,
     ].join("\n") + "\n",
   );
+});
+
+// The page head takes raw text and owns composition and escaping, so these
+// tests cross page_open rather than reading six layouts' conventions.
+function pageHead(script) {
+  return shellIn(shellModule, script, {
+    SITE_ROOT: root,
+    SITE_HOST: "https://example.com",
+    IDENTITY_FILE: join(root, "tests", "fixtures", "site", "identity.sh"),
+  });
+}
+
+test("a page head composes the site suffix, and a site-name title stands alone", () => {
+  const page = pageHead(`page_open "A & B" home "Guns & roses" /about/ true`);
+  assert.match(page, /<title>A &amp; B, Example Site<\/title>/);
+  assert.match(page, /<meta property="og:title" content="A &amp; B">/);
+  assert.match(page, /<meta name="description" content="Guns &amp; roses">/);
+  assert.match(page, /<link rel="canonical" href="https:\/\/example\.com\/about\/">/);
+
+  const home = pageHead(`page_open "Example Site" home "Test Tagline" / true`);
+  assert.match(home, /<title>Example Site<\/title>/);
+  assert.match(home, /<meta property="og:title" content="Example Site">/);
+});
+
+test("a non-indexable page claims no address and asks not to be indexed", () => {
+  const page = pageHead(`page_open "404, page not found" "" "That page does not exist." /404/ false`);
+  assert.doesNotMatch(page, /rel="canonical"/);
+  assert.doesNotMatch(page, /property="og:url"/);
+  assert.match(page, /<meta name="robots" content="noindex">/);
 });
