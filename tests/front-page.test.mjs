@@ -86,7 +86,7 @@ test("About renders three paragraphs, a photo and the primary links", () => {
   const prose = about.match(/<div class="prose">([\s\S]*?)<\/div>/)?.[1] ?? "";
   assert.equal((prose.match(/<p>/g) ?? []).length, 3, "About carries three paragraphs");
 
-  assert.match(about, /<img class="portrait" src="\/assets\/portrait\.png" alt="Example Name"/);
+  assert.match(about, /<img class="portrait" src="\/assets\/portrait\.jpg" alt="Example Name"/);
 
   const primary = about.match(/<ul class="links primary-links"[^>]*>([\s\S]*?)<\/ul>/)?.[1] ?? "";
   assert.match(primary, /<a href="mailto:hello@example\.com">Email<\/a>/);

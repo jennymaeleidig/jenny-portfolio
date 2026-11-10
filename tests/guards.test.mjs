@@ -120,7 +120,7 @@ test("the only binaries committed are the self-hosted font and project images", 
   // door: image files under assets/. The site icon and the About portrait are
   // the two images that sit at the root of assets/ rather than in a
   // subdirectory. Everything else stays text.
-  const image = /^assets\/(?:favicon\.png|portrait\.png|(?:[a-z0-9-]+\/)+[a-z0-9-]+\.(?:png|jpe?g|webp|gif))$/;
+  const image = /^assets\/(?:favicon\.png|portrait\.jpe?g|(?:[a-z0-9-]+\/)+[a-z0-9-]+\.(?:png|jpe?g|webp|gif))$/;
 
   assert.ok(tracked.includes(font), "the self-hosted font is committed");
 
