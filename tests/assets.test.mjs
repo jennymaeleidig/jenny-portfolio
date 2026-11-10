@@ -151,6 +151,11 @@ test("the featured grid caps at three columns and collapses on a narrow viewport
     "cards in a row share one height so the closing rules sit square",
   );
   assert.match(siteCss, /\.card\s*\{[^}]*border-top:/s, "each card opens on the light rule");
+  assert.match(
+    siteCss,
+    /\.card:nth-child\(-n \+ 3\)\s*\{\s*border-top:\s*0/,
+    "the first row opens without a rule under the tagline",
+  );
   assert.doesNotMatch(
     siteCss,
     /\.card\s*\{[^}]*border-bottom:/s,
@@ -167,6 +172,11 @@ test("the featured grid caps at three columns and collapses on a narrow viewport
     siteCss,
     /@media screen and \(max-width: 760px\)\s*\{\s*\.grid > \*\s*\{\s*flex-basis:\s*100%/s,
   );
+  assert.match(
+    siteCss,
+    /@media screen and \(max-width: 760px\)\s*\{[\s\S]*?\.card:first-child\s*\{\s*border-top:\s*0/s,
+    "the single-column run also opens without a rule",
+  );
 });
 
 test("the catalogue and the header stay readable on a narrow viewport", () => {
@@ -181,6 +191,11 @@ test("the catalogue and the header stay readable on a narrow viewport", () => {
   assert.match(
     siteCss,
     /@media screen and \(max-width: 640px\)\s*\{[\s\S]*?\.catalogue td\s*\{[^}]*display:\s*block/s,
+  );
+  assert.match(
+    siteCss,
+    /@media screen and \(max-width: 640px\)\s*\{[\s\S]*?\.catalogue tr:last-child\s*\{\s*border-bottom:\s*0/s,
+    "the last catalogue row never closes the run on a rule",
   );
 });
 

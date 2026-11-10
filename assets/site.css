@@ -375,9 +375,10 @@ i {
 }
 
 /*
- * The featured cards rule off like a table: one light rule above every card.
- * Cards in a row share a height, so the rules line up. No card rules off its
- * own bottom — the run ends where the page does.
+ * The featured cards rule off like a table: one light rule above every row
+ * after the first. The first row sits directly under the tagline, so it opens
+ * without a rule of its own. Cards in a row share a height, so the rules line
+ * up. No card rules off its own bottom — the run ends where the page does.
  */
 .featured {
   list-style: none;
@@ -390,6 +391,11 @@ i {
   flex-direction: column;
   border-top: var(--border-thickness) solid var(--sky-2);
   padding-top: calc(var(--line-height) / 2);
+}
+
+/* At most three cards share the first row, so the grid opens without a rule. */
+.card:nth-child(-n + 3) {
+  border-top: 0;
 }
 
 /* The card sets its own rhythm; a paragraph's default bottom margin would
@@ -1092,6 +1098,16 @@ th {
   .grid > * {
     flex-basis: 100%;
   }
+
+  /* One card per row: the run still opens without a rule, on the first card
+     only, and every card after it keeps the rule that separates the rows. */
+  .card:nth-child(-n + 3) {
+    border-top: var(--border-thickness) solid var(--sky-2);
+  }
+
+  .card:first-child {
+    border-top: 0;
+  }
 }
 
 @media screen and (max-width: 560px) {
@@ -1144,6 +1160,11 @@ th {
   .catalogue tr {
     border-bottom: var(--border-thickness) solid var(--sky-2);
     padding: calc(var(--line-height) / 2) 0;
+  }
+
+  /* The last row never closes the run on a rule of its own. */
+  .catalogue tr:last-child {
+    border-bottom: 0;
   }
 
   .catalogue td {
