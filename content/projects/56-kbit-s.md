@@ -14,6 +14,7 @@ tags:
 links:
   Live: https://dj-x86.straw.page/
   Video: https://www.youtube.com/@dj.x86
+featured: true
 ---
 
 # 56 kbit/s

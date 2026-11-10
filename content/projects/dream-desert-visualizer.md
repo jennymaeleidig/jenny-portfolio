@@ -11,6 +11,7 @@ tags:
 links:
   Live: https://dream-desert-visualizer.vercel.app/
   Repo: https://github.com/jennymaeleidig/dream-desert-visualizer
+featured: true
 ---
 
 # Dream Desert Visualizer

@@ -12,6 +12,7 @@ tags:
 links:
   Live: https://x86-soundscape.jenny-page.online/
   Repo: https://github.com/jennymaeleidig/x86-soundscape
+featured: true
 ---
 
 # x86 Soundscape

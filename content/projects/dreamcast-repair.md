@@ -8,6 +8,7 @@ tags:
   - retro
   - teardown
 publication: https://pagedout.institute/webview.php?issue=8&page=67&article=Dreamcast+Repair+-+A+journey+of+a+thousand+parts.
+featured: true
 ---
 
 # Dreamcast Repair

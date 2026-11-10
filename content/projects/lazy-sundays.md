@@ -13,6 +13,7 @@ links:
   Live: https://www.lazysundays.net/
   Frontend: https://github.com/lazy-sundays/Lazy-Sundays-Blog-Frontend
   Backend: https://github.com/lazy-sundays/Lazy-Sundays-Blog-Backend
+featured: true
 ---
 
 # the lazy sundays blog
