@@ -108,7 +108,6 @@ test("the work pages carry Projects and Career tabs, marking only the current pa
 test("each career filter lists exactly its own section, and All lists every one", () => {
   const all = readFileSync(join(output, "work", "career", "index.html"), "utf8");
   assert.deepEqual(careerHeadings(all), ["Experience", "Volunteering", "Education", "Skills"]);
-  assert.doesNotMatch(all, /career-section-ruled/, "the whole record rules each section off under its heading");
 
   for (const section of CAREER_SECTIONS) {
     const page = readFileSync(join(output, "work", "career", section, "index.html"), "utf8");
@@ -119,10 +118,10 @@ test("each career filter lists exactly its own section, and All lists every one"
       [],
       `/work/career/${section}/ does not repeat its own name above the disclosures`,
     );
-    assert.match(
+    assert.doesNotMatch(
       page,
-      /<section class="career-section career-section-ruled"/,
-      `/work/career/${section}/ opens on the rule its heading would have carried`,
+      /career-section-ruled/,
+      `/work/career/${section}/ repeats neither its heading nor the rule under it`,
     );
     assert.deepEqual(
       currentFilters(page),

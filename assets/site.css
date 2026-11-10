@@ -877,18 +877,6 @@ th {
   margin-top: var(--line-height);
 }
 
-/*
- * A filtered section has no heading of its own, so the rule that heading would
- * have carried sits directly above the first disclosure instead. The padding
- * matches the gap the record already leaves between a rule and the row under
- * it, minus the border itself, so the first row starts where every other row
- * does.
- */
-.career-section-ruled {
-  border-top: var(--border-thickness) solid var(--sky-2);
-  padding-top: calc(var(--line-height) / 2 - var(--border-thickness));
-}
-
 .career-section h2 {
   /* A section break is one row's gap, not the two steps a heading takes by
      default: the previous section already ended without a closing rule. */

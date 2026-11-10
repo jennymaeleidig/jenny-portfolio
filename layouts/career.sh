@@ -113,15 +113,16 @@ render_skills() {
   fi
 }
 
-# One section's markup. The whole record names each section with a heading; a
-# filtered route already carries that name as the page's own title, so it does
-# not repeat it above the disclosures.
+# One section's markup. The whole record names each section with a heading, and
+# the rule that heading carries; a filtered route already carries that name as
+# the page's own title, so it repeats neither the heading nor its rule and opens
+# straight on the first disclosure.
 render_section() {
   local name=$1 label
   label=$(vocabulary_label career-sections "$name")
   if [[ $section == "$name" ]]; then
     cat <<EOF
-        <section class="career-section career-section-ruled" aria-label="$label">
+        <section class="career-section" aria-label="$label">
 EOF
   else
     cat <<EOF
