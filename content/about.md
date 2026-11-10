@@ -1,5 +1,5 @@
 ---
-photo: /assets/portrait.svg
+photo: /assets/portrait.png
 ---
 I'm a software engineer in Richmond, Virginia. I'm also working on an MFA in Art and Technology at the University of Oklahoma, where my work has moved toward creative computing: games, sound, and hardware you can touch.
 
