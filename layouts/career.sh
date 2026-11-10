@@ -17,6 +17,8 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
+source "$SITE_ROOT/scripts/career.sh"
+# shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/tabs.sh"
@@ -44,7 +46,7 @@ career_disclosure() {
   printf '<span class="career-dates">%s</span>' "$(html_escape "$dates")"
   if [[ -n $note ]]; then
     printf ' <span class="career-sep" aria-hidden="true">&middot;</span> '
-    printf '<span class="career-note">%s</span>' "$(html_escape "$note")"
+    printf ' <span class="career-note">%s</span>' "$(html_escape "$note")"
   fi
   printf '</p>\n'
   if [[ -n $file ]]; then
@@ -55,45 +57,22 @@ career_disclosure() {
   printf '          </details>\n'
 }
 
-# One disclosure per role in a grouped section. The summary is title, then
-# the employer or organisation whose group the role belongs to; the identity
-# field is the only word experience and volunteering do not share.
-render_roles() {
-  local dir=$1 field=$2
-  local kind group location file title start end employer employer_location
-  while IFS=$'\t' read -r kind group location; do
-    case $kind in
-      group)
-        employer=$group
-        employer_location=$location
-        ;;
-      file)
-        file=$group
-        title=$(frontmatter_value "$file" title)
-        start=$(frontmatter_value "$file" start)
-        end=$(frontmatter_value "$file" end)
-        career_disclosure "$title - $employer" "$employer_location" \
-          "$(date_range "$start" "$end")" '' "$file"
-        ;;
-    esac
-  done < <(career_group_records "$dir" "$field")
-}
-
-# One disclosure per qualification, summarised as degree - school.
-render_education() {
-  local institution location degree start end note
-  while IFS=$'\t' read -r institution location degree start end note; do
-    career_disclosure "$degree - $institution" "$location" \
-      "$(date_range "$start" "$end")" "$note" ''
-  done < <(career_education_records "$career_dir/education")
+# One disclosure per record. The career module has already chosen the
+# summary, grouped the roles, read the fields and formatted the dates; the
+# layout only renders them.
+render_disclosures() {
+  local section=$1 kind summary location dates note body
+  while IFS=$'\037' read -r kind summary location dates note body; do
+    career_disclosure "$summary" "$location" "$dates" "$note" "$body"
+  done < <(career_section_records "$section" "$career_dir")
 }
 
 # One disclosure per skill group, summarised by the group name: `Data and
 # cloud`. The skills themselves are a list, which CSS lays out in two columns
 # when the sheet is wide enough for them.
 render_skills() {
-  local file=${1:-"$career_dir/skills.md"} category item current="" open=0
-  while IFS=$'\t' read -r category item; do
+  local kind category item current="" open=0
+  while IFS=$'\037' read -r kind category item; do
     if [[ $category != "$current" ]]; then
       if ((open)); then
         printf '            </ul>\n'
@@ -106,7 +85,7 @@ render_skills() {
       printf '            <ul class="skill-list">\n'
     fi
     printf '              <li>%s</li>\n' "$(html_escape "$item")"
-  done < <(career_skill_records "$file")
+  done < <(career_section_records skills "$career_dir")
   if ((open)); then
     printf '            </ul>\n'
     printf '          </details>\n'
@@ -131,9 +110,7 @@ EOF
 EOF
   fi
   case $name in
-    experience) render_roles "$career_dir/experience" employer ;;
-    volunteering) render_roles "$career_dir/volunteering" organization ;;
-    education) render_education ;;
+    experience | volunteering | education) render_disclosures "$name" ;;
     skills) render_skills ;;
   esac
   cat <<EOF

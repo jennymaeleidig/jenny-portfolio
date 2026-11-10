@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const lib = join(root, "scripts", "lib.sh");
 const projects = join(root, "scripts", "projects.sh");
+const career = join(root, "scripts", "career.sh");
 
 function shellIn(module, script, env = {}) {
   return execFileSync("bash", ["-c", `source "$1"\n${script}`, "modules-test", module], {
@@ -319,4 +320,81 @@ test("an unknown project field is an error, not an empty column", () => {
   projectSidecar(dir, "alpha");
 
   assert.throws(() => shellIn(projects, "project_show alpha nonsense", { META_DIR: dir }));
+});
+
+// A career entry on disk, so the career module is read the way the layout
+// reads it.
+function careerEntry(dir, section, name, frontmatter, body = "") {
+  const folder = join(dir, section);
+  mkdirSync(folder, { recursive: true });
+  writeFileSync(join(folder, `${name}.md`), `---\n${frontmatter.trim()}\n---\n${body}`);
+}
+
+test("roles group by employer identity and carry only disclosure facts", () => {
+  const dir = mkdtempSync(join(tmpdir(), "career-roles-"));
+  careerEntry(
+    dir,
+    "experience",
+    "captech-2025",
+    "employer: Captech\nlocation: Richmond, VA\ntitle: Staff Engineer\nstart: 2025-09\nend: present",
+    "- Led the work.\n",
+  );
+  careerEntry(
+    dir,
+    "experience",
+    "captech-2023",
+    "employer: Captech\nlocation: Richmond, VA\ntitle: Engineer\nstart: 2023-09\nend: 2025-04",
+  );
+  careerEntry(
+    dir,
+    "experience",
+    "other-workshop",
+    "employer: Other Workshop\nlocation: Petersburg, VA\ntitle: Builder\nstart: 2024-06\nend: 2024-12",
+  );
+
+  const body = join(dir, "experience", "captech-2025.md");
+  assert.equal(
+    shellIn(career, `career_section_records experience "${dir}"`),
+    "disclosure\u001fStaff Engineer - Captech\u001fRichmond, VA\u001fSeptember 2025 – Present\u001f\u001f" + body + "\n" +
+      "disclosure\u001fEngineer - Captech\u001fRichmond, VA\u001fSeptember 2023 – April 2025\u001f\u001f" + join(dir, "experience", "captech-2023.md") + "\n" +
+      "disclosure\u001fBuilder - Other Workshop\u001fPetersburg, VA\u001fJune 2024 – December 2024\u001f\u001f" + join(dir, "experience", "other-workshop.md") + "\n",
+  );
+});
+
+test("education is disclosed from its own fields, newest first", () => {
+  const dir = mkdtempSync(join(tmpdir(), "career-education-"));
+  careerEntry(
+    dir,
+    "education",
+    "second",
+    "institution: Second College\nlocation: Blacksburg, VA\ndegree: BS, Computer Science\nstart: 2019-08\nend: 2023-05\nnote: 3.9/4.0",
+  );
+  careerEntry(
+    dir,
+    "education",
+    "first",
+    "institution: First School\nlocation: Roanoke, VA\ndegree: BA, English\nstart: 2014\nend: 2018",
+  );
+
+  assert.equal(
+    shellIn(career, `career_section_records education "${dir}"`),
+    "disclosure\u001fBS, Computer Science - Second College\u001fBlacksburg, VA\u001fAugust 2019 – May 2023\u001f3.9/4.0\u001f\n" +
+      "disclosure\u001fBA, English - First School\u001fRoanoke, VA\u001f2014 – 2018\u001f\u001f\n",
+  );
+});
+
+test("skills are emitted as group and item records, keeping grouped skills whole", () => {
+  const dir = mkdtempSync(join(tmpdir(), "career-skills-"));
+  writeFileSync(
+    join(dir, "skills.md"),
+    "- **Data and cloud:** AWS (S3, EMR, DynamoDB), SQL\n- **Languages:** C, Bash\n",
+  );
+
+  assert.equal(
+    shellIn(career, `career_section_records skills "${dir}"`),
+    "item\u001fData and cloud\u001fAWS (S3, EMR, DynamoDB)\n" +
+      "item\u001fData and cloud\u001fSQL\n" +
+      "item\u001fLanguages\u001fC\n" +
+      "item\u001fLanguages\u001fBash\n",
+  );
 });
