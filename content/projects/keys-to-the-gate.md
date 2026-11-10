@@ -10,7 +10,7 @@ tags:
   - rendering
   - album art
 links:
-  video: https://www.youtube.com/watch?v=JGnfmoxXEtw
+  Video: https://www.youtube.com/watch?v=JGnfmoxXEtw
 ---
 # Keys to the Gate
 

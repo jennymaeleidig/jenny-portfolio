@@ -10,8 +10,8 @@ tags:
   - found sound
   - sound collage
 links:
-  live: https://dj-x86.straw.page/
-  video: https://www.youtube.com/@dj.x86
+  Live: https://dj-x86.straw.page/
+  Video: https://www.youtube.com/@dj.x86
   Program doc: https://docs.google.com/document/d/1siorAcecXdZgBcgpEu7SHsYCI97idXotH67sAQSUPL4/edit
 ---
 # 56 kbit/s

@@ -10,13 +10,13 @@ source "$SITE_ROOT/layouts/shell.sh"
 source "$SITE_ROOT/layouts/tabs.sh"
 
 category=${1:-}
-if [[ -n $category ]] && ! is_category "$category"; then
+if [[ -n $category ]] && ! vocabulary_has categories "$category"; then
   echo "error: unknown category '$category'" >&2
   exit 1
 fi
 
 if [[ -n $category ]]; then
-  heading=$(category_label "$category")
+  heading=$(vocabulary_label categories "$category")
   title="$heading, $SITE_NAME"
 else
   # The route is /work/, but the tab the reader is on is Projects.
@@ -38,7 +38,7 @@ rows=$(
       printf '              <td class="catalogue-blurb">%s</td>\n' "${META_BLURB:-}"
       if [[ -z $category ]]; then
         printf '              <td class="catalogue-category">%s</td>\n' \
-          "$(html_escape "$(category_label "$META_CATEGORY")")"
+          "$(html_escape "$(vocabulary_label categories "$META_CATEGORY")")"
       fi
       printf '              <td class="meta">%s</td>\n' "$(html_escape "$META_YEAR")"
       printf '            </tr>\n'
@@ -60,8 +60,8 @@ while IFS= read -r name; do
   printf '            <li><a href="/work/%s/"%s>%s</a></li>\n' \
     "$name" \
     "$(current_page_attr "$name" "$category")" \
-    "$(category_label "$name")"
-done < <(vocabulary_words "${CATEGORIES[@]}")
+    "$(vocabulary_label categories "$name")"
+done < <(vocabulary_words categories)
 
 cat <<EOF
           </ul>

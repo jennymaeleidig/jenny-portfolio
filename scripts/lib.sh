@@ -4,82 +4,34 @@
 # shellcheck source=/dev/null
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/frontmatter.sh"
 
-# The single source of truth for the values staging accepts and layouts label.
-# Each table holds "word=Label" entries, so a word is declared once and its
-# membership, its label and its place in the canonical order cannot drift
-# apart. Bash 3.2: no associative arrays (docs/adr/0001).
-STATUSES=(
-  active=active
-  shipped=shipped
-  "wip=work in progress"
-  archived=archived
-  study=study
-)
-CATEGORIES=(
-  games=Games
-  sound=Sound
-  hardware=Hardware
-  software=Software
-  articles=Articles
-)
-CAREER_SECTIONS=(
-  experience=Experience
-  volunteering=Volunteering
-  education=Education
-  skills=Skills
-)
-LINK_KINDS=(
-  live=Live
-  repo=Repo
-  itch=itch.io
-  paper=Paper
-  video=Video
-)
+# Vocabulary lives in files, not in this script: one file per domain under
+# vocabulary/, holding "word=Label" lines in canonical order. A word is
+# declared once, so its membership, its label and its place cannot drift
+# apart, and adding one is a content change.
+vocabulary_dir=${VOCABULARY_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/vocabulary}
 
-# The words of a vocabulary table, in canonical order.
+# Every vocabulary function takes the domain first, then the word: the domain
+# names the file, and the word is what a page or a frontmatter field carries.
+
+# The entries of a domain, comments and blank lines dropped.
+vocabulary_entries() {
+  sed -e 's/#.*//' -e 's/[[:space:]]*$//' -e '/^$/d' "$vocabulary_dir/$1"
+}
+
+# The words of a domain, in canonical order.
 vocabulary_words() {
-  local entry
-  for entry in "$@"; do
-    printf '%s\n' "${entry%%=*}"
-  done
+  vocabulary_entries "$1" | cut -d= -f1
 }
 
-# Whether a word is in the vocabulary table passed after it.
+# Whether a word belongs to a domain.
 vocabulary_has() {
-  local word=$1 entry
-  shift
-  for entry in "$@"; do
-    [[ ${entry%%=*} == "$word" ]] && return 0
-  done
-  return 1
+  vocabulary_words "$1" | grep -qxF -- "$2"
 }
 
-# The label for a word in the vocabulary table passed after it; empty when the
-# word is not there.
+# The label for a word in a domain; empty when the word is not there.
 vocabulary_label() {
-  local word=$1 entry
-  shift
-  for entry in "$@"; do
-    if [[ ${entry%%=*} == "$word" ]]; then
-      printf '%s' "${entry#*=}"
-      return 0
-    fi
-  done
+  vocabulary_entries "$1" | awk -F= -v word="$2" '$1 == word { sub(/^[^=]*=/, ""); print; exit }'
 }
-
-# A titled link lets a project carry two of the same sort — two repos, say —
-# by naming each one instead of repeating a kind. Titles start with a capital,
-# which keeps a lowercase misspelling of a kind an error rather than a label.
-# The grammar is the one frontmatter.sh scans keys with: no punctuation, since
-# the colon closing the key is the delimiter.
-is_link_title() {
-  [[ $1 =~ ^[A-Z][A-Za-z0-9_-]*(\ [A-Za-z0-9_-]+)*$ ]]
-}
-
-is_status() { vocabulary_has "$1" "${STATUSES[@]}"; }
-is_link_kind() { vocabulary_has "$1" "${LINK_KINDS[@]}"; }
-is_career_section() { vocabulary_has "$1" "${CAREER_SECTIONS[@]}"; }
-is_category() { vocabulary_has "$1" "${CATEGORIES[@]}"; }
 
 html_escape() {
   printf '%s' "$1" | sed \
@@ -101,11 +53,6 @@ current_page_attr() {
 markdown_body() {
   frontmatter_body "$1" | cmark-gfm --extension table --extension autolink
 }
-
-status_label() { vocabulary_label "$1" "${STATUSES[@]}"; }
-link_label() { vocabulary_label "$1" "${LINK_KINDS[@]}"; }
-career_section_label() { vocabulary_label "$1" "${CAREER_SECTIONS[@]}"; }
-category_label() { vocabulary_label "$1" "${CATEGORIES[@]}"; }
 
 # Emit the catalogue in its canonical order, one slug per line. A project
 # with `order` sorts first, lowest number first, so it can be pinned above

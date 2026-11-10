@@ -52,8 +52,7 @@ for file in "$content_dir"/*.md; do
   cover=
   order=
   featured=
-  paper=
-  live=
+  publication=
   tags=()
   links=()
 
@@ -67,6 +66,7 @@ for file in "$content_dir"/*.md; do
           cover) cover=$value ;;
           order) order=$value ;;
           featured) featured=$value ;;
+          publication) publication=$value ;;
           *) fail "$name" "unknown frontmatter field '$key'" ;;
         esac
         ;;
@@ -78,17 +78,10 @@ for file in "$content_dir"/*.md; do
       pair)
         [[ $key == links ]] || fail "$name" "unexpected mapping under '$key'"
         [[ $extra =~ ^https?://[^[:space:]]+$ ]] || fail "$name" "link '$value' must be an http(s) URL"
-        if is_link_kind "$value"; then
-          links+=("$value=$extra")
-          case $value in
-            paper) paper=$extra ;;
-            live) live=$extra ;;
-          esac
-        elif is_link_title "$value"; then
-          links+=("$value=$extra")
-        else
-          fail "$name" "'$value' is not a link kind, and a link title must start with a capital"
-        fi
+        # A link's key is the text it prints as, so the build has nothing to
+        # translate and no vocabulary to keep. frontmatter.sh has already
+        # refused any key that is not a plain label.
+        links+=("$value=$extra")
         ;;
       invalid)
         fail "$name" "cannot parse frontmatter line: $key"
@@ -100,8 +93,8 @@ for file in "$content_dir"/*.md; do
     fail "$name" "missing or invalid 'year'"
   fi
 
-  is_status "$status" || fail "$name" "missing or invalid 'status'"
-  is_category "$category" || fail "$name" "missing or invalid 'category'"
+  vocabulary_has statuses "$status" || fail "$name" "missing or invalid 'status'"
+  vocabulary_has categories "$category" || fail "$name" "missing or invalid 'category'"
 
   if [[ -n $order && ! $order =~ ^[0-9]+$ ]]; then
     fail "$name" "'order' must be a whole number"
@@ -119,17 +112,15 @@ for file in "$content_dir"/*.md; do
     fi
   fi
 
-  # An article has no page of its own, so its publication link is the only
-  # route to it. A paper wins over a live link, and the chosen href is what
-  # the catalogue row and the featured card use.
+  # An article has no page of its own, so where it was published is the only
+  # route to it, and the catalogue row and featured card both use it.
   href="/projects/$slug/"
   if [[ $category == articles ]]; then
-    [[ -n $paper$live ]] || fail "$name" "articles need a 'paper' or 'live' link"
-    if [[ -n $paper ]]; then
-      href=$paper
-    else
-      href=$live
-    fi
+    [[ -n $publication ]] || fail "$name" "articles need a 'publication' link"
+    [[ $publication =~ ^https?://[^[:space:]]+$ ]] || fail "$name" "'publication' must be an http(s) URL"
+    href=$publication
+  elif [[ -n $publication ]]; then
+    fail "$name" "'publication' is for articles; give this project a link instead"
   fi
 
   title=
@@ -157,6 +148,7 @@ for file in "$content_dir"/*.md; do
     printf 'META_COVER=%q\n' "$cover"
     printf 'META_ORDER=%q\n' "$order"
     printf 'META_HREF=%q\n' "$href"
+    printf 'META_PUBLICATION=%q\n' "$publication"
     printf 'META_FEATURED=%q\n' "$featured"
     printf 'META_TAGS=('
     if ((${#tags[@]})); then

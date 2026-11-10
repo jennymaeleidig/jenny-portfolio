@@ -10,9 +10,9 @@ tags:
   - c++
   - narrative
 links:
-  itch: https://jennyl.itch.io/broadcast
-  repo: https://github.com/jennymaeleidig/intro-game-engine-final
-  video: https://youtu.be/H1onwPht8JU
+  Itch.io: https://jennyl.itch.io/broadcast
+  Repo: https://github.com/jennymaeleidig/intro-game-engine-final
+  Video: https://youtu.be/H1onwPht8JU
 featured: true
 ---
 # Broadcast

@@ -77,13 +77,13 @@ emit_route /work/ work
 
 while IFS= read -r category; do
   emit_route "/work/$category/" work "$category"
-done < <(vocabulary_words "${CATEGORIES[@]}")
+done < <(vocabulary_words categories)
 
 emit_route /work/career/ career
 
 while IFS= read -r section; do
   emit_route "/work/career/$section/" career "$section"
-done < <(vocabulary_words "${CAREER_SECTIONS[@]}")
+done < <(vocabulary_words career-sections)
 
 for page in about now; do
   emit_route "/$page/" "$page"

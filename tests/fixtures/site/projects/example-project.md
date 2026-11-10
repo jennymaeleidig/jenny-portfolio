@@ -7,8 +7,8 @@ tags:
   - alpha
   - beta
 links:
-  itch: https://example.com/itch
-  repo: https://example.com/repo
+  Itch.io: https://example.com/itch
+  Repo: https://example.com/repo
 featured: true
 ---
 # Example Project

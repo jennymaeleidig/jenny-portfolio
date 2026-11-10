@@ -7,8 +7,7 @@ tags:
   - hardware repair
   - retro
   - teardown
-links:
-  paper: https://pagedout.institute/webview.php?issue=8&page=67&article=Dreamcast+Repair+-+A+journey+of+a+thousand+parts.
+publication: https://pagedout.institute/webview.php?issue=8&page=67&article=Dreamcast+Repair+-+A+journey+of+a+thousand+parts.
 ---
 # Dreamcast Repair
 

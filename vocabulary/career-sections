@@ -1,0 +1,6 @@
+# The career sections, in canonical order. Each one builds
+# /work/career/<word>/, so this list is also the tab order.
+experience=Experience
+volunteering=Volunteering
+education=Education
+skills=Skills

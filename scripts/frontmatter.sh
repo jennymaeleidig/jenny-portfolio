@@ -2,7 +2,9 @@
 # One reader for the frontmatter subset the site writes. The grammar is the
 # one docs/project.md and docs/career.md describe: top-level scalars, lists of
 # items, and one level of mappings. Everything else is reported, never silently
-# dropped, so the caller decides whether that is an error.
+# dropped, so the caller decides whether that is an error. This is also the one
+# place a link's key grammar lives: a mapping's key is its label, so it may
+# carry the punctuation a label needs, and nothing else may.
 
 # Emit the frontmatter as tab-separated records, one per line:
 #   scalar <key> <value>
@@ -64,7 +66,7 @@ frontmatter_records() {
         next
       }
 
-      if (section != "" && line ~ /^[[:space:]]+[A-Za-z][A-Za-z0-9 _-]*:[[:space:]]/) {
+      if (section != "" && line ~ /^[[:space:]]+[A-Za-z][A-Za-z0-9 ._-]*:[[:space:]]/) {
         subkey = line
         sub(/^[[:space:]]+/, "", subkey)
         sub(/:.*/, "", subkey)

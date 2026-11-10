@@ -24,7 +24,7 @@ source "$SITE_ROOT/layouts/tabs.sh"
 career_dir=${CAREER_DIR:-"$SITE_ROOT/content/career"}
 
 section=${1:-}
-if [[ -n $section ]] && ! is_career_section "$section"; then
+if [[ -n $section ]] && ! vocabulary_has career-sections "$section"; then
   echo "error: unknown career section '$section'" >&2
   exit 1
 fi
@@ -118,7 +118,7 @@ render_skills() {
 # not repeat it above the disclosures.
 render_section() {
   local name=$1 label
-  label=$(career_section_label "$name")
+  label=$(vocabulary_label career-sections "$name")
   if [[ $section == "$name" ]]; then
     cat <<EOF
         <section class="career-section career-section-ruled" aria-label="$label">
@@ -141,7 +141,7 @@ EOF
 }
 
 if [[ -n $section ]]; then
-  heading=$(career_section_label "$section")
+  heading=$(vocabulary_label career-sections "$section")
 else
   heading="Career"
 fi
@@ -161,8 +161,8 @@ while IFS= read -r name; do
   printf '            <li><a href="/work/career/%s/"%s>%s</a></li>\n' \
     "$name" \
     "$(current_page_attr "$name" "$section")" \
-    "$(career_section_label "$name")"
-done < <(vocabulary_words "${CAREER_SECTIONS[@]}")
+    "$(vocabulary_label career-sections "$name")"
+done < <(vocabulary_words career-sections)
 
 cat <<EOF
           </ul>
@@ -174,6 +174,6 @@ while IFS= read -r name; do
     continue
   fi
   render_section "$name"
-done < <(vocabulary_words "${CAREER_SECTIONS[@]}")
+done < <(vocabulary_words career-sections)
 
 page_close

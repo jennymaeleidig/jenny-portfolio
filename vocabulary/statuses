@@ -1,0 +1,7 @@
+# The words `status` accepts, and the text each one prints as, in canonical
+# order. The build refuses a status that is not here; the page prints the label.
+active=active
+shipped=shipped
+wip=work in progress
+archived=archived
+study=study

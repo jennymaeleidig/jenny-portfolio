@@ -1,0 +1,8 @@
+# The words `category` accepts, in canonical order. Each one builds
+# /work/<word>/, so this list is also the tab order of the catalogue's
+# category filter.
+games=Games
+sound=Sound
+hardware=Hardware
+software=Software
+articles=Articles

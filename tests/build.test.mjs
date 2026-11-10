@@ -166,9 +166,9 @@ test("a project page renders its title, year, status, links and prose from one f
   assert.match(page, /a cover, two tags, two links/i);
 });
 
-test("a project can title links, so two repos fit on one page", () => {
-  const content = mkdtempSync(join(tmpdir(), "portfolio-titled-links-"));
-  const dist = mkdtempSync(join(tmpdir(), "portfolio-titled-links-dist-"));
+test("a link prints its own key, so a project can carry two of the same sort", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-link-labels-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-link-labels-dist-"));
   writeProject(
     content,
     "two-repos",
@@ -176,9 +176,10 @@ test("a project can title links, so two repos fit on one page", () => {
 status: active
 category: software
 links:
-  live: https://example.com/site
+  Live: https://example.com/site
   Frontend: https://example.com/frontend
-  Backend: https://example.com/backend`,
+  Backend: https://example.com/backend
+  Itch.io: https://example.com/itch`,
   );
 
   buildFixture(content, dist);
@@ -189,10 +190,11 @@ links:
     ["Live", "https://example.com/site"],
     ["Frontend", "https://example.com/frontend"],
     ["Backend", "https://example.com/backend"],
-  ]);
+    ["Itch.io", "https://example.com/itch"],
+  ], "no vocabulary sits between the key and the text, punctuation included");
 });
 
-test("the build fails, naming the file, when a link is neither a kind nor a title", () => {
+test("the build fails, naming the file, when a link key is not a plain label", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-bad-link-"));
   const dist = mkdtempSync(join(tmpdir(), "portfolio-bad-link-dist-"));
   writeProject(
@@ -202,14 +204,14 @@ test("the build fails, naming the file, when a link is neither a kind nor a titl
 status: active
 category: software
 links:
-  rep: https://example.com/typo`,
+  repo/x: https://example.com/typo`,
   );
 
   const result = buildFixture(content, dist);
 
   assert.notEqual(result.status, 0, "the build must fail");
   assert.match(result.stderr, /bad-link\.md/);
-  assert.match(result.stderr, /capital/);
+  assert.match(result.stderr, /cannot parse frontmatter line/);
 });
 
 test("a project marked wip says so on its page", () => {
@@ -567,8 +569,7 @@ category: software`);
     `year: 2022
 status: shipped
 category: articles
-links:
-  paper: https://example.com/article-one`,
+publication: https://example.com/article-one`,
   );
 
   build(dist, { CONTENT_DIR: content });
@@ -847,8 +848,7 @@ test("article rows link out to the publication and have no detail page", () => {
 status: shipped
 category: articles
 featured: true
-links:
-  paper: https://example.com/a-paper`,
+publication: https://example.com/a-paper`,
   );
   writeProject(
     content,
@@ -856,8 +856,7 @@ links:
     `year: 2025
 status: shipped
 category: articles
-links:
-  live: https://example.com/a-live-piece`,
+publication: https://example.com/a-live-piece`,
   );
   writeProject(content, "a-project", `year: 2024
 status: shipped
@@ -880,7 +879,7 @@ category: software`);
   assert.match(home, /<a href="https:\/\/example\.com\/a-paper">/);
 });
 
-test("the build fails, naming the file, when an article has no publication link", () => {
+test("the build fails, naming the file, when an article has no publication", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-article-link-"));
   const dist = mkdtempSync(join(tmpdir(), "portfolio-article-link-dist-"));
   writeProject(content, "orphan-article", `year: 2026
@@ -891,7 +890,7 @@ category: articles`);
 
   assert.notEqual(result.status, 0, "the build must fail");
   assert.match(result.stderr, /orphan-article\.md/);
-  assert.match(result.stderr, /paper|live/);
+  assert.match(result.stderr, /publication/);
 });
 
 test("the catalogue is a three-column table with a header for each column", () => {

@@ -21,7 +21,7 @@ source "$meta"
 
 title=$(html_escape "$META_TITLE")
 category=$(html_escape "$META_CATEGORY")
-status=$(html_escape "$(status_label "$META_STATUS")")
+status=$(html_escape "$(vocabulary_label statuses "$META_STATUS")")
 
 page_open "$title, $SITE_NAME" work
 cat <<EOF
@@ -49,12 +49,7 @@ EOF
   for entry in "${META_LINKS[@]}"; do
     key=${entry%%=*}
     url=${entry#*=}
-    if is_link_kind "$key"; then
-      label=$(link_label "$key")
-    else
-      label=$key
-    fi
-    printf '            <li><a href="%s">%s</a></li>\n' "$(html_escape "$url")" "$(html_escape "$label")"
+    printf '            <li><a href="%s">%s</a></li>\n' "$(html_escape "$url")" "$(html_escape "$key")"
   done
   printf '          </ul>\n'
 fi

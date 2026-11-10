@@ -10,7 +10,7 @@ tags:
   - ui
   - game jam
 links:
-  itch: https://assortednonsense.itch.io/crabvocate-in-hot-water
+  Itch.io: https://assortednonsense.itch.io/crabvocate-in-hot-water
 ---
 # Crabvocate for Peace: In Hot Water
 

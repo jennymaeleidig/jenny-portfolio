@@ -10,7 +10,7 @@ tags:
   - tailwind css
   - postgres
 links:
-  live: https://www.lazysundays.net/
+  Live: https://www.lazysundays.net/
   Frontend: https://github.com/lazy-sundays/Lazy-Sundays-Blog-Frontend
   Backend: https://github.com/lazy-sundays/Lazy-Sundays-Blog-Backend
 ---

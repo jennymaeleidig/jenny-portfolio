@@ -11,7 +11,7 @@ tags:
   - ruffle
   - flash emulation
 links:
-  repo: https://github.com/jennymaeleidig/unofficial-homestuck-collection-web
+  Repo: https://github.com/jennymaeleidig/unofficial-homestuck-collection-web
 ---
 # The Unofficial Homestuck Collection: Web Edition
 

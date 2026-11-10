@@ -10,8 +10,8 @@ tags:
   - web audio
   - retro ui
 links:
-  live: https://x86-soundscape.jenny-page.online/
-  repo: https://github.com/jennymaeleidig/x86-soundscape
+  Live: https://x86-soundscape.jenny-page.online/
+  Repo: https://github.com/jennymaeleidig/x86-soundscape
 ---
 # x86 Soundscape
 

@@ -10,7 +10,7 @@ tags:
   - crank input
   - input handling
 links:
-  repo: https://github.com/jennymaeleidig/playdate-dungeon
+  Repo: https://github.com/jennymaeleidig/playdate-dungeon
 ---
 # Playdate Dungeon
 

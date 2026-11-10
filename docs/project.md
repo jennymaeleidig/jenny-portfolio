@@ -29,25 +29,42 @@ order: <n>
   technique, mood or mechanic, with nothing pending.
 - `category` — `games`, `sound`, `hardware`, `software`, `articles`. Each
   builds `/work/<category>/`. `articles` has no page of its own: its catalogue
-  row links straight out, so it needs a `paper` or `live` link.
+  row links straight out, so it needs a `publication`.
 - `cover` — absolute from `/`, and the file must exist. Project images live
   under `assets/projects/<slug>/`. Export them by hand; the build does no image
   processing.
 - `tags` — free-form. The only place tools and techniques are named.
-- `links` — `live`, `repo`, `itch`, `paper`, `video`, each an `http(s)` URL,
-  printed in the order written. When a project carries two links of the same
-  sort, title the extras instead of repeating a kind: a key that starts with a
-  capital is the link's own text, so `Frontend:` and `Backend:` can sit
-  alongside `live:`. A title is capitalised words of letters, digits, spaces,
-  hyphens and underscores — no punctuation, since the colon that ends the key
-  is the delimiter. Lowercase typos (`rep:`) stay an error; a capitalised one
-  (`Repo:`) reads as a title, so the label is printed as written.
+- `links` — a mapping of label to `http(s)` URL, printed in the order written.
+  The key is the text the link prints as, so there is no vocabulary to learn:
+  write `Live:`, `Repo:`, `Itch.io:`, or `Program doc:` and that is what the
+  page shows. A label is letters, digits, spaces, hyphens, underscores and
+  dots, and it may not contain a colon, which ends it.
+- `publication` — where an article was published, an `http(s)` URL. Required
+  by `articles`, refused on anything else.
 - `order` — integer. Pins the project above the catalogue, lowest first.
 - `featured` — `true` puts it on the front page as a card. Six is the number
   the page is designed around.
 
 `scripts/stage.sh` fails the build naming the file on an unknown key or value, a
-missing required field, a missing cover, or a filename jenny can't `eval`.
+missing required field, a missing cover, a `publication` on a project that
+should have a page, or a filename jenny can't `eval`.
+
+## Vocabulary
+
+The words `status` and `category` accept are not in the build script. They live
+in `vocabulary/`, one file per domain, in canonical order:
+
+```
+statuses          active, shipped, wip, archived, study
+categories        games, sound, hardware, software, articles
+career-sections   experience, volunteering, education, skills
+```
+
+Each line is `word=Label`, where the label is what the page prints. `#` starts a
+comment. Adding a word is a one-line change here and needs no code; the build
+reads the files, so the catalogue tabs, the category routes and
+`scripts/stage.sh`'s validation all follow. Order in a file is the order the
+site shows: the catalogue's category filter and the career tabs both read it.
 
 ## Body
 
