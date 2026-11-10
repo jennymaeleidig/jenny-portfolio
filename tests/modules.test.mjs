@@ -7,17 +7,23 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // The shell modules are tested through the same interface a layout crosses:
-// source lib.sh, call the accessor, read the output. Nothing here knows whether
-// vocabulary is a file or a table, or how a record stream is represented.
+// source the module, call the accessor, read the output. Nothing here knows
+// whether vocabulary is a file or a table, or how a record stream is
+// represented.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const lib = join(root, "scripts", "lib.sh");
+const projects = join(root, "scripts", "projects.sh");
 
-function shell(script, env = {}) {
-  return execFileSync("bash", ["-c", `source "$1"\n${script}`, "modules-test", lib], {
+function shellIn(module, script, env = {}) {
+  return execFileSync("bash", ["-c", `source "$1"\n${script}`, "modules-test", module], {
     cwd: root,
     encoding: "utf8",
     env: { ...process.env, ...env },
   });
+}
+
+function shell(script, env = {}) {
+  return shellIn(lib, script, env);
 }
 
 const VOCABULARIES = [
@@ -212,16 +218,105 @@ test("lists, mappings and unparseable lines keep their record shapes", () => {
   );
 });
 
-test("the catalogue record is an ordered list of slugs", () => {
-  const dir = mkdtempSync(join(tmpdir(), "catalogue-"));
-  const sidecar = (slug, year, order = "") =>
-    writeFileSync(
-      join(dir, `${slug}.sh`),
-      `META_SLUG=${slug}\nMETA_YEAR=${year}\nMETA_ORDER=${order}\n`,
-    );
-  sidecar("alpha", 2024);
-  sidecar("beta", 2026);
-  sidecar("pinned", 2020, 1);
+// A project sidecar is the module's storage, not its interface. These tests
+// write one so the module can be read the way a layout reads it.
+function projectDir() {
+  return mkdtempSync(join(tmpdir(), "projects-"));
+}
 
-  assert.equal(shell("project_records", { META_DIR: dir }), "pinned\nbeta\nalpha\n");
+function projectSidecar(dir, slug, overrides = {}) {
+  const facts = {
+    META_SLUG: `'${slug}'`,
+    META_TITLE: `'Title ${slug}'`,
+    META_BLURB: `'<p>Blurb ${slug}.</p>'`,
+    META_YEAR: "2026",
+    META_STATUS: "shipped",
+    META_CATEGORY: "games",
+    META_COVER: "''",
+    META_ORDER: "''",
+    META_HREF: `'/projects/${slug}/'`,
+    META_PUBLICATION: "''",
+    META_FEATURED: "''",
+    META_TAGS: "()",
+    META_LINKS: "()",
+    ...overrides,
+  };
+  writeFileSync(
+    join(dir, `${slug}.sh`),
+    Object.entries(facts)
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n"),
+  );
+}
+
+test("project records come in catalogue order and answer the fields a caller names", () => {
+  const dir = projectDir();
+  projectSidecar(dir, "alpha", { META_YEAR: "2024" });
+  projectSidecar(dir, "beta", { META_YEAR: "2026" });
+  projectSidecar(dir, "pinned", { META_YEAR: "2020", META_ORDER: "1" });
+
+  assert.equal(
+    shellIn(projects, "project_records slug title year", { META_DIR: dir }),
+    "pinned\u001fTitle pinned\u001f2020\nbeta\u001fTitle beta\u001f2026\nalpha\u001fTitle alpha\u001f2024\n",
+  );
+});
+
+test("one project's facts are read by name, never by sidecar variable", () => {
+  const dir = projectDir();
+  projectSidecar(dir, "alpha", { META_FEATURED: "true", META_STATUS: "wip" });
+
+  assert.equal(
+    shellIn(projects, "project_show alpha title status featured year", { META_DIR: dir }),
+    "Title alpha\u001fwip\u001ftrue\u001f2026\n",
+  );
+});
+
+test("publishability and href follow the article rule in one place", () => {
+  const dir = projectDir();
+  projectSidecar(dir, "article", {
+    META_CATEGORY: "articles",
+    META_HREF: "'https://example.com/article'",
+    META_PUBLICATION: "'https://example.com/article'",
+  });
+  projectSidecar(dir, "page", { META_CATEGORY: "software" });
+
+  assert.equal(
+    shellIn(projects, "project_show article publishable href", { META_DIR: dir }),
+    "false\u001fhttps://example.com/article\n",
+  );
+  assert.equal(
+    shellIn(projects, "project_show page publishable href", { META_DIR: dir }),
+    "true\u001f/projects/page/\n",
+  );
+});
+
+test("a project's blurb is available as rendered markup and as plain text", () => {
+  const dir = projectDir();
+  projectSidecar(dir, "alpha", { META_BLURB: "'<p>Guns &amp; roses.</p>'" });
+
+  assert.equal(
+    shellIn(projects, "project_show alpha blurb blurb_text", { META_DIR: dir }),
+    "<p>Guns &amp; roses.</p>\u001fGuns & roses.\n",
+  );
+});
+
+test("links and tags are ordered record streams, not fields on a row", () => {
+  const dir = projectDir();
+  projectSidecar(dir, "alpha", {
+    META_LINKS: "('First\thttps://example.com/one' 'Second\thttps://example.com/two')",
+    META_TAGS: "('c++' 'narrative')",
+  });
+
+  assert.equal(
+    shellIn(projects, "project_links alpha", { META_DIR: dir }),
+    "First\thttps://example.com/one\nSecond\thttps://example.com/two\n",
+  );
+  assert.equal(shellIn(projects, "project_tags alpha", { META_DIR: dir }), "c++\nnarrative\n");
+});
+
+test("an unknown project field is an error, not an empty column", () => {
+  const dir = projectDir();
+  projectSidecar(dir, "alpha");
+
+  assert.throws(() => shellIn(projects, "project_show alpha nonsense", { META_DIR: dir }));
 });

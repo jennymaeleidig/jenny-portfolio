@@ -7,21 +7,19 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
+source "$SITE_ROOT/scripts/projects.sh"
+# shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 
 # Collect the featured cards first, so a project that is not featured never
-# reaches the grid. project_records puts the catalogue in canonical order; each
-# row's facts come from its sidecar by name.
+# reaches the grid. project_records puts the catalogue in canonical order and
+# answers the named facts; the card filters on the featured flag itself.
 cards=$(
-  while IFS= read -r slug; do
-    (
-      # shellcheck source=/dev/null
-      source "$META_DIR/$slug.sh"
-      [[ ${META_FEATURED:-} == "true" ]] || exit 0
-      printf '%s\t%s\t%s\t%s\t%s\n' \
-        "$META_YEAR" "$META_CATEGORY" "$META_TITLE" "${META_BLURB:-}" "$META_HREF"
-    )
-  done < <(project_records)
+  while IFS=$'\037' read -r href title blurb category year featured; do
+    [[ $featured == true ]] || continue
+    printf '%s\t%s\t%s\t%s\t%s\n' \
+      "$year" "$category" "$title" "$blurb" "$href"
+  done < <(project_records href title blurb category year featured)
 )
 
 PAGE_DESCRIPTION="$FULL_NAME — $TAGLINE."

@@ -112,29 +112,6 @@ lead_paragraph() {
   ' | prose_text
 }
 
-# Emit the catalogue in its canonical order, one slug per line. A project
-# with `order` sorts first, lowest number first, so it can be pinned above
-# newer work; everything else follows by year, newest first. The slug breaks
-# ties so the output is stable between builds. Callers read a row's facts from
-# its sidecar by name.
-project_records() {
-  local meta pinned order
-  shopt -s nullglob
-  for meta in "$META_DIR"/*.sh; do
-    (
-      # shellcheck source=/dev/null
-      source "$meta"
-      pinned=1
-      order=0
-      if [[ -n ${META_ORDER:-} ]]; then
-        pinned=0
-        order=$META_ORDER
-      fi
-      printf '%s\t%s\t%s\t%s\n' \
-        "$pinned" "$order" "$META_YEAR" "$META_SLUG"
-    )
-  done | LC_ALL=C sort -t $'\t' -k1,1n -k2,2n -k3,3nr -k4,4 | cut -f4
-}
 
 # List one career section's entry files newest first, sorted by a frontmatter
 # field such as `start` or `year`. The filename breaks ties so the order is

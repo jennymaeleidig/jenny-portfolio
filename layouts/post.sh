@@ -5,42 +5,37 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
+source "$SITE_ROOT/scripts/projects.sh"
+# shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 
 slug=${POST_URL#/post/}
 slug=${slug%.html}
 
-meta="$META_DIR/$slug.sh"
-if [[ ! -f $meta ]]; then
-  echo "error: no metadata for $slug" >&2
-  exit 1
-fi
+facts=$(project_show "$slug" title category status year cover blurb_text)
+IFS=$'\037' read -r raw_title raw_category raw_status year cover blurb_text <<< "$facts"
 
-# shellcheck source=/dev/null
-source "$meta"
-
-title=$(html_escape "$META_TITLE")
-category=$(html_escape "$META_CATEGORY")
-status=$(html_escape "$(vocabulary_label statuses "$META_STATUS")")
+title=$(html_escape "$raw_title")
+category=$(html_escape "$raw_category")
+status=$(html_escape "$(vocabulary_label statuses "$raw_status")")
 
 # A project page is the one route jenny renders rather than post-build.sh, so
 # it names its own address: the link and the sitemap must agree.
 PAGE_ROUTE="/projects/$slug/"
-# META_BLURB is the blurb as cmark rendered it, which is why prose_text strips
-# markup here. The sidecar is a project page's only source for its opening
-# paragraph.
-PAGE_DESCRIPTION=$(printf '%s\n' "$META_BLURB" | prose_text)
+# The record hands over the blurb as plain text, so the layout never has to
+# un-render the markup an earlier step produced.
+PAGE_DESCRIPTION=$blurb_text
 
 page_open "$title, $SITE_NAME" work
 cat <<EOF
         <article>
           <h1>$title</h1>
-          <p class="meta">$category &middot; $META_YEAR &middot; <span class="status">$status</span></p>
+          <p class="meta">$category &middot; $year &middot; <span class="status">$status</span></p>
 EOF
 
-if [[ -n ${META_COVER:-} ]]; then
+if [[ -n $cover ]]; then
   cat <<EOF
-          <figure class="cover"><img src="$(html_escape "$META_COVER")" alt="$title cover"></figure>
+          <figure class="cover"><img src="$(html_escape "$cover")" alt="$title cover"></figure>
 EOF
 fi
 
@@ -50,22 +45,32 @@ $POST_CONTENTS
           </div>
 EOF
 
-if ((${#META_LINKS[@]})); then
+links=()
+while IFS= read -r entry; do
+  links+=("$entry")
+done < <(project_links "$slug")
+
+if ((${#links[@]})); then
   cat <<EOF
           <ul class="links ruled" aria-label="Links">
 EOF
-  for entry in "${META_LINKS[@]}"; do
-    IFS=$'\t' read -r title url <<< "$entry"
-    printf '            <li><a href="%s">%s</a></li>\n' "$(html_escape "$url")" "$(html_escape "$title")"
+  for entry in "${links[@]}"; do
+    IFS=$'\t' read -r link_title link_url <<< "$entry"
+    printf '            <li><a href="%s">%s</a></li>\n' "$(html_escape "$link_url")" "$(html_escape "$link_title")"
   done
   printf '          </ul>\n'
 fi
 
-if ((${#META_TAGS[@]})); then
+tags=()
+while IFS= read -r tag; do
+  tags+=("$tag")
+done < <(project_tags "$slug")
+
+if ((${#tags[@]})); then
   cat <<EOF
           <ul class="tags" aria-label="Tags">
 EOF
-  for tag in "${META_TAGS[@]}"; do
+  for tag in "${tags[@]}"; do
     printf '            <li>%s</li>\n' "$(html_escape "$tag")"
   done
   printf '          </ul>\n'

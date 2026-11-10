@@ -16,6 +16,8 @@ fi
 
 # shellcheck source=/dev/null
 source "$SITE_ROOT/scripts/lib.sh"
+# shellcheck source=/dev/null
+source "$SITE_ROOT/scripts/projects.sh"
 
 # Emit one route through its layout. A route is a directory with an
 # index.html; the front page is the site root. An empty page fails the build
@@ -41,25 +43,22 @@ emit_route() {
   fi
 }
 
-for meta in "${metas[@]}"; do
-  # shellcheck source=/dev/null
-  source "$meta"
+# A project page is one jenny rendered; an article has no page, and the record
+# says so. The build moves every publishable page to its route and leaves the
+# rest to the catalogue's external link.
+while IFS=$'\037' read -r slug publishable; do
+  [[ $publishable == true ]] || continue
 
-  # An article links out to its publication and has no page of its own.
-  if [[ $META_CATEGORY == articles ]]; then
-    continue
-  fi
-
-  rendered="$DIST/post/$META_SLUG.html"
+  rendered="$DIST/post/$slug.html"
   if [[ ! -s $rendered ]]; then
-    echo "error: jenny did not emit a page for $META_SLUG" >&2
+    echo "error: jenny did not emit a page for $slug" >&2
     exit 1
   fi
 
-  destination="$DIST/projects/$META_SLUG"
+  destination="$DIST/projects/$slug"
   mkdir -p "$destination"
   mv "$rendered" "$destination/index.html"
-done
+done < <(project_records slug publishable)
 
 # Nothing outside the route table survives the post-build step.
 rm -rf "$DIST/post" "$DIST/page" "$DIST/tag"

@@ -5,6 +5,8 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
+source "$SITE_ROOT/scripts/projects.sh"
+# shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/tabs.sh"
@@ -27,25 +29,21 @@ else
 fi
 
 rows=$(
-  while IFS= read -r slug; do
-    (
-      # shellcheck source=/dev/null
-      source "$META_DIR/$slug.sh"
-      if [[ -n $category && $META_CATEGORY != "$category" ]]; then
-        exit 0
-      fi
-      printf '            <tr>\n'
-      printf '              <td class="catalogue-title"><a href="%s">%s</a></td>\n' \
-        "$(html_escape "$META_HREF")" "$(html_escape "$META_TITLE")"
-      printf '              <td class="catalogue-blurb">%s</td>\n' "${META_BLURB:-}"
-      if [[ -z $category ]]; then
-        printf '              <td class="catalogue-category">%s</td>\n' \
-          "$(html_escape "$(vocabulary_label categories "$META_CATEGORY")")"
-      fi
-      printf '              <td class="meta">%s</td>\n' "$(html_escape "$META_YEAR")"
-      printf '            </tr>\n'
-    )
-  done < <(project_records)
+  while IFS=$'\037' read -r href title blurb row_category year; do
+    if [[ -n $category && $row_category != "$category" ]]; then
+      continue
+    fi
+    printf '            <tr>\n'
+    printf '              <td class="catalogue-title"><a href="%s">%s</a></td>\n' \
+      "$(html_escape "$href")" "$(html_escape "$title")"
+    printf '              <td class="catalogue-blurb">%s</td>\n' "$blurb"
+    if [[ -z $category ]]; then
+      printf '              <td class="catalogue-category">%s</td>\n' \
+        "$(html_escape "$(vocabulary_label categories "$row_category")")"
+    fi
+    printf '              <td class="meta">%s</td>\n' "$(html_escape "$year")"
+    printf '            </tr>\n'
+  done < <(project_records href title blurb category year)
 )
 
 page_open "$title" work
