@@ -14,6 +14,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const lib = join(root, "scripts", "lib.sh");
 const projects = join(root, "scripts", "projects.sh");
 const career = join(root, "scripts", "career.sh");
+const routes = join(root, "scripts", "routes.sh");
 
 function shellIn(module, script, env = {}) {
   return execFileSync("bash", ["-c", `source "$1"\n${script}`, "modules-test", module], {
@@ -396,5 +397,95 @@ test("skills are emitted as group and item records, keeping grouped skills whole
       "item\u001fData and cloud\u001fSQL\n" +
       "item\u001fLanguages\u001fC\n" +
       "item\u001fLanguages\u001fBash\n",
+  );
+});
+
+test("the route table names every page the build emits, in one order", () => {
+  const dir = projectDir();
+  projectSidecar(dir, "alpha", { META_YEAR: "2024" });
+  const dist = mkdtempSync(join(tmpdir(), "routes-dist-"));
+
+  assert.equal(
+    shellIn(routes, "route_records address indexable", { META_DIR: dir, DIST: dist }),
+    [
+      "/\u001ftrue",
+      "/work/\u001ftrue",
+      "/work/games/\u001ftrue",
+      "/work/sound/\u001ftrue",
+      "/work/hardware/\u001ftrue",
+      "/work/software/\u001ftrue",
+      "/work/articles/\u001ftrue",
+      "/work/career/\u001ftrue",
+      "/work/career/experience/\u001ftrue",
+      "/work/career/volunteering/\u001ftrue",
+      "/work/career/education/\u001ftrue",
+      "/work/career/skills/\u001ftrue",
+      "/about/\u001ftrue",
+      "/now/\u001ftrue",
+      "/404/\u001ffalse",
+      "/projects/alpha/\u001ftrue",
+    ].join("\n") + "\n",
+  );
+});
+
+test("a route record carries what renders it, and an article has no page route", () => {
+  const dir = projectDir();
+  projectSidecar(dir, "alpha", { META_YEAR: "2024" });
+  projectSidecar(dir, "article", {
+    META_YEAR: "2026",
+    META_CATEGORY: "articles",
+    META_HREF: "'https://example.com/article'",
+    META_PUBLICATION: "'https://example.com/article'",
+  });
+  const dist = mkdtempSync(join(tmpdir(), "routes-render-"));
+
+  assert.equal(
+    shellIn(routes, "route_records kind layout argument source", { META_DIR: dir, DIST: dist }),
+    [
+      "layout\u001fhome\u001f\u001f",
+      "layout\u001fwork\u001f\u001f",
+      "layout\u001fwork\u001fgames\u001f",
+      "layout\u001fwork\u001fsound\u001f",
+      "layout\u001fwork\u001fhardware\u001f",
+      "layout\u001fwork\u001fsoftware\u001f",
+      "layout\u001fwork\u001farticles\u001f",
+      "layout\u001fcareer\u001f\u001f",
+      "layout\u001fcareer\u001fexperience\u001f",
+      "layout\u001fcareer\u001fvolunteering\u001f",
+      "layout\u001fcareer\u001feducation\u001f",
+      "layout\u001fcareer\u001fskills\u001f",
+      "layout\u001fabout\u001f\u001f",
+      "layout\u001fnow\u001f\u001f",
+      "layout\u001f404\u001f\u001f",
+      `project\u001f\u001f\u001f${join(dist, "post", "alpha.html")}`,
+    ].join("\n") + "\n",
+  );
+});
+
+test("a route's output is its address under the dist tree", () => {
+  const dir = projectDir();
+  projectSidecar(dir, "alpha");
+  const dist = mkdtempSync(join(tmpdir(), "routes-output-"));
+
+  assert.equal(
+    shellIn(routes, "route_records address output", { META_DIR: dir, DIST: dist }),
+    [
+      `/\u001f${join(dist, "index.html")}`,
+      `/work/\u001f${join(dist, "work", "index.html")}`,
+      `/work/games/\u001f${join(dist, "work", "games", "index.html")}`,
+      `/work/sound/\u001f${join(dist, "work", "sound", "index.html")}`,
+      `/work/hardware/\u001f${join(dist, "work", "hardware", "index.html")}`,
+      `/work/software/\u001f${join(dist, "work", "software", "index.html")}`,
+      `/work/articles/\u001f${join(dist, "work", "articles", "index.html")}`,
+      `/work/career/\u001f${join(dist, "work", "career", "index.html")}`,
+      `/work/career/experience/\u001f${join(dist, "work", "career", "experience", "index.html")}`,
+      `/work/career/volunteering/\u001f${join(dist, "work", "career", "volunteering", "index.html")}`,
+      `/work/career/education/\u001f${join(dist, "work", "career", "education", "index.html")}`,
+      `/work/career/skills/\u001f${join(dist, "work", "career", "skills", "index.html")}`,
+      `/about/\u001f${join(dist, "about", "index.html")}`,
+      `/now/\u001f${join(dist, "now", "index.html")}`,
+      `/404/\u001f${join(dist, "404", "index.html")}`,
+      `/projects/alpha/\u001f${join(dist, "projects", "alpha", "index.html")}`,
+    ].join("\n") + "\n",
   );
 });

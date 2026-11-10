@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Emit sitemap.xml and robots.txt from the routes the build actually emitted.
-# The tree is the route table: a page added anywhere under dist/ appears here
-# without touching this script, and a page that was not emitted cannot appear.
+# Emit sitemap.xml and robots.txt from the route table.
+# The route table is the one address authority: a page that is not a route
+# cannot appear here, and a route carries whether it is indexable. A test
+# compares this list with the pages on disk, so the two cannot drift silently.
 set -euo pipefail
 
 : "${DIST:?DIST is required}"
 : "${SITE_ROOT:?SITE_ROOT is required}"
 
 # shellcheck source=/dev/null
-source "$SITE_ROOT/scripts/lib.sh"
+source "$SITE_ROOT/scripts/routes.sh"
 
 site_host=${SITE_HOST:-${BLOG_HOST:-}}
 if [[ -z $site_host ]]; then
@@ -16,22 +17,11 @@ if [[ -z $site_host ]]; then
   exit 1
 fi
 site_host=${site_host%/}
-# The route is derived by stripping the dist prefix, so a trailing slash on
-# DIST would otherwise turn /work/ into work/.
-dist=${DIST%/}
-
+# The sitemap lists every indexable address in the route table, sorted.
 routes=$(
-  find "$dist" -type f -name index.html | while IFS= read -r file; do
-    # /projects/<slug>/index.html -> /projects/<slug>/, /index.html -> /
-    route=${file#"$dist"}
-    route=${route%index.html}
-    [[ -n $route ]] || route=/
-
-    # /404 and its Pages fallback are not destinations, so they are not listed.
-    if [[ $route == /404 || $route == /404/ ]]; then
-      continue
-    fi
-    printf '%s\n' "$route"
+  route_records address indexable | while IFS=$'\037' read -r address indexable; do
+    [[ $indexable == true ]] || continue
+    printf '%s\n' "$address"
   done | LC_ALL=C sort
 )
 

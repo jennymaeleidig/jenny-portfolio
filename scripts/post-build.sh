@@ -15,53 +15,28 @@ if ((${#metas[@]} == 0)); then
 fi
 
 # shellcheck source=/dev/null
-source "$SITE_ROOT/scripts/lib.sh"
-# shellcheck source=/dev/null
-source "$SITE_ROOT/scripts/projects.sh"
+source "$SITE_ROOT/scripts/routes.sh"
 
-# Emit one route through its layout. A route is a directory with an
-# index.html; the front page is the site root. An empty page fails the build
+# Render one layout route to the output path the route table chose. The route
+# is the page's own address, so the head can declare a canonical URL without
+# every layout having to spell it out again. An empty page fails the build
 # rather than shipping.
-emit_route() {
-  local route=$1 layout=$2 argument=${3:-} page
-  if [[ $route == / ]]; then
-    page="$DIST/index.html"
-  else
-    page="$DIST${route%/}/index.html"
-  fi
-  mkdir -p "$(dirname "$page")"
-  # The route is the page's own address, so the head can declare a canonical URL
-  # without every layout having to spell it out again.
+render_route() {
+  local address=$1 output=$2 layout=$3 argument=${4:-}
+  mkdir -p "$(dirname "$output")"
   if [[ -n $argument ]]; then
-    PAGE_ROUTE=$route "$SITE_ROOT/layouts/$layout.sh" "$argument" > "$page"
+    PAGE_ROUTE=$address "$SITE_ROOT/layouts/$layout.sh" "$argument" > "$output"
   else
-    PAGE_ROUTE=$route "$SITE_ROOT/layouts/$layout.sh" > "$page"
+    PAGE_ROUTE=$address "$SITE_ROOT/layouts/$layout.sh" > "$output"
   fi
-  if [[ ! -s $page ]]; then
-    echo "error: the $route route was not emitted" >&2
+  if [[ ! -s $output ]]; then
+    echo "error: the $address route was not emitted" >&2
     exit 1
   fi
 }
 
-# A project page is one jenny rendered; an article has no page, and the record
-# says so. The build moves every publishable page to its route and leaves the
-# rest to the catalogue's external link.
-while IFS=$'\037' read -r slug publishable; do
-  [[ $publishable == true ]] || continue
-
-  rendered="$DIST/post/$slug.html"
-  if [[ ! -s $rendered ]]; then
-    echo "error: jenny did not emit a page for $slug" >&2
-    exit 1
-  fi
-
-  destination="$DIST/projects/$slug"
-  mkdir -p "$destination"
-  mv "$rendered" "$destination/index.html"
-done < <(project_records slug publishable)
-
-# Nothing outside the route table survives the post-build step.
-rm -rf "$DIST/post" "$DIST/page" "$DIST/tag"
+# The feed is out of scope; jenny's feed and its extra route trees are
+# discarded after the route table has moved the project pages out of post/.
 rm -f "$DIST/feed.xml"
 
 mkdir -p "$DIST/assets"
@@ -97,27 +72,30 @@ if [[ ${SKY_LEVERS:-} != 1 ]]; then
   rm -f "$DIST/assets/sky-levers.mjs"
 fi
 
-emit_route / home
-emit_route /work/ work
+# One route table drives both jobs: a layout route is rendered here, and a
+# project route is the page jenny already rendered, moved to the address the
+# record names. An article has no page, so it has no route to move.
+while IFS=$'\037' read -r kind address output layout argument source; do
+  case $kind in
+    layout) render_route "$address" "$output" "$layout" "$argument" ;;
+    project)
+      if [[ ! -s $source ]]; then
+        echo "error: jenny did not emit a page for $address" >&2
+        exit 1
+      fi
+      mkdir -p "$(dirname "$output")"
+      mv "$source" "$output"
+      ;;
+  esac
+done < <(route_records kind address output layout argument source)
 
-while IFS= read -r category; do
-  emit_route "/work/$category/" work "$category"
-done < <(vocabulary_words categories)
-
-emit_route /work/career/ career
-
-while IFS= read -r section; do
-  emit_route "/work/career/$section/" career "$section"
-done < <(vocabulary_words career-sections)
-
-for page in about now; do
-  emit_route "/$page/" "$page"
-done
+# Nothing outside the route table survives the post-build step.
+rm -rf "$DIST/post" "$DIST/page" "$DIST/tag"
 
 # /404 is a route like any other, and GitHub Pages also serves a root 404.html
 # for unknown paths, so the same page is emitted at both.
-emit_route /404/ 404
 cp "$DIST/404/index.html" "$DIST/404.html"
 
-# The sitemap walks what is now on disk, so it cannot drift from the build.
+# The sitemap reads the same route table the renderer just walked, so a page
+# cannot be published at an address the table does not know.
 "$SITE_ROOT/scripts/sitemap.sh"
