@@ -285,3 +285,16 @@ test("the font and its licence sit beside each other", () => {
   assert.equal(statSync(licence).isFile(), true);
   assert.match(readFileSync(licence, "utf8"), /SIL OPEN FONT LICENSE Version 1\.1/);
 });
+
+test("the icon ships with the credit for the cloud it came from", () => {
+  const icon = join(output, "assets", "favicon.png");
+  const credit = join(output, "assets", "favicon.md");
+
+  assert.equal(statSync(icon).isFile(), true);
+  assert.equal(statSync(credit).isFile(), true);
+  assert.match(
+    readFileSync(credit, "utf8"),
+    /Kuramaru[\s\S]*https:\/\/kuramarushka\.itch\.io\/pixel-art-cloud-assets/,
+    "the credit names the maker and the page the cloud came from",
+  );
+});
