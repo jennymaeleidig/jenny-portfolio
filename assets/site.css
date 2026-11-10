@@ -114,9 +114,16 @@ body {
 }
 
 .sheet {
+  /*
+   * The sheet's own font size, named so the palette strip can borrow it: a ch
+   * resolves against the font of the element that uses it, and the footer sets
+   * a smaller one, so the strip would otherwise inset itself short of the text.
+   */
+  --sheet-font-size: 1rem;
   --sheet-pad-x: 3ch;
   --swatch-size: 1.25rem;
   --sheet-pad-y: var(--line-height);
+  font-size: var(--sheet-font-size);
   position: relative;
   width: 100%;
   padding: var(--sheet-pad-y) var(--sheet-pad-x);
@@ -620,6 +627,7 @@ main > :last-child > :last-child {
    * flow: the header and the footer lay out as if it were not there.
    */
   --swatch-inset-y: calc(var(--sheet-pad-y) + (var(--line-height) - var(--swatch-size)) / 2);
+  font-size: var(--sheet-font-size);
   position: absolute;
   right: var(--sheet-pad-x);
   display: flex;

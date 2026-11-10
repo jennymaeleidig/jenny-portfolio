@@ -215,6 +215,16 @@ test("every page runs the palette strip in its header and its footer", () => {
   );
   assert.match(
     siteCss,
+    /\.sheet\s*\{[^}]*--sheet-font-size:[^}]*font-size:\s*var\(--sheet-font-size\)/s,
+    "the sheet names its own font size",
+  );
+  assert.match(
+    siteCss,
+    /\.swatches\s*\{[^}]*font-size:\s*var\(--sheet-font-size\)/s,
+    "the strip measures its inset in the sheet's font, so its edge lands on the text's",
+  );
+  assert.match(
+    siteCss,
     /\.site-header nav a,\s*\n\.site-footer a\s*\{[^}]*background-color:\s*var\(--paper\)/s,
     "type over the strip carries its own paper backing, so it stays legible",
   );
