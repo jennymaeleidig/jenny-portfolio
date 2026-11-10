@@ -24,6 +24,7 @@ cards=$(
   done < <(project_records)
 )
 
+PAGE_DESCRIPTION="$FULL_NAME — $TAGLINE."
 page_open "$SITE_NAME" home
 cat <<EOF
         <h1>$SITE_NAME</h1>

@@ -128,6 +128,12 @@ export const SITE_HOST = readFileSync(join(fixtureSite, "identity.sh"), "utf8")
   .match(/^PORTFOLIO=(.*)$/m)[1]
   .trim();
 
+// The name composed into every page title, for the tests that check the suffix
+// does not reach a preview card.
+export const SITE_NAME = readFileSync(join(fixtureSite, "identity.sh"), "utf8")
+  .match(/^SITE_NAME="?([^"\n]*)"?$/m)[1]
+  .trim();
+
 // The route set as a visitor could enumerate it: every index.html under the
 // dist tree, with the Pages 404 fallback and the /404 route itself excluded.
 // This walks the emitted filesystem rather than reading the sitemap, so a page

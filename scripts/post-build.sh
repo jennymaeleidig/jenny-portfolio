@@ -28,10 +28,12 @@ emit_route() {
     page="$DIST${route%/}/index.html"
   fi
   mkdir -p "$(dirname "$page")"
+  # The route is the page's own address, so the head can declare a canonical URL
+  # without every layout having to spell it out again.
   if [[ -n $argument ]]; then
-    "$SITE_ROOT/layouts/$layout.sh" "$argument" > "$page"
+    PAGE_ROUTE=$route "$SITE_ROOT/layouts/$layout.sh" "$argument" > "$page"
   else
-    "$SITE_ROOT/layouts/$layout.sh" > "$page"
+    PAGE_ROUTE=$route "$SITE_ROOT/layouts/$layout.sh" > "$page"
   fi
   if [[ ! -s $page ]]; then
     echo "error: the $route route was not emitted" >&2
@@ -65,6 +67,30 @@ rm -f "$DIST/feed.xml"
 
 mkdir -p "$DIST/assets"
 cp -R "$SITE_ROOT/assets/." "$DIST/assets/"
+
+# Decode stdin as base64. BSD's base64 spells it `-D` and coreutils' spells it
+# `--decode`, and the build does not get to pick a new tool to depend on.
+decode_base64() {
+  if base64 --decode </dev/null >/dev/null 2>&1; then
+    base64 --decode
+  else
+    base64 -D
+  fi
+}
+
+# Share cards. A link preview cannot use an SVG, but the poster stays text-only
+# by carrying its pixels as a PNG data URI, so the build unwraps that same image
+# into the tree. The share card is then the poster the site already draws.
+poster_data=$(grep -o 'data:image/png;base64,[A-Za-z0-9+/=]*' "$DIST/assets/sky-poster.svg" | head -n 1 || true)
+if [[ -z $poster_data ]]; then
+  echo "error: sky-poster.svg carries no PNG to use as the share card" >&2
+  exit 1
+fi
+printf '%s' "${poster_data#data:image/png;base64,}" | decode_base64 > "$DIST/assets/sky-poster.png"
+if [[ ! -s $DIST/assets/sky-poster.png ]]; then
+  echo "error: the share card was not written" >&2
+  exit 1
+fi
 
 # Development only: the levers module is not emitted at all without the flag,
 # so a production tree has nothing to load and nothing pointing at it.

@@ -23,6 +23,14 @@ title=$(html_escape "$META_TITLE")
 category=$(html_escape "$META_CATEGORY")
 status=$(html_escape "$(vocabulary_label statuses "$META_STATUS")")
 
+# A project page is the one route jenny renders rather than post-build.sh, so
+# it names its own address: the link and the sitemap must agree.
+PAGE_ROUTE="/projects/$slug/"
+# META_BLURB is the blurb as cmark rendered it, which is why prose_text strips
+# markup here. The sidecar is a project page's only source for its opening
+# paragraph.
+PAGE_DESCRIPTION=$(printf '%s\n' "$META_BLURB" | prose_text)
+
 page_open "$title, $SITE_NAME" work
 cat <<EOF
         <article>

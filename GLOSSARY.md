@@ -32,7 +32,7 @@ _Avoid_: record, item
 **Blurb**:
 The opening paragraph after a project's title, used by its catalogue row and
 its featured card.
-_Avoid_: summary, excerpt, description
+_Avoid_: summary, excerpt
 
 **Featured project**:
 A project marked for the front page's card grid.
@@ -81,3 +81,18 @@ _Avoid_: background, canvas, gradient
 **Poster**:
 The static image of the sky shown when the canvas cannot run.
 _Avoid_: fallback image, still
+
+**Share card**:
+The image a link preview shows: the poster's pixels written as a PNG at build
+time, because a preview crawler does not render SVG.
+_Avoid_: preview image, thumbnail, og:image
+
+**Description**:
+The one line of prose a page hands to a link preview. On a project page it is
+the blurb; every other page writes its own.
+_Avoid_: summary, meta text, excerpt
+
+**Canonical URL**:
+The one address a page declares for itself: the site host and the route the
+build emitted it at, which is also the address in the sitemap.
+_Avoid_: permalink, page URL, link

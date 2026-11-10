@@ -25,6 +25,7 @@ render_links() {
   done
 }
 
+PAGE_DESCRIPTION=$(lead_paragraph "$about")
 page_open "About, $SITE_NAME" about
 cat <<EOF
         <h1>About</h1>

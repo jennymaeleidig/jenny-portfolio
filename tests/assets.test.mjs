@@ -96,6 +96,21 @@ test("the committed poster is a static frame of the current sky", () => {
   assert.equal(png.readUInt32BE(20), POSTER.rows, "the poster is the shipped height");
 });
 
+test("the share card is the poster, unwrapped for a link preview", () => {
+  const svg = readFileSync(join(root, "assets", "sky-poster.svg"), "utf8");
+  const [, base64] = svg.match(/base64,([A-Za-z0-9+/=]+)/) ?? [];
+  assert.ok(base64, "the poster embeds its PNG frame");
+
+  const card = readFileSync(join(output, "assets", "sky-poster.png"));
+  assert.deepEqual(card, Buffer.from(base64, "base64"), "the card is the poster's own pixels, not a re-render");
+
+  const width = card.readUInt32BE(16);
+  const height = card.readUInt32BE(20);
+  const home = readFileSync(join(output, "index.html"), "utf8");
+  assert.match(home, new RegExp(`<meta property="og:image:width" content="${width}">`), "the card declares the width it ships");
+  assert.match(home, new RegExp(`<meta property="og:image:height" content="${height}">`), "the card declares the height it ships");
+});
+
 test("the reset is carried over verbatim", () => {
   const reset = readFileSync(join(output, "assets", "reset.css"));
   assert.equal(

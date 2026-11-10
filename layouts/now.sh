@@ -32,6 +32,7 @@ rows=$(
   done
 )
 
+PAGE_DESCRIPTION="What $SITE_NAME is doing now. Last updated $updated."
 page_open "Now, $SITE_NAME" now
 cat <<EOF
         <h1>Now</h1>

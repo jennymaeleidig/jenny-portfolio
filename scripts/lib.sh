@@ -69,6 +69,42 @@ markdown_body() {
   frontmatter_body "$1" | cmark-gfm --extension table --extension autolink
 }
 
+# Rendered prose as a plain string: markup stripped, whitespace folded, and the
+# entities cmark writes put back. A meta tag needs raw text it escapes once, so
+# undoing the parser's escaping here is what keeps `&` from becoming `&amp;amp;`.
+prose_text() {
+  awk '
+    { text = text " " $0 }
+    END {
+      gsub(/<[^>]*>/, "", text)
+      # The parser escapes these four; undo them before the amp entity, so an
+      # escaped `&lt;` in the source comes back as the text it was written to be.
+      gsub(/&lt;/, "<", text)
+      gsub(/&gt;/, ">", text)
+      gsub(/&quot;/, "\"", text)
+      gsub(/&amp;/, "\\&", text)
+      gsub(/[[:space:]]+/, " ", text)
+      sub(/^ /, "", text)
+      sub(/ $/, "", text)
+      print text
+    }
+  '
+}
+
+# The opening paragraph of a markdown page as plain text.
+lead_paragraph() {
+  markdown_body "$1" | tr '\n' ' ' | awk '
+    {
+      start = index($0, "<p>")
+      if (!start) exit
+      text = substr($0, start + 3)
+      stop = index(text, "</p>")
+      if (stop) text = substr(text, 1, stop - 1)
+      print text
+    }
+  ' | prose_text
+}
+
 # Emit the catalogue in its canonical order, one slug per line. A project
 # with `order` sorts first, lowest number first, so it can be pinned above
 # newer work; everything else follows by year, newest first. The slug breaks

@@ -18,10 +18,12 @@ fi
 if [[ -n $category ]]; then
   heading=$(vocabulary_label categories "$category")
   title="$heading, $SITE_NAME"
+  PAGE_DESCRIPTION="Every project in the catalogue filed under $heading."
 else
   # The route is /work/, but the tab the reader is on is Projects.
   heading="Projects"
   title="Projects, $SITE_NAME"
+  PAGE_DESCRIPTION="The catalogue: every project, newest first, with its blurb, category and year."
 fi
 
 rows=$(

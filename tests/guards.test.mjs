@@ -117,8 +117,10 @@ test("the build cleans its output directory before generating", () => {
 test("the only binaries committed are the self-hosted font and project images", { skip: tracked === null && "not a git checkout" }, () => {
   const font = "assets/fonts/CommitMonoV143-VF.woff2";
   // A project cover has to be a real image, so the no-binaries rule has one
-  // other door: image files under assets/. Everything else stays text.
-  const image = /^assets\/(?:[a-z0-9-]+\/)+[a-z0-9-]+\.(?:png|jpe?g|webp|gif)$/;
+  // other door: image files under assets/. The site icon is the one image that
+  // sits at the root of assets/ rather than in a subdirectory. Everything else
+  // stays text.
+  const image = /^assets\/(?:favicon\.png|(?:[a-z0-9-]+\/)+[a-z0-9-]+\.(?:png|jpe?g|webp|gif))$/;
 
   assert.ok(tracked.includes(font), "the self-hosted font is committed");
 
