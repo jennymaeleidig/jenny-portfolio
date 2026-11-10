@@ -5,7 +5,7 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
-source "$SITE_ROOT/scripts/projects.sh"
+source "$SITE_ROOT/scripts/routes.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 
@@ -20,11 +20,13 @@ category=$(html_escape "$raw_category")
 status=$(html_escape "$(vocabulary_label statuses "$raw_status")")
 
 # A project page is the one route jenny renders rather than post-build.sh, so
-# it names its own address: the link and the sitemap must agree.
-route="/projects/$slug/"
+# it asks the route table for its address and indexability instead of spelling
+# either one here.
+route_facts=$(project_route "$slug" address indexable)
+IFS=$'\037' read -r route indexable <<< "$route_facts"
 # The record hands over the blurb as plain text, so the layout never has to
 # un-render the markup an earlier step produced.
-page_open "$raw_title" work "$blurb_text" "$route" true
+page_open "$raw_title" work "$blurb_text" "$route" "$indexable"
 
 cat <<EOF
         <article>

@@ -19,12 +19,10 @@ fi
 
 if [[ -n $category ]]; then
   heading=$(vocabulary_label categories "$category")
-  title="$heading, $SITE_NAME"
   description="Every project in the catalogue filed under $heading."
 else
   # The route is /work/, but the tab the reader is on is Projects.
   heading="Projects"
-  title="Projects, $SITE_NAME"
   description="The catalogue: every project, newest first, with its blurb, category and year."
 fi
 
@@ -48,7 +46,7 @@ rows=$(
 
 route=${PAGE_ROUTE:?PAGE_ROUTE is required}
 heading_html=$(html_escape "$heading")
-page_open "$heading" work "$description" "$route" true
+page_open "$heading" work "$description" "$route" "${PAGE_INDEXABLE:?PAGE_INDEXABLE is required}"
 cat <<EOF
         <h1>$heading_html</h1>
 $(tab_bar projects)

@@ -174,7 +174,7 @@ swatch_strip() {
 }
 
 page_open() {
-  local title=$1 section=${2:-} description=${3:-} route=${4:-} indexable=${5:-true}
+  local title=$1 section=${2:-} description=${3:-} route=${4:-} indexable=${5:?page_open needs an indexable flag}
   shell_head "$title" "$description" "$route" "$indexable"
   cat <<EOF
     <div class="sky" aria-hidden="true">

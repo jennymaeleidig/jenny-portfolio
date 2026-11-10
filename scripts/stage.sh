@@ -119,12 +119,11 @@ for file in "$content_dir"/*.md; do
   fi
 
   # An article has no page of its own, so where it was published is the only
-  # route to it, and the catalogue row and featured card both use it.
-  href="/projects/$slug/"
+  # route to it. The record derives the catalogue href from this rule; the
+  # sidecar carries the facts, not the address.
   if [[ $category == articles ]]; then
     [[ -n $publication ]] || fail "$name" "articles need a 'publication' link"
     is_http_url "$publication" || fail "$name" "'publication' must be an http(s) URL"
-    href=$publication
   elif [[ -n $publication ]]; then
     fail "$name" "'publication' is for articles; give this project a link instead"
   fi
@@ -153,7 +152,6 @@ for file in "$content_dir"/*.md; do
     printf 'META_CATEGORY=%s\n' "$(shell_quote "$category")"
     printf 'META_COVER=%s\n' "$(shell_quote "$cover")"
     printf 'META_ORDER=%s\n' "$(shell_quote "$order")"
-    printf 'META_HREF=%s\n' "$(shell_quote "$href")"
     printf 'META_PUBLICATION=%s\n' "$(shell_quote "$publication")"
     printf 'META_FEATURED=%s\n' "$(shell_quote "$featured")"
     printf 'META_TAGS=('

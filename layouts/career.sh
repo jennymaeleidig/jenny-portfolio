@@ -128,7 +128,7 @@ fi
 
 route=${PAGE_ROUTE:?PAGE_ROUTE is required}
 heading_html=$(html_escape "$heading")
-page_open "$heading" work "$description" "$route" true
+page_open "$heading" work "$description" "$route" "${PAGE_INDEXABLE:?PAGE_INDEXABLE is required}"
 cat <<EOF
         <h1>$heading_html</h1>
 $(tab_bar career)

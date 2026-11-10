@@ -6,6 +6,7 @@
 set -euo pipefail
 
 : "${DIST:?DIST is required}"
+: "${META_DIR:?META_DIR is required}"
 : "${SITE_ROOT:?SITE_ROOT is required}"
 
 # shellcheck source=/dev/null

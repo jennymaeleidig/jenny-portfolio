@@ -237,7 +237,6 @@ function projectSidecar(dir, slug, overrides = {}) {
     META_CATEGORY: "games",
     META_COVER: "''",
     META_ORDER: "''",
-    META_HREF: `'/projects/${slug}/'`,
     META_PUBLICATION: "''",
     META_FEATURED: "''",
     META_TAGS: "()",
@@ -278,7 +277,6 @@ test("publishability and href follow the article rule in one place", () => {
   const dir = projectDir();
   projectSidecar(dir, "article", {
     META_CATEGORY: "articles",
-    META_HREF: "'https://example.com/article'",
     META_PUBLICATION: "'https://example.com/article'",
   });
   projectSidecar(dir, "page", { META_CATEGORY: "software" });
@@ -435,7 +433,6 @@ test("a route record carries what renders it, and an article has no page route",
   projectSidecar(dir, "article", {
     META_YEAR: "2026",
     META_CATEGORY: "articles",
-    META_HREF: "'https://example.com/article'",
     META_PUBLICATION: "'https://example.com/article'",
   });
   const dist = mkdtempSync(join(tmpdir(), "routes-render-"));
@@ -488,6 +485,17 @@ test("a route's output is its address under the dist tree", () => {
       `/404/\u001f${join(dist, "404", "index.html")}`,
       `/projects/alpha/\u001f${join(dist, "projects", "alpha", "index.html")}`,
     ].join("\n") + "\n",
+  );
+});
+
+test("a project page asks the route table for its address and indexability", () => {
+  const dir = projectDir();
+  projectSidecar(dir, "alpha");
+  const dist = mkdtempSync(join(tmpdir(), "routes-project-"));
+
+  assert.equal(
+    shellIn(routes, "project_route alpha address indexable", { META_DIR: dir, DIST: dist }),
+    "/projects/alpha/\u001ftrue\n",
   );
 });
 

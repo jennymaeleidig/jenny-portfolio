@@ -23,7 +23,7 @@ cards=$(
 )
 
 route=${PAGE_ROUTE:?PAGE_ROUTE is required}
-page_open "$SITE_NAME" home "$FULL_NAME — $TAGLINE." "$route" true
+page_open "$SITE_NAME" home "$FULL_NAME — $TAGLINE." "$route" "${PAGE_INDEXABLE:?PAGE_INDEXABLE is required}"
 cat <<EOF
         <h1>$(html_escape "$SITE_NAME")</h1>
         <p class="lede">$(html_escape "$TAGLINE")</p>

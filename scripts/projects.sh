@@ -9,9 +9,9 @@
 #
 # A row's fields are joined with the unit separator rather than a tab: a
 # project may omit a middle field (no cover, no order), and bash's `read`
-# collapses consecutive tab delimiters. The links and tags are record streams
-# rather than row fields, so a title carrying a tab can never be confused with
-# a column boundary (ADR-0002).
+# collapses consecutive tab delimiters. Links are a title<TAB>url record
+# stream, as ADR-0002 requires; stage.sh refuses a title containing a tab, so
+# the tab is the link's own field boundary.
 
 # shellcheck source=/dev/null
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
@@ -51,7 +51,13 @@ project_field_value() {
     order) printf '%s' "${META_ORDER:-}" ;;
     publication) printf '%s' "${META_PUBLICATION:-}" ;;
     featured) printf '%s' "${META_FEATURED:-}" ;;
-    href) printf '%s' "${META_HREF:-}" ;;
+    href)
+      if [[ ${META_CATEGORY:-} == articles ]]; then
+        printf '%s' "${META_PUBLICATION:-}"
+      else
+        printf '/projects/%s/' "${META_SLUG:-}"
+      fi
+      ;;
     publishable)
       if [[ ${META_CATEGORY:-} == articles ]]; then
         printf 'false'
@@ -93,15 +99,23 @@ project_records() {
   done | LC_ALL=C sort -t $'\t' -k1,1n -k2,2n -k3,3nr -k4,4 | cut -f5- | sed $'s/^\037//'
 }
 
+# One project's sidecar path, or a named error. The storage stays private to
+# the module; every accessor crosses this guard.
+project_meta() {
+  local meta="$META_DIR/$1.sh"
+  if [[ ! -f $meta ]]; then
+    echo "error: no project metadata for $1" >&2
+    return 1
+  fi
+  printf '%s' "$meta"
+}
+
 # Emit one project's named facts as one unit-separated row.
 project_show() {
   local slug=$1
   shift
-  local meta="$META_DIR/$slug.sh" field first=1
-  if [[ ! -f $meta ]]; then
-    echo "error: no project metadata for $slug" >&2
-    return 1
-  fi
+  local meta field first=1
+  meta=$(project_meta "$slug") || return 1
   for field in "$@"; do
     project_known_field "$field" || return 1
   done
@@ -122,11 +136,8 @@ project_show() {
 
 # A project's links as title<TAB>url records, in file order.
 project_links() {
-  local meta="$META_DIR/$1.sh" entry
-  if [[ ! -f $meta ]]; then
-    echo "error: no project metadata for $1" >&2
-    return 1
-  fi
+  local meta entry
+  meta=$(project_meta "$1") || return 1
   (
     # shellcheck source=/dev/null
     source "$meta"
@@ -138,11 +149,8 @@ project_links() {
 
 # A project's tags, one per line, in file order.
 project_tags() {
-  local meta="$META_DIR/$1.sh" tag
-  if [[ ! -f $meta ]]; then
-    echo "error: no project metadata for $1" >&2
-    return 1
-  fi
+  local meta tag
+  meta=$(project_meta "$1") || return 1
   (
     # shellcheck source=/dev/null
     source "$meta"

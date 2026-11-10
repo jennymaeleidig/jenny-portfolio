@@ -1,10 +1,11 @@
 // Reading the site: no JavaScript, no legacy routes, 404 and the sitemap
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { SITE_HOST, articleSlugs, build, currentNavLinks, emittedRoutes, escapeRegExp, root, sharedSite, sitemapLocs } from "./support/site.mjs";
+import { SITE_HOST, articleSlugs, build, currentNavLinks, emittedRoutes, escapeRegExp, root, sharedSite, sitemapLocs, walk, writeProject } from "./support/site.mjs";
 
 const { output, htmlFiles, siteCss } = await sharedSite();
 
@@ -174,4 +175,46 @@ test("robots.txt points at the absolute sitemap", () => {
 
   assert.match(robots, /^User-agent: \*$/m);
   assert.match(robots, new RegExp(`^Sitemap: ${escapeRegExp(SITE_HOST)}/sitemap\\.xml$`, "m"));
+});
+
+test("every emitted page is a route in the table, including the 404", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-drift-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-drift-dist-"));
+  writeProject(content, "routed", "year: 2026\nstatus: shipped\ncategory: software");
+  build(dist, { CONTENT_DIR: content });
+
+  // The build's staging directory is temporary, so read the same route table
+  // from sidecars staged separately, then compare it with the emitted pages.
+  const meta = mkdtempSync(join(tmpdir(), "portfolio-drift-meta-"));
+  const staging = mkdtempSync(join(tmpdir(), "portfolio-drift-staging-"));
+  execFileSync(join(root, "scripts", "stage.sh"), [content, staging, meta, root], {
+    cwd: root,
+    env: { ...process.env, VOCABULARY_DIR: join(root, "vocabulary") },
+    encoding: "utf8",
+  });
+
+  const rows = execFileSync(
+    "bash",
+    ["-c", 'source "$1"\nroute_records address indexable', "routes-test", join(root, "scripts", "routes.sh")],
+    {
+      cwd: root,
+      encoding: "utf8",
+      env: { ...process.env, META_DIR: meta, DIST: dist, SITE_ROOT: root },
+    },
+  );
+  const table = rows
+    .trim()
+    .split("\n")
+    .map((line) => line.split("\u001f")[0])
+    .sort();
+
+  const emitted = walk(dist)
+    .filter((file) => file.endsWith("index.html"))
+    .map((file) => {
+      const rel = relative(dist, file);
+      return rel === "index.html" ? "/" : `/${rel.slice(0, -"index.html".length)}`;
+    })
+    .sort();
+
+  assert.deepEqual(emitted, table, "the table and the emitted pages name the same addresses");
 });

@@ -33,7 +33,7 @@ rows=$(
 )
 
 route=${PAGE_ROUTE:?PAGE_ROUTE is required}
-page_open "Now" now "What $SITE_NAME is doing now. Last updated $updated." "$route" true
+page_open "Now" now "What $SITE_NAME is doing now. Last updated $updated." "$route" "${PAGE_INDEXABLE:?PAGE_INDEXABLE is required}"
 cat <<EOF
         <h1>Now</h1>
         <p class="meta">Last updated $(html_escape "$updated")</p>

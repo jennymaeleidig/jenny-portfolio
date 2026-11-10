@@ -27,7 +27,7 @@ render_links() {
 
 route=${PAGE_ROUTE:?PAGE_ROUTE is required}
 description=$(lead_paragraph "$about")
-page_open "About" about "$description" "$route" true
+page_open "About" about "$description" "$route" "${PAGE_INDEXABLE:?PAGE_INDEXABLE is required}"
 cat <<EOF
         <h1>About</h1>
         <img class="portrait" src="$(html_escape "$photo")" alt="$(html_escape "$FULL_NAME")">

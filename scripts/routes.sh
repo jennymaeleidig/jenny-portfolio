@@ -63,6 +63,22 @@ route_output() {
   fi
 }
 
+# One project page's route. post.sh names its own address while jenny renders
+# it, so it asks this function rather than spelling the path a second time.
+project_route() {
+  local slug=$1
+  shift
+  local -a fields=("$@")
+  local field address output source
+  for field in "${fields[@]}"; do
+    route_known_field "$field" || return 1
+  done
+  address="/projects/$slug/"
+  output=$(route_output "$address")
+  source="${DIST%/}/post/$slug.html"
+  route_row "$address" "$output" true project "" "" "$source" "${fields[@]}"
+}
+
 # Emit the route table once. Callers name the fields they need: the renderer
 # asks for the render kind and source, the sitemap for the address and
 # indexability.
@@ -97,7 +113,6 @@ route_records() {
 
   while IFS=$'\037' read -r slug publishable; do
     [[ $publishable == true ]] || continue
-    route_row "/projects/$slug/" "$(route_output "/projects/$slug/")" true \
-      project "" "" "${DIST%/}/post/$slug.html" "${fields[@]}"
+    project_route "$slug" "${fields[@]}"
   done < <(project_records slug publishable)
 }
