@@ -30,10 +30,26 @@ links:
 test("the build refuses a link without a valid title or http url", () => {
   const cases = [
     ["no-url", "  - title: 'Repo'", /cannot parse frontmatter line/],
-    ["bad-url", "  - title: 'Repo'\n    url: 'ftp://example.com/repo'", /link 'Repo' must be an http\(s\) URL/],
-    ["empty-title", "  - title: ''\n    url: 'https://example.com/repo'", /cannot parse frontmatter line/],
-    ["unquoted-title", "  - title: Repo\n    url: 'https://example.com/repo'", /cannot parse frontmatter line/],
-    ["tab-title", "  - title: 'two\twords'\n    url: 'https://example.com/repo'", /cannot parse frontmatter line/],
+    [
+      "bad-url",
+      "  - title: 'Repo'\n    url: 'ftp://example.com/repo'",
+      /link 'Repo' must be an http\(s\) URL/,
+    ],
+    [
+      "empty-title",
+      "  - title: ''\n    url: 'https://example.com/repo'",
+      /cannot parse frontmatter line/,
+    ],
+    [
+      "unquoted-title",
+      "  - title: Repo\n    url: 'https://example.com/repo'",
+      /cannot parse frontmatter line/,
+    ],
+    [
+      "tab-title",
+      "  - title: 'two\twords'\n    url: 'https://example.com/repo'",
+      /cannot parse frontmatter line/,
+    ],
   ];
 
   for (const [slug, links, expected] of cases) {
@@ -52,9 +68,39 @@ ${links}`,
     const result = buildFixture(content, dist);
 
     assert.notEqual(result.status, 0, `${slug} must fail`);
-    assert.match(result.stderr, new RegExp(`${slug}\\.md`), `${slug} names the file`);
+    assert.match(
+      result.stderr,
+      new RegExp(`${slug}\\.md`),
+      `${slug} names the file`,
+    );
     assert.match(result.stderr, expected, slug);
   }
+});
+
+test("the build accepts a formatter's double-quoted links", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-double-links-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-double-links-dist-"));
+  writeProject(
+    content,
+    "double-links",
+    `year: 2026
+status: shipped
+category: software
+links:
+  - title: "Alan Zucconi's Journey"
+    url: "https://example.com/alan"
+  - title: "Jenny's \\"Final\\" Cut"
+    url: "https://example.com/final"`,
+  );
+
+  buildFixture(content, dist);
+
+  const page = readFileSync(
+    join(dist, "projects", "double-links", "index.html"),
+    "utf8",
+  );
+  assert.match(page, /Alan Zucconi's Journey/);
+  assert.match(page, /Jenny's &quot;Final&quot; Cut/);
 });
 
 test("a project marked wip says so on its page", () => {
@@ -70,7 +116,10 @@ category: games`,
 
   buildFixture(content, dist);
 
-  const page = readFileSync(join(dist, "projects", "half-built", "index.html"), "utf8");
+  const page = readFileSync(
+    join(dist, "projects", "half-built", "index.html"),
+    "utf8",
+  );
   assert.match(page, /work in progress/i);
   assert.doesNotMatch(page, />wip</i);
 });
@@ -89,7 +138,10 @@ tags: [agents, terminal]`,
 
   buildFixture(content, dist);
 
-  const page = readFileSync(join(dist, "projects", "tagged", "index.html"), "utf8");
+  const page = readFileSync(
+    join(dist, "projects", "tagged", "index.html"),
+    "utf8",
+  );
   const tags = page.match(/<ul class="tags"[^>]*>([\s\S]*?)<\/ul>/);
   assert.ok(tags, "the project page carries a tag list");
   assert.match(tags[1], /<li>agents<\/li>/);
@@ -117,9 +169,16 @@ category: software`,
 
   buildFixture(content, dist);
 
-  const covered = readFileSync(join(dist, "projects", "covered", "index.html"), "utf8");
-  const uncovered = readFileSync(join(dist, "projects", "uncovered", "index.html"), "utf8");
-  const article = (page) => page.match(/<article[^>]*>([\s\S]*?)<\/article>/)?.[1] ?? "";
+  const covered = readFileSync(
+    join(dist, "projects", "covered", "index.html"),
+    "utf8",
+  );
+  const uncovered = readFileSync(
+    join(dist, "projects", "uncovered", "index.html"),
+    "utf8",
+  );
+  const article = (page) =>
+    page.match(/<article[^>]*>([\s\S]*?)<\/article>/)?.[1] ?? "";
 
   assert.match(article(covered), /<img[^>]+src="\/assets\/sky-poster\.svg"/);
   assert.doesNotMatch(article(uncovered), /<img\b/);

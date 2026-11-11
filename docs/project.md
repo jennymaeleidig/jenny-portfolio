@@ -35,15 +35,20 @@ order: <n>
   processing.
 - `tags` — free-form. The only place tools and techniques are named.
 - `links` — a list of titled `http(s)` links, printed in the order written.
-  Each link has a `title` and a `url`, both single-quoted YAML scalars. There
-  is no default set and no vocabulary: write the title exactly as it should
-  print, and its case is kept. A title is non-empty single-line text, including
+  Each link has a `title` and a `url`, both quoted YAML scalars. There is no
+  default set and no vocabulary: write the title exactly as it should print,
+  and its case is kept. A title is non-empty single-line text, including
   colons, apostrophes, parentheses, `#`, `=`, and Unicode; a single quote inside
   one is written twice. A title of only spaces is empty. Tabs, newlines and
   other control characters are rejected. Duplicate titles are allowed, and one
   link does not need a different title from another. Indent the `- title:` and
   `url:` lines with spaces, as in the example; put comments on their own line,
   not after a quoted value.
+
+  Single quotes are the house style, and Prettier keeps them; a formatter may
+  still write a double-quoted scalar, which the build also reads. In a
+  double-quoted value, `\"` and `\\` stand for a quote and a backslash; other
+  backslash escapes are refused because a link is one line of plain text.
 
   ```yaml
   links:
@@ -57,6 +62,7 @@ order: <n>
 
   The mapping form this field used to take (`Repo: <url>`) is refused; the
   build names the file and points here.
+
 - `publication` — where an article was published, an `http(s)` URL. Required
   by `articles`, refused on anything else. An article has no page of its own,
   so its catalogue row links out through `publication`; links are rendered on
@@ -70,6 +76,7 @@ category: articles
 publication: <url>
 ---
 ```
+
 - `order` — integer. Pins the project above the catalogue, lowest first.
 - `featured` — `true` puts it on the front page as a card. Six is the number
   the page is designed around.
@@ -77,7 +84,7 @@ publication: <url>
 `scripts/stage.sh` fails the build naming the file on an unknown key or value, a
 missing required field, a missing cover, a `publication` on a project that
 should have a page, a link that is not a title/url pair, a title or URL that is
-not a single-quoted YAML scalar, a link URL that is not `http(s)`, or a filename
+not one quoted YAML scalar, a link URL that is not `http(s)`, or a filename
 jenny can't `eval`.
 
 ## Vocabulary

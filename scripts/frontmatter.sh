@@ -29,12 +29,18 @@ frontmatter_records() {
       }
       return s
     }
-    # A single-quoted YAML scalar. The outer quotes are required, and a quote
-    # inside is written twice. Returns the text and sets value_error when the
-    # scalar is not quoted or an inner quote is not doubled.
-    function quoted(s,   text, out, i, c) {
+    # A quoted YAML scalar. Either delimiter is accepted: single quotes double
+    # an inner quote, while double quotes escape an inner quote or backslash
+    # with a backslash. Returns the text and sets value_error when the scalar
+    # is not one quoted line or carries a malformed inner quote.
+    function quoted(s,   q, text, out, i, c, n) {
       s = trim(s)
-      if (s !~ /^\047.*\047$/ || length(s) < 2) {
+      if (length(s) < 2) {
+        value_error = 1
+        return ""
+      }
+      q = substr(s, 1, 1)
+      if ((q != "\047" && q != "\042") || substr(s, length(s), 1) != q) {
         value_error = 1
         return ""
       }
@@ -42,16 +48,27 @@ frontmatter_records() {
       out = ""
       for (i = 1; i <= length(text); i++) {
         c = substr(text, i, 1)
-        if (c == "\047") {
-          if (substr(text, i + 1, 1) != "\047") {
+        if (q == "\047") {
+          if (c == "\047") {
+            if (substr(text, i + 1, 1) != "\047") {
+              value_error = 1
+              return ""
+            }
+            i++
+          }
+        } else if (c == "\042") {
+          value_error = 1
+          return ""
+        } else if (c == "\\") {
+          n = substr(text, i + 1, 1)
+          if (n != "\\" && n != "\042") {
             value_error = 1
             return ""
           }
-          out = out "\047"
+          c = n
           i++
-        } else {
-          out = out c
         }
+        out = out c
       }
       return out
     }
@@ -64,7 +81,7 @@ frontmatter_records() {
       value_error = 0
       value = quoted(value)
       if (value_error) return "\001"
-      if (value ~ /[\001-\010\013-\037\177]/ || index(value, "\t") > 0) return "\001"
+      if (value ~ /[\001-\037\177]/) return "\001"
       return value
     }
     NR == 1 && $0 == "---" { capture = 1; next }

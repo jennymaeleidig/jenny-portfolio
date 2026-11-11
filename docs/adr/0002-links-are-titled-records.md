@@ -1,5 +1,8 @@
 # Links are titled records
 
+_Superseded in part by [ADR-0004](0004-links-accept-either-quote-style.md):
+both fields may be double-quoted as well._
+
 A project's `links:` field is a list of `title`/`url` records, not a mapping of
 label to URL. Both fields are single-quoted YAML scalars:
 
