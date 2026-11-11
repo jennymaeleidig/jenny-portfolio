@@ -18,15 +18,33 @@
 # shellcheck source=/dev/null
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
-# List one section's entry files newest first, sorted by a frontmatter field
-# such as `start`. The filename breaks ties so the order is stable.
-career_files() {
-  local dir=$1 field=$2 file key
+# List one section's entry files. The caller reads each file once and sorts
+# the rows it produces.
+career_file_list() {
+  local dir=$1 file
   shopt -s nullglob
   for file in "$dir"/*.md; do
-    key=$(frontmatter_value "$file" "$field")
-    printf '%s\t%s\n' "${key:-0000}" "$file"
-  done | LC_ALL=C sort -t $'\t' -k1,1r -k2,2 | cut -f2-
+    printf '%s\n' "$file"
+  done
+}
+
+# One row per file, newest first by its `start` field, with the filename as a
+# tie-breaker. The reader names the fields its section declares and refuses
+# anything else, so a typo is a build error rather than an empty line.
+career_records() {
+  local dir=$1 reader=$2
+  shift 2
+  local file row first second third start fourth fifth rows
+  rows=$(
+    while IFS= read -r file; do
+      row=$("$reader" "$file" "$@") || exit 1
+      # Every section keeps its start date in the fourth field.
+      IFS=$'\037' read -r first second third start fourth fifth <<< "$row"
+      printf '%s\t%s\t%s\n' "${start:-0000}" "$file" "$row"
+    done < <(career_file_list "$dir")
+  ) || return 1
+  [[ -n $rows ]] || return 0
+  printf '%s\n' "$rows" | LC_ALL=C sort -t $'\t' -k1,1r -k2,2 | cut -f3-
 }
 
 month_label() {
@@ -62,19 +80,41 @@ date_range() {
   printf '%s – %s' "$(date_label "$start")" "$(date_label "$end")"
 }
 
+# One role's declared fields, read once.
+career_role_row() {
+  local file=$1 identity=$2
+  local group='' title='' location='' start='' end='' key value
+  while IFS=$'\t' read -r key value; do
+    case $key in
+      "$identity") group=$value ;;
+      title) title=$value ;;
+      location) location=$value ;;
+      start) start=$value ;;
+      end) end=$value ;;
+      *)
+        echo "error: $file: unknown career field '$key'" >&2
+        return 1
+        ;;
+    esac
+  done < <(frontmatter_scalars "$file")
+  printf '%s\037%s\037%s\037%s\037%s\037%s\n' \
+    "$group" "$title" "$location" "$start" "$end" "$file"
+}
+
 # One disclosure per role, grouped by employer or organisation identity rather
 # than adjacency, so two stints stay together when another role is dated
 # between them. The group's location comes from its newest role.
 career_role_records() {
   local dir=$1 identity=$2
   local -a groups=()
-  local -a group_files=()
-  local file group first location title start end
+  local -a group_rows=()
+  local row rows group first location title start end file
   local i found
 
-  while IFS= read -r file; do
-    [[ -n $file ]] || continue
-    group=$(frontmatter_value "$file" "$identity")
+  rows=$(career_records "$dir" career_role_row "$identity") || return 1
+  while IFS= read -r row; do
+    [[ -n $row ]] || continue
+    IFS=$'\037' read -r group title location start end file <<< "$row"
     found=-1
     for ((i = 0; i < ${#groups[@]}; i++)); do
       if [[ ${groups[i]} == "$group" ]]; then
@@ -84,47 +124,58 @@ career_role_records() {
     done
     if ((found < 0)); then
       groups+=("$group")
-      group_files+=("$file")
+      group_rows+=("$row")
     else
-      group_files[found]+=$'\n'"$file"
+      group_rows[found]+=$'\n'"$row"
     fi
-  done < <(career_files "$dir" start)
+  done <<< "$rows"
 
   for ((i = 0; i < ${#groups[@]}; i++)); do
     group=${groups[i]}
-    first=${group_files[i]%%$'\n'*}
-    location=$(frontmatter_value "$first" location)
-    while IFS= read -r file; do
-      [[ -n $file ]] || continue
-      title=$(frontmatter_value "$file" title)
-      start=$(frontmatter_value "$file" start)
-      end=$(frontmatter_value "$file" end)
+    first=${group_rows[i]%%$'\n'*}
+    IFS=$'\037' read -r _ _ location _ _ _ <<< "$first"
+    while IFS= read -r row; do
+      [[ -n $row ]] || continue
+      IFS=$'\037' read -r _ title _ start end file <<< "$row"
       printf 'disclosure\037%s - %s\037%s\037%s\037\037%s\n' \
         "$title" "$group" "$location" "$(date_range "$start" "$end")" "$file"
-    done <<< "${group_files[i]}"
+    done <<< "${group_rows[i]}"
   done
+}
+
+# One qualification's declared fields, read once.
+career_education_row() {
+  local file=$1
+  local institution='' location='' degree='' start='' end='' note='' key value
+  while IFS=$'\t' read -r key value; do
+    case $key in
+      institution) institution=$value ;;
+      location) location=$value ;;
+      degree) degree=$value ;;
+      start) start=$value ;;
+      end) end=$value ;;
+      note) note=$value ;;
+      *)
+        echo "error: $file: unknown career field '$key'" >&2
+        return 1
+        ;;
+    esac
+  done < <(frontmatter_scalars "$file")
+  printf '%s\037%s\037%s\037%s\037%s\037%s\n' \
+    "$institution" "$location" "$degree" "$start" "$end" "$note"
 }
 
 # One disclosure per qualification, newest first, summarised as degree - school.
 career_education_records() {
-  local dir=$1 file key value
-  local institution location degree start end note
-  while IFS= read -r file; do
-    [[ -n $file ]] || continue
-    institution='' location='' degree='' start='' end='' note=''
-    while IFS=$'\t' read -r key value; do
-      case $key in
-        institution) institution=$value ;;
-        location) location=$value ;;
-        degree) degree=$value ;;
-        start) start=$value ;;
-        end) end=$value ;;
-        note) note=$value ;;
-      esac
-    done < <(frontmatter_scalars "$file")
+  local dir=$1
+  local row rows institution location degree start end note
+  rows=$(career_records "$dir" career_education_row) || return 1
+  while IFS= read -r row; do
+    [[ -n $row ]] || continue
+    IFS=$'\037' read -r institution location degree start end note <<< "$row"
     printf 'disclosure\037%s - %s\037%s\037%s\037%s\037\n' \
       "$degree" "$institution" "$location" "$(date_range "$start" "$end")" "$note"
-  done < <(career_files "$dir" start)
+  done <<< "$rows"
 }
 
 # One item per skill. Each category is a bullet of the hand-written
@@ -147,13 +198,13 @@ career_skill_records() {
         if (char == "(") depth++
         if (char == ")" && depth > 0) depth--
         if (char == "," && depth == 0) {
-          if (trim(buffer) != "") printf "item\037%s\037%s\n", category, trim(buffer)
+          if (trim(buffer) != "") printf "item\037%s\n", trim(buffer)
           buffer = ""
           continue
         }
         buffer = buffer char
       }
-      if (trim(buffer) != "") printf "item\037%s\037%s\n", category, trim(buffer)
+      if (trim(buffer) != "") printf "item\037%s\n", trim(buffer)
     }
     /^- \*\*/ {
       line = $0
@@ -162,6 +213,7 @@ career_skill_records() {
       sub(/:\*\*.*/, "", category)
       items = line
       sub(/^.*:\*\*[[:space:]]*/, "", items)
+      printf "group\037%s\n", category
       emit(items)
     }
   ' "$file"

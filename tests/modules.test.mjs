@@ -618,10 +618,27 @@ test("skills are emitted as group and item records, keeping grouped skills whole
 
   assert.equal(
     shellIn(career, `career_section_records skills "${dir}"`),
-    "item\u001fData and cloud\u001fAWS (S3, EMR, DynamoDB)\n" +
-      "item\u001fData and cloud\u001fSQL\n" +
-      "item\u001fLanguages\u001fC\n" +
-      "item\u001fLanguages\u001fBash\n",
+    "group\u001fData and cloud\n" +
+      "item\u001fAWS (S3, EMR, DynamoDB)\n" +
+      "item\u001fSQL\n" +
+      "group\u001fLanguages\n" +
+      "item\u001fC\n" +
+      "item\u001fBash\n",
+  );
+});
+
+test("an unknown career field fails, naming the file", () => {
+  const dir = mkdtempSync(join(tmpdir(), "career-typo-"));
+  careerEntry(
+    dir,
+    "experience",
+    "typo",
+    "employer: Captech\nlocation: Richmond, VA\ntitle: Engineer\nstart: 2020\nend: 2021\ncolour: blue",
+  );
+
+  assert.throws(
+    () => shellIn(career, `career_section_records experience "${dir}"`),
+    (error) => /typo\.md/.test(String(error.stderr ?? error.message)),
   );
 });
 
