@@ -140,7 +140,7 @@ for file in "$content_dir"/*.md; do
   fi
 
   blurb=$(printf '%s\n' "$body" | blurb_of)
-  blurb_html=$(printf '%s\n' "$blurb" | cmark-gfm --extension table --extension autolink)
+  blurb_html=$(printf '%s\n' "$blurb" | render_markdown)
 
   mkdir -p "$meta_dir"
   {

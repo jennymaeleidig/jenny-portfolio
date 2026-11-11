@@ -29,7 +29,7 @@ rows=$(
     printf '            <tr>\n'
     printf '              <td class="now-doing">%s</td>\n' "$(html_escape "$doing")"
     printf '              <td class="catalogue-blurb">\n'
-    printf '%s\n' "$body" | cmark-gfm --extension table --extension autolink
+    printf '%s\n' "$body" | render_markdown
     printf '              </td>\n'
     printf '            </tr>\n'
   done
