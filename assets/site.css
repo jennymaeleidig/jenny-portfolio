@@ -806,10 +806,10 @@ nav + * > :first-child {
   margin-top: 0;
 }
 
-/* Now's table keeps a larger step under the date line than the work pages do
-   under their filter bar. */
+/* Now's date line opens the table the way the tagline opens the featured
+   cards: the paragraph's own bottom margin, no extra step. */
 .catalogue.now-table {
-  margin-top: calc(var(--line-height) * 1.5);
+  margin-top: 0;
 }
 
 th,
