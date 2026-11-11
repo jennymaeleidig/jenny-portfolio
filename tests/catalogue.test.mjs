@@ -13,6 +13,7 @@ import {
   currentFilters,
   currentNavLinks,
   currentTabs,
+  emittedRoutes,
   escapeRegExp,
   filterLabels,
   filters,
@@ -131,6 +132,42 @@ publication: https://example.com/article-one`,
       `/work/${category}/ carries exactly ${category}`,
     );
   }
+});
+
+test("a catalogue href is an emitted route, or an article's publication", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-catalogue-links-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-catalogue-links-dist-"));
+  writeProject(
+    content,
+    "a-page",
+    `year: 2026
+status: shipped
+category: software`,
+  );
+  writeProject(
+    content,
+    "an-article",
+    `year: 2025
+status: shipped
+category: articles
+publication: https://example.com/an-article`,
+  );
+
+  build(dist, { CONTENT_DIR: content });
+
+  const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
+  const routes = new Set(emittedRoutes(dist));
+  const hrefs = catalogueRows(catalogue);
+
+  for (const href of hrefs) {
+    if (href.startsWith("/")) {
+      assert.ok(routes.has(href), `${href} is a route the build emitted`);
+    } else {
+      assert.match(href, /^https:\/\//, `${href} is an external article link`);
+    }
+  }
+  assert.ok(hrefs.includes("/projects/a-page/"));
+  assert.ok(hrefs.includes("https://example.com/an-article"));
 });
 
 test("the work pages carry Projects and Career tabs, marking only the current page", () => {

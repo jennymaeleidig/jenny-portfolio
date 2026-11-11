@@ -116,3 +116,56 @@ route_records() {
     project_route "$slug" "${fields[@]}"
   done < <(project_records slug publishable)
 }
+
+# A project as a row for a page that links to it: the catalogue and the
+# featured grid. The route table owns the address, so `href` is resolved here;
+# an article has no route, so its href is its publication. Callers name the
+# project fields they print, exactly as project_records.
+project_row_records() {
+  local -a fields=("$@")
+  local -a record_fields=()
+  local -a record
+  local field href value first
+  local i
+
+  for field in "${fields[@]}"; do
+    case $field in
+      href | publishable | publication) ;;
+      *)
+        project_known_field "$field" || return 1
+        record_fields+=("$field")
+        ;;
+    esac
+  done
+
+  while IFS=$'\037' read -r -a record; do
+    local slug=${record[0]:-} publishable=${record[1]:-} publication=${record[2]:-}
+    if [[ $publishable == true ]]; then
+      href=$(project_route "$slug" address) || return 1
+    else
+      href=$publication
+    fi
+    first=1
+    i=0
+    for field in "${fields[@]}"; do
+      case $field in
+        href) value=$href ;;
+        publishable) value=$publishable ;;
+        publication) value=$publication ;;
+        *)
+          # read drops a trailing empty field, so a row's last column can be
+          # absent under `set -u`.
+          value=${record[3 + i]:-}
+          i=$((i + 1))
+          ;;
+      esac
+      if ((first)); then
+        first=0
+      else
+        printf '\037'
+      fi
+      printf '%s' "$value"
+    done
+    printf '\n'
+  done < <(project_records slug publishable publication "${record_fields[@]}")
+}

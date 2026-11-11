@@ -19,7 +19,7 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 # Whether a field is part of the record. Lists have their own accessors.
 project_known_field() {
   case $1 in
-    slug | title | blurb | blurb_text | year | status | category | cover | order | publication | featured | publishable | href)
+    slug | title | blurb | blurb_text | year | status | category | cover | order | publication | featured | publishable)
       return 0
       ;;
     links | tags)
@@ -51,13 +51,6 @@ project_field_value() {
     order) printf '%s' "${META_ORDER:-}" ;;
     publication) printf '%s' "${META_PUBLICATION:-}" ;;
     featured) printf '%s' "${META_FEATURED:-}" ;;
-    href)
-      if [[ ${META_CATEGORY:-} == articles ]]; then
-        printf '%s' "${META_PUBLICATION:-}"
-      else
-        printf '/projects/%s/' "${META_SLUG:-}"
-      fi
-      ;;
     publishable)
       if [[ ${META_CATEGORY:-} == articles ]]; then
         printf 'false'

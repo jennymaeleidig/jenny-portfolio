@@ -7,7 +7,7 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
-source "$SITE_ROOT/scripts/projects.sh"
+source "$SITE_ROOT/scripts/routes.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 
@@ -19,7 +19,7 @@ cards=$(
     [[ $featured == true ]] || continue
     printf '%s\t%s\t%s\t%s\t%s\n' \
       "$year" "$category" "$title" "$blurb" "$href"
-  done < <(project_records href title blurb category year featured)
+  done < <(project_row_records href title blurb category year featured)
 )
 
 route=${PAGE_ROUTE:?PAGE_ROUTE is required}
