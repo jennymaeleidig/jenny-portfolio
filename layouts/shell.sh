@@ -9,6 +9,8 @@ stylesheet=${STYLESHEET:-$asset_base/site.css}
 # shellcheck source=/dev/null
 source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
+source "$SITE_ROOT/scripts/routes.sh"
+# shellcheck source=/dev/null
 source "$identity_file"
 
 # The page head takes raw text: the title and description are composed and
@@ -130,14 +132,19 @@ sky_levers_attr() {
 
 shell_sheet_open() {
   local section=${1:-}
+  local home_href work_href about_href now_href
+  home_href=$(route_address home) || return 1
+  work_href=$(route_address work) || return 1
+  about_href=$(route_address about) || return 1
+  now_href=$(route_address now) || return 1
   cat <<EOF
     <div class="sheet">
       <header class="site-header">
         <nav aria-label="Primary">
-          <a href="/"$(current_page_attr "$section" home)>$SITE_NAME</a>
-          <a href="/work/"$(current_page_attr "$section" work)>Work</a>
-          <a href="/about/"$(current_page_attr "$section" about)>About</a>
-          <a href="/now/"$(current_page_attr "$section" now)>Now</a>
+          <a href="$home_href"$(current_page_attr "$section" home)>$SITE_NAME</a>
+          <a href="$work_href"$(current_page_attr "$section" work)>Work</a>
+          <a href="$about_href"$(current_page_attr "$section" about)>About</a>
+          <a href="$now_href"$(current_page_attr "$section" now)>Now</a>
         </nav>
         $(swatch_strip)
       </header>

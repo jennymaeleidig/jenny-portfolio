@@ -701,6 +701,22 @@ test("a route's output is its address under the dist tree", () => {
   );
 });
 
+test("a layout route's address comes from the route table", () => {
+  const dist = mkdtempSync(join(tmpdir(), "routes-address-"));
+
+  assert.equal(
+    shellIn(routes, "route_address work games", { DIST: dist }),
+    "/work/games/",
+  );
+  assert.equal(
+    shellIn(routes, "route_address career", { DIST: dist }),
+    "/work/career/",
+  );
+  assert.throws(() =>
+    shellIn(routes, "route_address nonsense", { DIST: dist }),
+  );
+});
+
 test("a project page asks the route table for its address and indexability", () => {
   const dir = projectDir();
   projectSidecar(dir, "alpha");
@@ -721,6 +737,7 @@ function pageHead(script) {
   return shellIn(shellModule, script, {
     SITE_ROOT: root,
     SITE_HOST: "https://example.com",
+    DIST: join(tmpdir(), "page-head-dist"),
     IDENTITY_FILE: join(root, "tests", "fixtures", "site", "identity.sh"),
   });
 }

@@ -126,21 +126,24 @@ else
   description="The career record: experience, volunteering, education and skills."
 fi
 
+tabs=$(tab_bar career) || exit 1
 heading_html=$(html_escape "$heading")
 page_open "$heading" work "$description" "$route" "$indexable"
 cat <<EOF
         <h1>$heading_html</h1>
-$(tab_bar career)
+$tabs
 
         <nav aria-label="Career sections">
           <ul class="filters">
 EOF
 
-printf '            <li><a href="/work/career/"%s>All</a></li>\n' \
-  "$(current_page_attr "" "$section")"
+all_href=$(route_address career) || exit 1
+printf '            <li><a href="%s"%s>All</a></li>\n' \
+  "$all_href" "$(current_page_attr "" "$section")"
 while IFS= read -r name; do
-  printf '            <li><a href="/work/career/%s/"%s>%s</a></li>\n' \
-    "$name" \
+  section_href=$(route_address career "$name") || exit 1
+  printf '            <li><a href="%s"%s>%s</a></li>\n' \
+    "$section_href" \
     "$(current_page_attr "$name" "$section")" \
     "$(vocabulary_label career-sections "$name")"
 done < <(vocabulary_words career-sections)
