@@ -17,4 +17,4 @@ links:
 
 # Horizon Keyboard
 
-A custom mechanical keyboard built from the open-source Horizon design, assembled and flashed, and then mostly left alone in favour of the Apple keyboard.
+A custom mechanical keyboard built from the open-source Horizon design, assembled and flashed, and then left alone in favour of the Apple keyboard.

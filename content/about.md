@@ -2,8 +2,8 @@
 photo: /assets/portrait.jpg
 ---
 
-I'm a software engineer in Richmond, Virginia. I'm also working on an MFA in Art and Technology at the University of Oklahoma, where my work has moved toward creative computing: games, sound, and hardware you can touch.
+I play with computers.
 
-The through-line is that the same person writes the pipeline and the interface. I care about technology that carries something rather than only processing it. A radio stream you can sit with, a game that makes a signal feel alive, an FPGA that puts an old console back on a modern screen.
+---
 
-I want engineering work with a creative edge. That means teams building tools or experiences where the technical decisions are also design decisions, and where the thing has to feel right, not just run.
+Computation has a cost — capital, natural resources, time, attention, the labor of everyone who created the machine, the labor of those who keep the machine running. Most computing is designed to hide that truth, to make the transfer seem effortless. My work goes the other way: older, slower, physically insistent machines make the cost visible, and make the exchange between person and machine intimate rather than casual. Through my work, I seek to deconstruct the mysticism surrounding computing technology by making our encounters with the machine more personal, intentional, and ritualistic. The process, of course, does not come without friction; purposeful languorousness inherently means rejecting efficiency and productivity. The grander the computing infrastructure, the harder it becomes to address the concern that any of this may not be worth the cost. The sea of information has grown so vast that when we question the authenticity of a work, we are questioning whether it was made by a human at all. This question is existential and horrifying. As an artist and engineer, I find it my responsibility to resist by bringing about meaning through human-centered creation.

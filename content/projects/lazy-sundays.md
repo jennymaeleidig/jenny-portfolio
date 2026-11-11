@@ -21,4 +21,4 @@ featured: true
 
 # the lazy sundays blog
 
-A multi-author site about games, film, TV and music: a Next.js front end over a Strapi CMS, with author pages, tags, an archive, a random article button and an RSS feed. Built and maintained the site since 2023 with [Devin Toms](https://github.com/dtoms).
+A multi-author site about games, film, TV and music: a Next.js front end over a Strapi CMS. Built and maintained the site since 2023 with [Devin Toms](https://github.com/dtoms).

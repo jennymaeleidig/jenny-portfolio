@@ -41,11 +41,9 @@ career_disclosure() {
   printf '            <p class="career-meta">'
   if [[ -n $location ]]; then
     printf '<span class="meta">%s</span> ' "$(html_escape "$location")"
-    printf '<span class="career-sep" aria-hidden="true">&middot;</span> '
   fi
   printf '<span class="career-dates">%s</span>' "$(html_escape "$dates")"
   if [[ -n $note ]]; then
-    printf ' <span class="career-sep" aria-hidden="true">&middot;</span> '
     printf ' <span class="career-note">%s</span>' "$(html_escape "$note")"
   fi
   printf '</p>\n'

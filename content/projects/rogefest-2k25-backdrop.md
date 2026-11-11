@@ -16,4 +16,4 @@ links:
 
 # ROGEFEST 2k25 Intermission Backdrop
 
-Three minutes of anime and Sega Genesis footage put through circuit-bent video gear.
+Anime and Sega Genesis footage put through circuit-bent video gear.

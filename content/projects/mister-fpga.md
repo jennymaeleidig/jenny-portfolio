@@ -16,4 +16,4 @@ links:
 
 # MiSTer FPGA
 
-An analog MiSTer built around a Terasic DE10-Nano, an aluminium kit, and an mt32-pi, with a video output to a CRT.
+An analog MiSTer built around a Terasic DE10-Nano and an mt32-pi, with a video output to a CRT.

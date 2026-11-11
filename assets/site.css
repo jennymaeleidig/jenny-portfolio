@@ -563,7 +563,7 @@ article > .links {
   gap: 0;
 }
 
-/* The same separator the meta line uses, so the tags read as one line. */
+/* The tags' own separator, so they read as one line. */
 .tags li + li::before {
   content: "·";
   margin: 0 1ch;
@@ -696,24 +696,18 @@ main > :last-child > :last-child {
   flex-direction: row-reverse;
 }
 
+/*
+ * A rule sits closer to its text than a paragraph break does: half a line on
+ * each side, the same gap the links close on. The top margin is negative so
+ * that, collapsing against the paragraph's full line-height margin above it,
+ * it lands at half a line rather than at the paragraph's larger margin.
+ */
 hr {
-  position: relative;
   display: block;
-  height: var(--line-height);
-  margin: calc(var(--line-height) * 1.5) 0;
-  border: none;
-  color: var(--ink);
-}
-
-hr::after {
-  display: block;
-  content: "";
-  position: absolute;
-  top: calc(var(--line-height) / 2 - var(--border-thickness));
-  left: 0;
-  width: 100%;
   height: 0;
-  border-top: calc(var(--border-thickness) * 3) double var(--ink);
+  margin: calc(var(--line-height) * -0.5) 0 calc(var(--line-height) / 2);
+  border: none;
+  border-top: var(--border-thickness) solid var(--sky-2);
 }
 
 ul,
@@ -959,9 +953,11 @@ th {
 
 /*
  * One gap under every summary, whatever the record holds: 12px between the
- * index line and the dates, the prose or the skills. The gap rides on the
- * first child rather than the summary's margin-bottom so it does not depend
- * on margin collapsing through the details slot.
+ * index line and the dates, the prose or the skills. The same 12px sits under
+ * the meta line, so the dates hold the middle of the two: an even gap above
+ * and below, not a tight one on either side. The gap rides on the children
+ * rather than the summary's margin-bottom so it does not depend on margin
+ * collapsing through the details slot.
  */
 .career-disclosure[open] > summary {
   margin-bottom: 0;
@@ -979,16 +975,34 @@ th {
   margin-top: calc(var(--line-height) / 2);
 }
 
-.career-disclosure > * + * {
-  margin-top: calc(var(--line-height) / 4);
+/*
+ * The reset above outranks a plain `* + *` on specificity, so the sibling gap
+ * names both children as :not(summary) to win it back.
+ */
+.career-disclosure > :not(summary) + :not(summary) {
+  margin-top: calc(var(--line-height) / 2);
 }
 
+/*
+ * The meta line is one row flush to both edges: the place holds the left and
+ * the dates the right, with the gap between them carrying the space. An entry
+ * with a note gives the note the right edge and steps the dates in beside it.
+ * `align-items: baseline` keeps every piece on the one text line even where a
+ * piece's font size is smaller. The row is inset a gutter on each side so it
+ * reads as sitting inside the disclosure, not ruling edge to edge with the
+ * summary and the prose.
+ */
 .career-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: 2ch;
+  padding: 0 2ch;
   margin: 0;
 }
 
 .career-meta .meta,
-.career-meta .career-sep,
 .career-meta .career-note {
   margin: 0;
   color: color-mix(in srgb, var(--ink) 75%, var(--paper));
@@ -1168,6 +1182,13 @@ th {
   .links,
   .tags {
     gap: 1ch;
+  }
+
+  /* Too narrow to hold the row flush: the dates and the note flow as one line
+     again, wrapping where the words do, rather than leaving a piece stranded
+     alone on a line. */
+  .career-meta {
+    display: block;
   }
 }
 

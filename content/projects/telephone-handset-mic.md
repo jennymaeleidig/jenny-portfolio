@@ -16,4 +16,4 @@ links:
 
 # Telephone Handset Mic
 
-A yellowed plastic telephone handset turned into a microphone, and then a second one turned into a one-handed cue monitor for DJing.
+A telephone handset turned into a microphone, and then a second one turned into a one-handed cue monitor for DJing.

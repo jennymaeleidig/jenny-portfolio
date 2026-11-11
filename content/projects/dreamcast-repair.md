@@ -13,4 +13,4 @@ featured: true
 
 # Dreamcast Repair
 
-A Sega Dreamcast, cleaned, modded, and put back together. The teardown is documented well; the reassembly less so. One page in Paged Out! issue #8 about why, and what a 2mm difference in screw length does to a motherboard, first written up on the [lazy sundays blog](https://www.lazysundays.net/articles/dreamcast-repair).
+A Sega Dreamcast. The teardown is documented well; the reassembly less so. About what a 2mm difference in screw length does to a motherboard.

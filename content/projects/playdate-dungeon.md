@@ -16,4 +16,4 @@ links:
 
 # Playdate Dungeon
 
-A sketch of dungeon crawler battle system built around the Playdate's crankx
+A sketch of dungeon crawler battle system built around the Playdate's crank.
