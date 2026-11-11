@@ -144,6 +144,24 @@ test("the body is the page without its frontmatter", () => {
   assert.equal(shell(`frontmatter_body "${file}"`), "# A page\n\nProse.\n");
 });
 
+test("the opening paragraph is the text after an optional H1", () => {
+  assert.equal(
+    shell(
+      `printf '%s\\n' '# Title' '' 'First *paragraph*.' '' 'Second.' | opening_paragraph`,
+    ),
+    "First *paragraph*.\n",
+  );
+  assert.equal(
+    shell(`printf '%s\\n' 'No heading.' '' 'Second.' | opening_paragraph`),
+    "No heading.\n",
+  );
+});
+
+test("a file's opening paragraph drops its frontmatter", () => {
+  const file = page("---\nphoto: /x\n---\n\nAbout paragraph.\n\nMore.\n");
+  assert.equal(shell(`lead_paragraph "${file}"`), "About paragraph.\n");
+});
+
 test("scalars unquote their values and skip lists and mappings", () => {
   const file = page(
     [
@@ -396,6 +414,7 @@ function projectSidecar(dir, slug, overrides = {}) {
     META_SLUG: `'${slug}'`,
     META_TITLE: `'Title ${slug}'`,
     META_BLURB: `'<p>Blurb ${slug}.</p>'`,
+    META_BLURB_TEXT: `'Blurb ${slug}.'`,
     META_YEAR: "2026",
     META_STATUS: "shipped",
     META_CATEGORY: "games",
@@ -479,7 +498,10 @@ test("a project row resolves a page to its route and an article to its publicati
 
 test("a project's blurb is available as rendered markup and as plain text", () => {
   const dir = projectDir();
-  projectSidecar(dir, "alpha", { META_BLURB: "'<p>Guns &amp; roses.</p>'" });
+  projectSidecar(dir, "alpha", {
+    META_BLURB: "'<p>Guns &amp; roses.</p>'",
+    META_BLURB_TEXT: "'Guns & roses.'",
+  });
 
   assert.equal(
     shellIn(projects, "project_show alpha blurb blurb_text", { META_DIR: dir }),

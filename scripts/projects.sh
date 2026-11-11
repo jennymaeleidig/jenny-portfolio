@@ -39,11 +39,7 @@ project_field_value() {
     slug) printf '%s' "${META_SLUG:-}" ;;
     title) printf '%s' "${META_TITLE:-}" ;;
     blurb) printf '%s' "${META_BLURB:-}" ;;
-    blurb_text)
-      local text
-      text=$(printf '%s\n' "${META_BLURB:-}" | prose_text)
-      printf '%s' "$text"
-      ;;
+    blurb_text) printf '%s' "${META_BLURB_TEXT:-}" ;;
     year) printf '%s' "${META_YEAR:-}" ;;
     status) printf '%s' "${META_STATUS:-}" ;;
     category) printf '%s' "${META_CATEGORY:-}" ;;

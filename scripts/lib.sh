@@ -109,16 +109,21 @@ prose_text() {
   '
 }
 
-# The opening paragraph of a markdown page as plain text.
+# The opening paragraph of a markdown body: the text after an optional H1,
+# up to the next blank line. The rule lives on the source, so a project's
+# blurb and About's description cannot extract it differently.
+opening_paragraph() {
+  awk '
+    !started && /^#[[:space:]]/ { started = 1; next }
+    !started && /^[[:space:]]*$/ { next }
+    !started { started = 1 }
+    started && /^[[:space:]]*$/ { if (text != "") exit; next }
+    started { text = (text == "" ? $0 : text " " $0) }
+    END { print text }
+  '
+}
+
+# The opening paragraph of a markdown file, dropping its frontmatter.
 lead_paragraph() {
-  markdown_body "$1" | tr '\n' ' ' | awk '
-    {
-      start = index($0, "<p>")
-      if (!start) exit
-      text = substr($0, start + 3)
-      stop = index(text, "</p>")
-      if (stop) text = substr(text, 1, stop - 1)
-      print text
-    }
-  ' | prose_text
+  frontmatter_body "$1" | opening_paragraph
 }
