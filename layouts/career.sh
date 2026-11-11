@@ -57,38 +57,52 @@ career_disclosure() {
   printf '          </details>\n'
 }
 
-# One disclosure per record. The career module has already chosen the
-# summary, grouped the roles, read the fields and formatted the dates; the
-# layout only renders them.
-render_disclosures() {
-  local section=$1 kind summary location dates note body
-  while IFS=$'\037' read -r kind summary location dates note body; do
-    career_disclosure "$summary" "$location" "$dates" "$note" "$body"
-  done < <(career_section_records "$section" "$career_dir")
+# A skills group: the summary the reader scans, then the skills as a list,
+# which CSS lays out in two columns when the sheet is wide enough for them.
+career_group_open() {
+  printf '          <details class="career-disclosure">\n'
+  printf '            <summary>%s</summary>\n' "$(html_escape "$1")"
+  printf '            <ul class="skill-list">\n'
 }
 
-# One disclosure per skill group, summarised by the group name: `Data and
-# cloud`. The skills themselves are a list, which CSS lays out in two columns
-# when the sheet is wide enough for them.
-render_skills() {
-  local kind category item current="" open=0
-  while IFS=$'\037' read -r kind category item; do
-    if [[ $category != "$current" ]]; then
-      if ((open)); then
-        printf '            </ul>\n'
-        printf '          </details>\n'
-      fi
-      current=$category
-      open=1
-      printf '          <details class="career-disclosure">\n'
-      printf '            <summary>%s</summary>\n' "$(html_escape "$category")"
-      printf '            <ul class="skill-list">\n'
-    fi
-    printf '              <li>%s</li>\n' "$(html_escape "$item")"
-  done < <(career_section_records skills "$career_dir")
-  if ((open)); then
-    printf '            </ul>\n'
-    printf '          </details>\n'
+career_group_close() {
+  printf '            </ul>\n'
+  printf '          </details>\n'
+}
+
+# One section's records, rendered by kind. The career module chooses the kind,
+# groups the roles and the skills, reads each file once, and formats the
+# dates; the layout only renders the record it is handed.
+render_records() {
+  local section=$1 kind first second third fourth fifth group_open=0 rows
+  rows=$(career_section_records "$section" "$career_dir") || return 1
+  while IFS=$'\037' read -r kind first second third fourth fifth; do
+    case $kind in
+      disclosure)
+        if ((group_open)); then
+          career_group_close
+          group_open=0
+        fi
+        career_disclosure "$first" "$second" "$third" "$fourth" "$fifth"
+        ;;
+      group)
+        if ((group_open)); then
+          career_group_close
+        fi
+        career_group_open "$first"
+        group_open=1
+        ;;
+      item)
+        printf '              <li>%s</li>\n' "$(html_escape "$first")"
+        ;;
+      *)
+        echo "error: unknown career record '$kind'" >&2
+        return 1
+        ;;
+    esac
+  done <<< "$rows"
+  if ((group_open)); then
+    career_group_close
   fi
 }
 
@@ -109,10 +123,7 @@ EOF
           <h2 id="career-$name">$label</h2>
 EOF
   fi
-  case $name in
-    experience | volunteering | education) render_disclosures "$name" ;;
-    skills) render_skills ;;
-  esac
+  render_records "$name"
   cat <<EOF
         </section>
 EOF

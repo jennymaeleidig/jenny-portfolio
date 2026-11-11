@@ -2,6 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -39,6 +40,29 @@ test("the build fails, naming the file, when a required field is missing", () =>
     assert.notEqual(result.status, 0, `the build must fail without ${missing}`);
     assert.match(result.stderr, new RegExp(`missing-${missing}\\.md`));
   }
+});
+
+test("the build fails, naming the file, on an unknown career field", () => {
+  const career = mkdtempSync(join(tmpdir(), "portfolio-career-typo-"));
+  mkdirSync(join(career, "experience"), { recursive: true });
+  writeFileSync(
+    join(career, "experience", "typo.md"),
+    `---
+employer: Captech
+location: Richmond, VA
+title: Engineer
+start: 2020
+end: 2021
+colour: blue
+---
+`,
+  );
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-career-typo-dist-"));
+
+  assert.throws(
+    () => build(dist, { CAREER_DIR: career }),
+    (error) => /typo\.md/.test(String(error.stderr ?? error.message)),
+  );
 });
 
 test("the build fails on a filename jenny would eval unsafely", () => {
