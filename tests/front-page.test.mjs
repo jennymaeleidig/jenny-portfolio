@@ -195,6 +195,12 @@ test("Now carries a visible update date and its five sections, without an archiv
     "Not doing",
   ]);
 
+  assert.doesNotMatch(
+    now,
+    /<td class="now-doing"><\/td>/,
+    "the blank line after the frontmatter is not an empty row",
+  );
+
   assert.match(
     now,
     /<td class="catalogue-blurb">\s*<p>I'm rebuilding this site/,
