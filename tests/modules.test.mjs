@@ -439,7 +439,7 @@ test("one project's facts are read by name, never by sidecar variable", () => {
   );
 });
 
-test("publishability and href follow the article rule in one place", () => {
+test("publishability follows the article rule", () => {
   const dir = projectDir();
   projectSidecar(dir, "article", {
     META_CATEGORY: "articles",
@@ -448,14 +448,32 @@ test("publishability and href follow the article rule in one place", () => {
   projectSidecar(dir, "page", { META_CATEGORY: "software" });
 
   assert.equal(
-    shellIn(projects, "project_show article publishable href", {
+    shellIn(projects, "project_show article publishable publication", {
       META_DIR: dir,
     }),
     "false\u001fhttps://example.com/article\n",
   );
   assert.equal(
-    shellIn(projects, "project_show page publishable href", { META_DIR: dir }),
-    "true\u001f/projects/page/\n",
+    shellIn(projects, "project_show page publishable", { META_DIR: dir }),
+    "true\n",
+  );
+});
+
+test("a project row resolves a page to its route and an article to its publication", () => {
+  const dir = projectDir();
+  projectSidecar(dir, "article", {
+    META_CATEGORY: "articles",
+    META_PUBLICATION: "'https://example.com/article'",
+  });
+  projectSidecar(dir, "page", { META_CATEGORY: "software" });
+  const dist = mkdtempSync(join(tmpdir(), "routes-rows-"));
+
+  assert.equal(
+    shellIn(routes, "project_row_records href slug", {
+      META_DIR: dir,
+      DIST: dist,
+    }),
+    "https://example.com/article\u001farticle\n/projects/page/\u001fpage\n",
   );
 });
 
@@ -493,6 +511,9 @@ test("an unknown project field is an error, not an empty column", () => {
 
   assert.throws(() =>
     shellIn(projects, "project_show alpha nonsense", { META_DIR: dir }),
+  );
+  assert.throws(() =>
+    shellIn(projects, "project_show alpha href", { META_DIR: dir }),
   );
 });
 

@@ -5,7 +5,7 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
-source "$SITE_ROOT/scripts/projects.sh"
+source "$SITE_ROOT/scripts/routes.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 # shellcheck source=/dev/null
@@ -41,7 +41,7 @@ rows=$(
     fi
     printf '              <td class="meta">%s</td>\n' "$(html_escape "$year")"
     printf '            </tr>\n'
-  done < <(project_records href title blurb category year)
+  done < <(project_row_records href title blurb category year)
 )
 
 route=${PAGE_ROUTE:?PAGE_ROUTE is required}
