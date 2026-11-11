@@ -10,6 +10,7 @@ source "$SITE_ROOT/layouts/shell.sh"
 
 route=${1:?a route is required}
 indexable=${2:?an indexable flag is required}
+site_name=$(identity_value SITE_NAME) || exit 1
 
 now=${NOW_FILE:-"$SITE_ROOT/content/now.md"}
 updated=$(frontmatter_value "$now" updated)
@@ -38,7 +39,7 @@ rows=$(
   done
 )
 
-page_open "Now" now "What $SITE_NAME is doing now. Last updated $updated." "$route" "$indexable"
+page_open "Now" now "What $site_name is doing now. Last updated $updated." "$route" "$indexable"
 cat <<EOF
         <h1>Now</h1>
         <p class="meta">Last updated $(html_escape "$updated")</p>

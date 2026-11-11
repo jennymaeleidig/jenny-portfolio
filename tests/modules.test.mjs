@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 // represented.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const lib = join(root, "scripts", "lib.sh");
+const identity = join(root, "scripts", "identity.sh");
 const projects = join(root, "scripts", "projects.sh");
 const career = join(root, "scripts", "career.sh");
 const routes = join(root, "scripts", "routes.sh");
@@ -31,6 +32,20 @@ function shellIn(module, script, env = {}) {
 
 function shell(script, env = {}) {
   return shellIn(lib, script, env);
+}
+
+// A sourced module that fails while loading must stop the caller, as it does
+// in a layout under `set -e`.
+function shellStrict(module, script, env = {}) {
+  return execFileSync(
+    "bash",
+    ["-c", `set -e\nsource "$1"\n${script}`, "modules-test", module],
+    {
+      cwd: root,
+      encoding: "utf8",
+      env: { ...process.env, ...env },
+    },
+  );
 }
 
 const VOCABULARIES = [
@@ -433,6 +448,56 @@ function projectSidecar(dir, slug, overrides = {}) {
       .join("\n"),
   );
 }
+
+test("identity facts are read through one interface", () => {
+  const dir = mkdtempSync(join(tmpdir(), "identity-"));
+  const file = join(dir, "identity.sh");
+  writeFileSync(
+    file,
+    `FULL_NAME="Example Name"
+SITE_NAME="Example Site"
+TAGLINE="Test Tagline"
+PORTFOLIO=https://example.com
+EMAIL=hello@example.com
+PRIMARY_LINKS=("Email"$'\\t'"mailto:hello@example.com" "GitHub"$'\\t'"https://example.com/github")
+`,
+  );
+
+  assert.equal(
+    shellIn(identity, "identity_value SITE_NAME", { IDENTITY_FILE: file }),
+    "Example Site",
+  );
+  assert.equal(
+    shellIn(identity, "identity_links", { IDENTITY_FILE: file }),
+    "Email\tmailto:hello@example.com\nGitHub\thttps://example.com/github\n",
+  );
+  assert.throws(() =>
+    shellIn(identity, "identity_value nonsense", { IDENTITY_FILE: file }),
+  );
+});
+
+test("identity refuses a missing required fact, naming the file", () => {
+  const dir = mkdtempSync(join(tmpdir(), "identity-missing-"));
+  const file = join(dir, "identity.sh");
+  writeFileSync(
+    file,
+    `FULL_NAME="Example Name"
+SITE_NAME="Example Site"
+PORTFOLIO=https://example.com
+EMAIL=hello@example.com
+PRIMARY_LINKS=("Email"$'\\t'"mailto:hello@example.com")
+`,
+  );
+
+  assert.throws(
+    () =>
+      shellStrict(identity, "identity_value SITE_NAME", {
+        IDENTITY_FILE: file,
+      }),
+    (error) =>
+      /identity\.sh.*TAGLINE/.test(String(error.stderr ?? error.message)),
+  );
+});
 
 test("project records come in catalogue order and answer the fields a caller names", () => {
   const dir = projectDir();
