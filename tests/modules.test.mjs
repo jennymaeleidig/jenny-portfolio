@@ -70,6 +70,14 @@ for (const vocabulary of VOCABULARIES) {
   });
 }
 
+test("markdown is rendered with the pinned table and autolink extensions", () => {
+  const html = shell(
+    `printf '%s\\n' '| Tool | Pinned |' '| ---- | ------ |' '| cmark-gfm | yes |' '' 'https://example.com' | render_markdown`,
+  );
+  assert.match(html, /<table>/);
+  assert.match(html, /href="https:\/\/example\.com"/);
+});
+
 test("an unknown word is rejected and carries no label", () => {
   for (const vocabulary of VOCABULARIES) {
     assert.equal(

@@ -5,6 +5,12 @@ set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 dist_arg=${1:-"$root/dist"}
 
+# The markdown parser is defined with the other shared helpers, so jenny and
+# the layouts cannot drift. jenny reads it as a command string.
+# shellcheck source=/dev/null
+source "$root/scripts/lib.sh"
+export MARKDOWN_COMMAND
+
 if [[ $dist_arg = /* ]]; then
   dist=$dist_arg
 else
@@ -63,7 +69,6 @@ export POSTS_PER_PAGE=1000
 export SUPPRESS_UTILS_WARN=1
 export DIST=$(printf '%q' "$dist")
 export LAYOUT_DIR=$(printf '%q' "$root/layouts")
-export MARKDOWN_COMMAND='cmark-gfm --extension table --extension autolink'
 export SITE_ROOT=$(printf '%q' "$root")
 export META_DIR=$(printf '%q' "$meta_dir")
 # Development only: the sky's tuning levers. Empty in a normal build, so the

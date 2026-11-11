@@ -71,9 +71,20 @@ is_http_url() {
   [[ $1 =~ ^https?://[^[:space:]]+$ ]]
 }
 
+# The parser and the GFM extensions the site pins, in one place. jenny reads
+# the command as a string, so the build exports it from this array; the
+# layouts and the staging step call render_markdown and never spell it.
+MARKDOWN=(cmark-gfm --extension table --extension autolink)
+MARKDOWN_COMMAND="${MARKDOWN[*]}"
+
+# Render markdown from stdin.
+render_markdown() {
+  "${MARKDOWN[@]}"
+}
+
 # Render a hand-written markdown page, dropping its frontmatter.
 markdown_body() {
-  frontmatter_body "$1" | cmark-gfm --extension table --extension autolink
+  frontmatter_body "$1" | render_markdown
 }
 
 # Rendered prose as a plain string: markup stripped, whitespace folded, and the
