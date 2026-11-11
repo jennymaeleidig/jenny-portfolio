@@ -8,7 +8,7 @@ This site.
 
 ## Reading
 
-I Have No Mouth and I Must Scream.
+I Have No Mouth, and I Must Scream.
 
 ## Listening
 
