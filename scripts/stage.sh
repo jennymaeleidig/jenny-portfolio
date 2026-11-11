@@ -18,17 +18,6 @@ fail() {
   exit 1
 }
 
-# The opening paragraph after the H1 is the project's blurb: enough to make a
-# catalogue row worth clicking, and the only prose an article carries.
-blurb_of() {
-  awk '
-    /^#[[:space:]]/ && !heading { heading = 1; next }
-    heading && /^[[:space:]]*$/ { if (text != "") exit; next }
-    heading { text = (text == "" ? $0 : text " " $0) }
-    END { print text }
-  '
-}
-
 count=0
 shopt -s nullglob
 
@@ -139,14 +128,18 @@ for file in "$content_dir"/*.md; do
     fail "$name" "missing '# Title' line"
   fi
 
-  blurb=$(printf '%s\n' "$body" | blurb_of)
+  # The opening paragraph after the H1 is the project's blurb: enough to make
+  # a catalogue row worth clicking, and the only prose an article carries.
+  blurb=$(printf '%s\n' "$body" | opening_paragraph)
   blurb_html=$(printf '%s\n' "$blurb" | render_markdown)
+  blurb_text=$(printf '%s\n' "$blurb_html" | prose_text)
 
   mkdir -p "$meta_dir"
   {
     printf 'META_SLUG=%s\n' "$(shell_quote "$slug")"
     printf 'META_TITLE=%s\n' "$(shell_quote "$title")"
     printf 'META_BLURB=%s\n' "$(shell_quote "$blurb_html")"
+    printf 'META_BLURB_TEXT=%s\n' "$(shell_quote "$blurb_text")"
     printf 'META_YEAR=%s\n' "$(shell_quote "$year")"
     printf 'META_STATUS=%s\n' "$(shell_quote "$status")"
     printf 'META_CATEGORY=%s\n' "$(shell_quote "$category")"

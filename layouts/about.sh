@@ -28,7 +28,7 @@ render_links() {
   done
 }
 
-description=$(lead_paragraph "$about")
+description=$(lead_paragraph "$about" | render_markdown | prose_text)
 page_open "About" about "$description" "$route" "$indexable"
 cat <<EOF
         <h1>About</h1>
