@@ -79,12 +79,11 @@ project_route() {
   route_row "$address" "$output" true project "" "" "$source" "${fields[@]}"
 }
 
-# Emit the route table once. Callers name the fields they need: the renderer
-# asks for the render kind and source, the sitemap for the address and
-# indexability.
-route_records() {
+# Emit the routes the build renders through a layout. This is the address
+# table a navigation link reads, and it needs no project records.
+layout_route_records() {
   local -a fields=("$@")
-  local field category section slug publishable
+  local field category section
   for field in "${fields[@]}"; do
     route_known_field "$field" || return 1
   done
@@ -110,11 +109,37 @@ route_records() {
   # The 404 is a page with no address to claim: it answers unknown paths and
   # asks not to be indexed.
   route_row /404/ "$(route_output /404/)" false layout 404 "" "" "${fields[@]}"
+}
+
+# Emit the route table once: every layout route, then every publishable
+# project's page. Callers name the fields they need: the renderer asks for the
+# render kind and source, the sitemap for the address and indexability.
+route_records() {
+  local -a fields=("$@")
+  local slug publishable
+
+  layout_route_records "${fields[@]}" || return 1
 
   while IFS=$'\037' read -r slug publishable; do
     [[ $publishable == true ]] || continue
     project_route "$slug" "${fields[@]}"
   done < <(project_records slug publishable)
+}
+
+# The address of a layout route. The navigation bars and filters name the
+# layout and its optional argument, the same words the route table reads from
+# the vocabulary, and never spell an address.
+route_address() {
+  local layout=$1 argument=${2:-}
+  local address record_layout record_argument
+  while IFS=$'\037' read -r address record_layout record_argument; do
+    if [[ $record_layout == "$layout" && $record_argument == "$argument" ]]; then
+      printf '%s' "$address"
+      return 0
+    fi
+  done < <(layout_route_records address layout argument)
+  echo "error: no route for layout '$layout'${argument:+ with argument '$argument'}" >&2
+  return 1
 }
 
 # A project as a row for a page that links to it: the catalogue and the

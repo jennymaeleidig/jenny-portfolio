@@ -46,20 +46,23 @@ rows=$(
   done < <(project_row_records href title blurb category year)
 )
 
+tabs=$(tab_bar projects) || exit 1
 heading_html=$(html_escape "$heading")
 page_open "$heading" work "$description" "$route" "$indexable"
 cat <<EOF
         <h1>$heading_html</h1>
-$(tab_bar projects)
+$tabs
         <nav aria-label="Categories">
           <ul class="filters">
 EOF
 
-printf '            <li><a href="/work/"%s>All</a></li>\n' \
-  "$(current_page_attr "" "$category")"
+all_href=$(route_address work) || exit 1
+printf '            <li><a href="%s"%s>All</a></li>\n' \
+  "$all_href" "$(current_page_attr "" "$category")"
 while IFS= read -r name; do
-  printf '            <li><a href="/work/%s/"%s>%s</a></li>\n' \
-    "$name" \
+  category_href=$(route_address work "$name") || exit 1
+  printf '            <li><a href="%s"%s>%s</a></li>\n' \
+    "$category_href" \
     "$(current_page_attr "$name" "$category")" \
     "$(vocabulary_label categories "$name")"
 done < <(vocabulary_words categories)
