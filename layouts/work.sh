@@ -11,7 +11,9 @@ source "$SITE_ROOT/layouts/shell.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/tabs.sh"
 
-category=${1:-}
+route=${1:?a route is required}
+indexable=${2:?an indexable flag is required}
+category=${3:-}
 if [[ -n $category ]] && ! vocabulary_has categories "$category"; then
   echo "error: unknown category '$category'" >&2
   exit 1
@@ -44,9 +46,8 @@ rows=$(
   done < <(project_row_records href title blurb category year)
 )
 
-route=${PAGE_ROUTE:?PAGE_ROUTE is required}
 heading_html=$(html_escape "$heading")
-page_open "$heading" work "$description" "$route" "${PAGE_INDEXABLE:?PAGE_INDEXABLE is required}"
+page_open "$heading" work "$description" "$route" "$indexable"
 cat <<EOF
         <h1>$heading_html</h1>
 $(tab_bar projects)
