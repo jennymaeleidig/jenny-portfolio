@@ -134,6 +134,18 @@ test("the build fails, naming the file, when a project cannot be staged", () => 
   assert.match(result.stderr, /broken\.md/);
 });
 
+test("layouts take the page contract as arguments, not ambient state", () => {
+  for (const file of readdirSync(join(root, "layouts"))) {
+    if (!file.endsWith(".sh")) continue;
+    const source = readFileSync(join(root, "layouts", file), "utf8");
+    assert.doesNotMatch(
+      source,
+      /PAGE_ROUTE|PAGE_INDEXABLE/,
+      `${file} reads the page contract from the environment`,
+    );
+  }
+});
+
 test("the build cleans its output directory before generating", () => {
   const dist = mkdtempSync(join(tmpdir(), "portfolio-clean-"));
   build(dist);

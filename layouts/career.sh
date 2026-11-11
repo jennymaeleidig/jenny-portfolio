@@ -25,7 +25,9 @@ source "$SITE_ROOT/layouts/tabs.sh"
 
 career_dir=${CAREER_DIR:-"$SITE_ROOT/content/career"}
 
-section=${1:-}
+route=${1:?a route is required}
+indexable=${2:?an indexable flag is required}
+section=${3:-}
 if [[ -n $section ]] && ! vocabulary_has career-sections "$section"; then
   echo "error: unknown career section '$section'" >&2
   exit 1
@@ -124,9 +126,8 @@ else
   description="The career record: experience, volunteering, education and skills."
 fi
 
-route=${PAGE_ROUTE:?PAGE_ROUTE is required}
 heading_html=$(html_escape "$heading")
-page_open "$heading" work "$description" "$route" "${PAGE_INDEXABLE:?PAGE_INDEXABLE is required}"
+page_open "$heading" work "$description" "$route" "$indexable"
 cat <<EOF
         <h1>$heading_html</h1>
 $(tab_bar career)

@@ -19,16 +19,14 @@ source "$SITE_ROOT/scripts/routes.sh"
 
 # Render one layout route to the output path the route table chose. The route
 # is the page's own address, so the head can declare a canonical URL without
-# every layout having to spell it out again. An empty page fails the build
-# rather than shipping.
+# every layout having to spell it out again. The renderer passes the address
+# and its indexability as the layout's first two arguments; a layout's own
+# optional argument is the third. An empty page fails the build rather than
+# shipping.
 render_route() {
   local address=$1 output=$2 layout=$3 argument=${4:-} indexable=$5
   mkdir -p "$(dirname "$output")"
-  if [[ -n $argument ]]; then
-    PAGE_ROUTE=$address PAGE_INDEXABLE=$indexable "$SITE_ROOT/layouts/$layout.sh" "$argument" > "$output"
-  else
-    PAGE_ROUTE=$address PAGE_INDEXABLE=$indexable "$SITE_ROOT/layouts/$layout.sh" > "$output"
-  fi
+  "$SITE_ROOT/layouts/$layout.sh" "$address" "$indexable" "$argument" > "$output"
   if [[ ! -s $output ]]; then
     echo "error: the $address route was not emitted" >&2
     exit 1

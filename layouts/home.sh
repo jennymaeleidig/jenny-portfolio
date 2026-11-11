@@ -11,6 +11,9 @@ source "$SITE_ROOT/scripts/routes.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 
+route=${1:?a route is required}
+indexable=${2:?an indexable flag is required}
+
 # Collect the featured cards first, so a project that is not featured never
 # reaches the grid. project_records puts the catalogue in canonical order and
 # answers the named facts; the card filters on the featured flag itself.
@@ -22,8 +25,7 @@ cards=$(
   done < <(project_row_records href title blurb category year featured)
 )
 
-route=${PAGE_ROUTE:?PAGE_ROUTE is required}
-page_open "$SITE_NAME" home "$FULL_NAME — $TAGLINE." "$route" "${PAGE_INDEXABLE:?PAGE_INDEXABLE is required}"
+page_open "$SITE_NAME" home "$FULL_NAME — $TAGLINE." "$route" "$indexable"
 cat <<EOF
         <h1>$(html_escape "$SITE_NAME")</h1>
         <p class="lede">$(html_escape "$TAGLINE")</p>

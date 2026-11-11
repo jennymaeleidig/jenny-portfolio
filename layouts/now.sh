@@ -8,6 +8,9 @@ source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/layouts/shell.sh"
 
+route=${1:?a route is required}
+indexable=${2:?an indexable flag is required}
+
 now=${NOW_FILE:-"$SITE_ROOT/content/now.md"}
 updated=$(frontmatter_value "$now" updated)
 
@@ -35,8 +38,7 @@ rows=$(
   done
 )
 
-route=${PAGE_ROUTE:?PAGE_ROUTE is required}
-page_open "Now" now "What $SITE_NAME is doing now. Last updated $updated." "$route" "${PAGE_INDEXABLE:?PAGE_INDEXABLE is required}"
+page_open "Now" now "What $SITE_NAME is doing now. Last updated $updated." "$route" "$indexable"
 cat <<EOF
         <h1>Now</h1>
         <p class="meta">Last updated $(html_escape "$updated")</p>
