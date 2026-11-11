@@ -1,0 +1,19 @@
+# Build output
+.dist/
+dist/
+build/
+.bloglock
+
+# Dependencies and vendored generator
+node_modules/
+vendor/
+
+# Harness and browser scratch
+.pi/
+.playwright-mcp/
+
+# Generated at build time, never hand-edited
+assets/sky-poster.svg
+
+# Vendored reset, copied verbatim; its hash is pinned by the tests
+assets/reset.css

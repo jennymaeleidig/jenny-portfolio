@@ -13,6 +13,7 @@ links:
     url: 'https://example.com/repo'
 featured: true
 ---
+
 # Example Project
 
 An example project, staged by the tests rather than read from the real content.

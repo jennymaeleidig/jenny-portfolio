@@ -1,0 +1,24 @@
+{
+  "name": "jenny-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jenny Leidig's portfolio, built from shell and content files.",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky",
+    "test": "make test",
+    "build": "make build"
+  },
+  "lint-staged": {
+    "*.{md,css,js,mjs,json,yml,yaml,html}": "prettier --write"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.10.0"
+  },
+  "engines": {
+    "node": ">=20.17"
+  }
+}

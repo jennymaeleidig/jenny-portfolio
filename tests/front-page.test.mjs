@@ -4,7 +4,14 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { build, escapeRegExp, fixtureSite, root, sharedSite, writeProject } from "./support/site.mjs";
+import {
+  build,
+  escapeRegExp,
+  fixtureSite,
+  root,
+  sharedSite,
+  writeProject,
+} from "./support/site.mjs";
 
 const { output, htmlFiles, siteCss } = await sharedSite();
 
@@ -43,32 +50,53 @@ Not on the front page.
   const home = readFileSync(join(dist, "index.html"), "utf8");
   assert.match(home, /href="\/projects\/featured-project\/"/);
   assert.doesNotMatch(home, /quiet-project/);
-  assert.equal(statSync(join(dist, "projects", "quiet-project", "index.html")).isFile(), true);
+  assert.equal(
+    statSync(join(dist, "projects", "quiet-project", "index.html")).isFile(),
+    true,
+  );
 });
 
 test("the front page shows exactly the featured projects as cards with category and year", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-front-page-"));
   const dist = mkdtempSync(join(tmpdir(), "portfolio-front-page-dist-"));
-  writeProject(content, "featured-game", `year: 2026
+  writeProject(
+    content,
+    "featured-game",
+    `year: 2026
 status: shipped
 category: games
-featured: true`);
-  writeProject(content, "featured-sound", `year: 2024
+featured: true`,
+  );
+  writeProject(
+    content,
+    "featured-sound",
+    `year: 2024
 status: shipped
 category: sound
-featured: true`);
-  writeProject(content, "quiet-web", `year: 2025
+featured: true`,
+  );
+  writeProject(
+    content,
+    "quiet-web",
+    `year: 2025
 status: shipped
-category: software`);
+category: software`,
+  );
 
   build(dist, { CONTENT_DIR: content });
 
   const home = readFileSync(join(dist, "index.html"), "utf8");
   assert.match(home, /<ul class="grid featured">/);
 
-  const cards = [...home.matchAll(/<li class="card">([\s\S]*?)<\/li>/g)].map(([, card]) => card);
+  const cards = [...home.matchAll(/<li class="card">([\s\S]*?)<\/li>/g)].map(
+    ([, card]) => card,
+  );
   assert.equal(cards.length, 2, "only the featured projects are cards");
-  assert.doesNotMatch(home, /card-last/, "no card carries a closing rule of its own");
+  assert.doesNotMatch(
+    home,
+    /card-last/,
+    "no card carries a closing rule of its own",
+  );
   assert.match(cards[0], /href="\/projects\/featured-game\/"/);
   assert.match(cards[0], /games/);
   assert.match(cards[0], /2026/);
@@ -84,11 +112,20 @@ test("About renders three paragraphs, a photo and the primary links", () => {
   assert.match(about, /<h1>About<\/h1>/);
 
   const prose = about.match(/<div class="prose">([\s\S]*?)<\/div>/)?.[1] ?? "";
-  assert.equal((prose.match(/<p>/g) ?? []).length, 3, "About carries three paragraphs");
+  assert.equal(
+    (prose.match(/<p>/g) ?? []).length,
+    3,
+    "About carries three paragraphs",
+  );
 
-  assert.match(about, /<img class="portrait" src="\/assets\/portrait\.jpg" alt="Example Name"/);
+  assert.match(
+    about,
+    /<img class="portrait" src="\/assets\/portrait\.jpg" alt="Example Name"/,
+  );
 
-  const primary = about.match(/<ul class="links primary-links"[^>]*>([\s\S]*?)<\/ul>/)?.[1] ?? "";
+  const primary =
+    about.match(/<ul class="links primary-links"[^>]*>([\s\S]*?)<\/ul>/)?.[1] ??
+    "";
   assert.match(primary, /<a href="mailto:hello@example\.com">Email<\/a>/);
   assert.ok(
     primary.indexOf("mailto:") < primary.indexOf("https://example.com/github"),
@@ -102,9 +139,17 @@ test("About renders three paragraphs, a photo and the primary links", () => {
     assert.match(primary, new RegExp(`href="${escapeRegExp(href)}"`));
   }
 
-  assert.doesNotMatch(about, /class="links elsewhere"/, "the elsewhere list is gone");
+  assert.doesNotMatch(
+    about,
+    /class="links elsewhere"/,
+    "the elsewhere list is gone",
+  );
 
-  assert.doesNotMatch(about, /Unofficial Homestuck Collection/i, "the contribution line is gone");
+  assert.doesNotMatch(
+    about,
+    /Unofficial Homestuck Collection/i,
+    "the contribution line is gone",
+  );
   assert.doesNotMatch(about, /class="contribution"/);
 });
 
@@ -114,7 +159,11 @@ test("the photo appears only on About", () => {
       continue;
     }
     const html = readFileSync(file, "utf8");
-    assert.doesNotMatch(html, /portrait/, `${relative(root, file)} must not show the photo`);
+    assert.doesNotMatch(
+      html,
+      /portrait/,
+      `${relative(root, file)} must not show the photo`,
+    );
   }
 });
 
@@ -124,15 +173,27 @@ test("Now carries a visible update date and its five sections, without an archiv
   assert.match(now, /<h1>Now<\/h1>/);
   assert.match(now, /Last updated/);
 
-  const updated = readFileSync(join(fixtureSite, "now.md"), "utf8").match(/^updated:\s*(.+)$/m)?.[1]?.trim();
+  const updated = readFileSync(join(fixtureSite, "now.md"), "utf8")
+    .match(/^updated:\s*(.+)$/m)?.[1]
+    ?.trim();
   assert.ok(updated, "Now declares when it was last updated");
   assert.match(now, new RegExp(escapeRegExp(updated)));
 
-  const headers = [...now.matchAll(/<th scope="col">([^<]+)<\/th>/g)].map(([, text]) => text);
+  const headers = [...now.matchAll(/<th scope="col">([^<]+)<\/th>/g)].map(
+    ([, text]) => text,
+  );
   assert.deepEqual(headers, ["Doing", "Blurb"], "Now is a two-column table");
 
-  const doing = [...now.matchAll(/<td class="now-doing">([^<]+)<\/td>/g)].map(([, text]) => text);
-  assert.deepEqual(doing, ["Making", "Reading", "Listening", "Watching", "Not doing"]);
+  const doing = [...now.matchAll(/<td class="now-doing">([^<]+)<\/td>/g)].map(
+    ([, text]) => text,
+  );
+  assert.deepEqual(doing, [
+    "Making",
+    "Reading",
+    "Listening",
+    "Watching",
+    "Not doing",
+  ]);
 
   assert.match(
     now,

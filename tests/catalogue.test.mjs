@@ -4,23 +4,51 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { CAREER_SECTIONS, build, careerHeadings, careerSection, catalogueRows, currentFilters, currentNavLinks, currentTabs, escapeRegExp, filterLabels, filters, root, sharedSite, tabBar, writeProject } from "./support/site.mjs";
+import {
+  CAREER_SECTIONS,
+  build,
+  careerHeadings,
+  careerSection,
+  catalogueRows,
+  currentFilters,
+  currentNavLinks,
+  currentTabs,
+  escapeRegExp,
+  filterLabels,
+  filters,
+  root,
+  sharedSite,
+  tabBar,
+  writeProject,
+} from "./support/site.mjs";
 
 const { output, htmlFiles, siteCss } = await sharedSite();
 
 test("/work lists every project, newest first, with order pinning above newer work", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-catalogue-"));
   const dist = mkdtempSync(join(tmpdir(), "portfolio-catalogue-dist-"));
-  writeProject(content, "alpha", `year: 2024
+  writeProject(
+    content,
+    "alpha",
+    `year: 2024
 status: shipped
-category: games`);
-  writeProject(content, "beta", `year: 2026
+category: games`,
+  );
+  writeProject(
+    content,
+    "beta",
+    `year: 2026
 status: shipped
-category: software`);
-  writeProject(content, "pinned", `year: 2020
+category: software`,
+  );
+  writeProject(
+    content,
+    "pinned",
+    `year: 2020
 status: shipped
 category: sound
-order: 1`);
+order: 1`,
+  );
 
   build(dist, { CONTENT_DIR: content });
 
@@ -35,18 +63,34 @@ order: 1`);
 test("each category filter lists exactly its own projects", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-categories-"));
   const dist = mkdtempSync(join(tmpdir(), "portfolio-categories-dist-"));
-  writeProject(content, "game-one", `year: 2024
+  writeProject(
+    content,
+    "game-one",
+    `year: 2024
 status: shipped
-category: games`);
-  writeProject(content, "game-two", `year: 2026
+category: games`,
+  );
+  writeProject(
+    content,
+    "game-two",
+    `year: 2026
 status: shipped
-category: games`);
-  writeProject(content, "sound-one", `year: 2025
+category: games`,
+  );
+  writeProject(
+    content,
+    "sound-one",
+    `year: 2025
 status: shipped
-category: sound`);
-  writeProject(content, "web-one", `year: 2023
+category: sound`,
+  );
+  writeProject(
+    content,
+    "web-one",
+    `year: 2023
 status: shipped
-category: software`);
+category: software`,
+  );
   writeProject(
     content,
     "article-one",
@@ -59,7 +103,11 @@ publication: https://example.com/article-one`,
   build(dist, { CONTENT_DIR: content });
 
   const all = readFileSync(join(dist, "work", "index.html"), "utf8");
-  assert.equal(catalogueRows(all).length, 5, "the catalogue lists every project once");
+  assert.equal(
+    catalogueRows(all).length,
+    5,
+    "the catalogue lists every project once",
+  );
 
   const expected = {
     games: ["game-two", "game-one"],
@@ -70,9 +118,18 @@ publication: https://example.com/article-one`,
   };
 
   for (const [category, slugs] of Object.entries(expected)) {
-    const page = readFileSync(join(dist, "work", category, "index.html"), "utf8");
-    const hrefs = catalogueRows(page).map((href) => href.replace(/^\/projects\/|\/$/g, ""));
-    assert.deepEqual(hrefs, slugs, `/work/${category}/ carries exactly ${category}`);
+    const page = readFileSync(
+      join(dist, "work", category, "index.html"),
+      "utf8",
+    );
+    const hrefs = catalogueRows(page).map((href) =>
+      href.replace(/^\/projects\/|\/$/g, ""),
+    );
+    assert.deepEqual(
+      hrefs,
+      slugs,
+      `/work/${category}/ carries exactly ${category}`,
+    );
   }
 });
 
@@ -80,39 +137,88 @@ test("the work pages carry Projects and Career tabs, marking only the current pa
   const routes = [
     [join(output, "work", "index.html"), "/work/"],
     [join(output, "work", "career", "index.html"), "/work/career/"],
-    ...CAREER_SECTIONS.map((section) => [join(output, "work", "career", section, "index.html"), "/work/career/"]),
-    ...["games", "sound", "hardware", "software", "articles"].map((category) => [
-      join(output, "work", category, "index.html"),
-      "/work/",
+    ...CAREER_SECTIONS.map((section) => [
+      join(output, "work", "career", section, "index.html"),
+      "/work/career/",
     ]),
+    ...["games", "sound", "hardware", "software", "articles"].map(
+      (category) => [join(output, "work", category, "index.html"), "/work/"],
+    ),
   ];
 
   for (const [file, current] of routes) {
     const html = readFileSync(file, "utf8");
     const bar = tabBar(html);
-    assert.match(bar, /<a href="\/work\/"[^>]*>Projects<\/a>/, `${relative(root, file)} links to Projects`);
-    assert.match(bar, /<a href="\/work\/career\/"[^>]*>Career<\/a>/, `${relative(root, file)} links to Career`);
-    assert.deepEqual(currentTabs(html), [current], `${relative(root, file)} marks only ${current} as current`);
+    assert.match(
+      bar,
+      /<a href="\/work\/"[^>]*>Projects<\/a>/,
+      `${relative(root, file)} links to Projects`,
+    );
+    assert.match(
+      bar,
+      /<a href="\/work\/career\/"[^>]*>Career<\/a>/,
+      `${relative(root, file)} links to Career`,
+    );
+    assert.deepEqual(
+      currentTabs(html),
+      [current],
+      `${relative(root, file)} marks only ${current} as current`,
+    );
   }
 
   // The filters are each side's own: projects filter by category, the career
   // record filters by section, and neither borrows the other's.
-  const career = readFileSync(join(output, "work", "career", "index.html"), "utf8");
-  assert.doesNotMatch(career, /<nav aria-label="Categories"/, "category filters stay on the Projects side");
-  assert.deepEqual(filterLabels(career), ["All", "Experience", "Volunteering", "Education", "Skills"]);
+  const career = readFileSync(
+    join(output, "work", "career", "index.html"),
+    "utf8",
+  );
+  assert.doesNotMatch(
+    career,
+    /<nav aria-label="Categories"/,
+    "category filters stay on the Projects side",
+  );
+  assert.deepEqual(filterLabels(career), [
+    "All",
+    "Experience",
+    "Volunteering",
+    "Education",
+    "Skills",
+  ]);
 
   const projects = readFileSync(join(output, "work", "index.html"), "utf8");
-  assert.deepEqual(filterLabels(projects), ["All", "Games", "Sound", "Hardware", "Software", "Articles"]);
+  assert.deepEqual(filterLabels(projects), [
+    "All",
+    "Games",
+    "Sound",
+    "Hardware",
+    "Software",
+    "Articles",
+  ]);
 });
 
 test("each career filter lists exactly its own section, and All lists every one", () => {
-  const all = readFileSync(join(output, "work", "career", "index.html"), "utf8");
-  assert.deepEqual(careerHeadings(all), ["Experience", "Volunteering", "Education", "Skills"]);
+  const all = readFileSync(
+    join(output, "work", "career", "index.html"),
+    "utf8",
+  );
+  assert.deepEqual(careerHeadings(all), [
+    "Experience",
+    "Volunteering",
+    "Education",
+    "Skills",
+  ]);
 
   for (const section of CAREER_SECTIONS) {
-    const page = readFileSync(join(output, "work", "career", section, "index.html"), "utf8");
+    const page = readFileSync(
+      join(output, "work", "career", section, "index.html"),
+      "utf8",
+    );
     const label = section[0].toUpperCase() + section.slice(1);
-    assert.match(page, new RegExp(`<h1>${label}</h1>`), `/work/career/${section}/ is titled ${label}`);
+    assert.match(
+      page,
+      new RegExp(`<h1>${label}</h1>`),
+      `/work/career/${section}/ is titled ${label}`,
+    );
     assert.deepEqual(
       careerHeadings(page),
       [],
@@ -130,7 +236,11 @@ test("each career filter lists exactly its own section, and All lists every one"
     );
   }
 
-  assert.deepEqual(currentFilters(all), ["/work/career/"], "the whole record marks All as current");
+  assert.deepEqual(
+    currentFilters(all),
+    ["/work/career/"],
+    "the whole record marks All as current",
+  );
 });
 
 test("the page header marks the current section, and current links stay ink", () => {
@@ -139,11 +249,13 @@ test("the page header marks the current section, and current links stay ink", ()
     [join(output, "404.html"), []],
     [join(output, "work", "index.html"), ["/work/"]],
     [join(output, "work", "career", "index.html"), ["/work/"]],
-    ...CAREER_SECTIONS.map((section) => [join(output, "work", "career", section, "index.html"), ["/work/"]]),
-    ...["games", "sound", "hardware", "software", "articles"].map((category) => [
-      join(output, "work", category, "index.html"),
+    ...CAREER_SECTIONS.map((section) => [
+      join(output, "work", "career", section, "index.html"),
       ["/work/"],
     ]),
+    ...["games", "sound", "hardware", "software", "articles"].map(
+      (category) => [join(output, "work", category, "index.html"), ["/work/"]],
+    ),
     [join(output, "projects", "example-project", "index.html"), ["/work/"]],
     [join(output, "about", "index.html"), ["/about/"]],
     [join(output, "now", "index.html"), ["/now/"]],
@@ -151,7 +263,11 @@ test("the page header marks the current section, and current links stay ink", ()
 
   for (const [file, current] of routes) {
     const html = readFileSync(file, "utf8");
-    assert.deepEqual(currentNavLinks(html), current, `${relative(root, file)} marks only its section as current`);
+    assert.deepEqual(
+      currentNavLinks(html),
+      current,
+      `${relative(root, file)} marks only its section as current`,
+    );
   }
 
   const rules = [
@@ -159,7 +275,11 @@ test("the page header marks the current section, and current links stay ink", ()
     /\.tab-bar a\[aria-current="page"\]\s*\{[^}]*color:\s*var\(--ink\)/s,
   ];
   for (const rule of rules) {
-    assert.match(siteCss, rule, "selected links are the plain ink colour, not a bright accent");
+    assert.match(
+      siteCss,
+      rule,
+      "selected links are the plain ink colour, not a bright accent",
+    );
   }
 
   // The header rests in the accent and answers hover in ink, so the one ink
@@ -182,19 +302,41 @@ test("the page header marks the current section, and current links stay ink", ()
 });
 
 test("/work/career is a normal-shell career page with one heading and only the narrow record", () => {
-  const career = readFileSync(join(output, "work", "career", "index.html"), "utf8");
+  const career = readFileSync(
+    join(output, "work", "career", "index.html"),
+    "utf8",
+  );
 
-  assert.equal((career.match(/<h1\b/g) ?? []).length, 1, "the career page has one heading");
+  assert.equal(
+    (career.match(/<h1\b/g) ?? []).length,
+    1,
+    "the career page has one heading",
+  );
   assert.match(career, /<h1>Career<\/h1>/);
   assert.match(career, /<canvas class="sky-canvas"><\/canvas>/);
-  assert.match(career, /<script type="module" src="\/assets\/sky\.js"><\/script>/);
-  assert.match(career, /<script type="module" src="\/assets\/nav\.js"><\/script>/);
+  assert.match(
+    career,
+    /<script type="module" src="\/assets\/sky\.js"><\/script>/,
+  );
+  assert.match(
+    career,
+    /<script type="module" src="\/assets\/nav\.js"><\/script>/,
+  );
 
-  const headings = [...career.matchAll(/<h2 id="career-[^"]+">([^<]+)<\/h2>/g)].map(([, text]) => text);
-  assert.deepEqual(headings, ["Experience", "Volunteering", "Education", "Skills"]);
+  const headings = [
+    ...career.matchAll(/<h2 id="career-[^"]+">([^<]+)<\/h2>/g),
+  ].map(([, text]) => text);
+  assert.deepEqual(headings, [
+    "Experience",
+    "Volunteering",
+    "Education",
+    "Skills",
+  ]);
 
   const experience = careerSection(career, "experience");
-  const summaries = [...experience.matchAll(/<summary>([^<]+)<\/summary>/g)].map(([, text]) => text);
+  const summaries = [
+    ...experience.matchAll(/<summary>([^<]+)<\/summary>/g),
+  ].map(([, text]) => text);
   assert.deepEqual(summaries, [
     "Software Engineer - Consultant - Example Employer",
     "Associate Consultant - Example Employer",
@@ -205,9 +347,14 @@ test("/work/career is a normal-shell career page with one heading and only the n
   for (const position of roleDates) {
     assert.notEqual(position, -1, "every role carries its dates");
   }
-  assert.deepEqual([...roleDates].sort((a, b) => a - b), roleDates, "roles run newest first");
+  assert.deepEqual(
+    [...roleDates].sort((a, b) => a - b),
+    roleDates,
+    "roles run newest first",
+  );
   assert.ok(
-    experience.indexOf("Software Engineer - Consultant") < experience.indexOf("Web Designer"),
+    experience.indexOf("Software Engineer - Consultant") <
+      experience.indexOf("Web Designer"),
     "roles run newest first",
   );
   assert.equal(
@@ -215,7 +362,11 @@ test("/work/career is a normal-shell career page with one heading and only the n
     summaries.length,
     "each role is its own disclosure",
   );
-  assert.doesNotMatch(experience, /<details[^>]*\bopen\b/, "roles start closed");
+  assert.doesNotMatch(
+    experience,
+    /<details[^>]*\bopen\b/,
+    "roles start closed",
+  );
 
   const volunteering = careerSection(career, "volunteering");
   assert.match(
@@ -223,18 +374,26 @@ test("/work/career is a normal-shell career page with one heading and only the n
     /<summary>Volunteer Coordinator - Example Nonprofit<\/summary>/,
     "volunteering is summarised like the roles: title, then organization",
   );
-  assert.doesNotMatch(volunteering, /<details[^>]*\bopen\b/, "volunteering starts closed");
+  assert.doesNotMatch(
+    volunteering,
+    /<details[^>]*\bopen\b/,
+    "volunteering starts closed",
+  );
 
   const education = careerSection(career, "education");
   assert.ok(
-    education.indexOf("Master of Fine Arts") < education.indexOf("Bachelor of Science"),
+    education.indexOf("Master of Fine Arts") <
+      education.indexOf("Bachelor of Science"),
     "education runs newest first",
   );
   assert.match(
     education,
     /<summary>Master of Fine Arts \(MFA\), Art and Technology - Example University<\/summary>/,
   );
-  assert.match(education, /<summary>Bachelor of Science \(BS\), Computer Science - Second College<\/summary>/);
+  assert.match(
+    education,
+    /<summary>Bachelor of Science \(BS\), Computer Science - Second College<\/summary>/,
+  );
 
   const skills = careerSection(career, "skills");
   for (const group of ["Languages", "Data and cloud", "Tools"]) {
@@ -244,7 +403,11 @@ test("/work/career is a normal-shell career page with one heading and only the n
       `${group} is a skill group summary`,
     );
   }
-  assert.match(skills, /<li>Apache Spark<\/li>/, "each skill is its own list item");
+  assert.match(
+    skills,
+    /<li>Apache Spark<\/li>/,
+    "each skill is its own list item",
+  );
   assert.match(
     skills,
     /<li>AWS \(S3, EMR, DynamoDB\)<\/li>/,
@@ -256,19 +419,39 @@ test("/work/career is a normal-shell career page with one heading and only the n
     "every skill group carries its own list",
   );
 
-  assert.doesNotMatch(career, /example-project/, "projects stay on the Projects tab");
-  assert.doesNotMatch(career, /Example Project/, "projects stay on the Projects tab");
+  assert.doesNotMatch(
+    career,
+    /example-project/,
+    "projects stay on the Projects tab",
+  );
+  assert.doesNotMatch(
+    career,
+    /Example Project/,
+    "projects stay on the Projects tab",
+  );
 
   assert.doesNotMatch(career, /portrait/, "the career page has no photo");
-  assert.doesNotMatch(career, /<(?:picture|svg)\b/i, "the career page has no image");
+  assert.doesNotMatch(
+    career,
+    /<(?:picture|svg)\b/i,
+    "the career page has no image",
+  );
   const images = [...career.matchAll(/<img\b[^>]*>/g)].map(([tag]) => tag);
   assert.deepEqual(
     images.filter((tag) => !/class="sky-poster"/.test(tag)),
     [],
     "the only image is the sky's no-JavaScript poster",
   );
-  assert.doesNotMatch(career, /type="checkbox"/, "the career page has no selector");
-  assert.doesNotMatch(career, /name="include"/, "the career page has no query selection");
+  assert.doesNotMatch(
+    career,
+    /type="checkbox"/,
+    "the career page has no selector",
+  );
+  assert.doesNotMatch(
+    career,
+    /name="include"/,
+    "the career page has no query selection",
+  );
 });
 
 test("print leaves paper, hides the tab bar and keeps roles apart", () => {
@@ -279,7 +462,10 @@ test("print leaves paper, hides the tab bar and keeps roles apart", () => {
     "print hides the sky, the site chrome and the tab bar",
   );
   assert.match(print, /\.career-disclosure[^{]*\{[^}]*break-inside:\s*avoid/s);
-  assert.match(print, /\.career-disclosure \+ \.career-disclosure\s*\{\s*margin-top:\s*0\.5rem/);
+  assert.match(
+    print,
+    /\.career-disclosure \+ \.career-disclosure\s*\{\s*margin-top:\s*0\.5rem/,
+  );
   assert.match(
     print,
     /details::details-content\s*\{\s*content-visibility:\s*visible/,

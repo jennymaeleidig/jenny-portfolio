@@ -21,7 +21,11 @@ import {
 
 function rawToneIndex(value, bandThresholds, dither, bayer) {
   let q = 0;
-  while (q < bandThresholds.length && value + dither * bayer >= bandThresholds[q]) q += 1;
+  while (
+    q < bandThresholds.length &&
+    value + dither * bayer >= bandThresholds[q]
+  )
+    q += 1;
   return q;
 }
 
@@ -87,7 +91,12 @@ test("the field is periodic in x, one lattice period apart", () => {
     for (let x = 0; x < 24; x += 1) {
       const step = x * (periodX / field.width);
       const here = fbm(step, y * (field.cellPx / field.scale), seed, periodX);
-      const there = fbm(step + periodX, y * (field.cellPx / field.scale), seed, periodX);
+      const there = fbm(
+        step + periodX,
+        y * (field.cellPx / field.scale),
+        seed,
+        periodX,
+      );
       assert.ok(
         Math.abs(here - there) < 1e-12,
         `x=${x}, y=${y} is not periodic: ${here} !== ${there}`,
@@ -97,15 +106,24 @@ test("the field is periodic in x, one lattice period apart", () => {
 
   // The hash itself wraps exactly.
   for (let x = -8; x < 16; x += 1) {
-    assert.equal(hash(x, 2, seed, periodX), hash(x + periodX, 2, seed, periodX));
+    assert.equal(
+      hash(x, 2, seed, periodX),
+      hash(x + periodX, 2, seed, periodX),
+    );
   }
 });
 
 test("sampling the stored field wraps instead of clamping", () => {
   const field = createField(fieldOptions);
 
-  assert.equal(sampleField(field, 3, 4), sampleField(field, field.width + 3, 4));
-  assert.equal(sampleField(field, -1, 4), sampleField(field, field.width - 1, 4));
+  assert.equal(
+    sampleField(field, 3, 4),
+    sampleField(field, field.width + 3, 4),
+  );
+  assert.equal(
+    sampleField(field, -1, 4),
+    sampleField(field, field.width - 1, 4),
+  );
 });
 
 test("the quantiser only ever emits indices into the ramp", () => {
@@ -118,7 +136,10 @@ test("the quantiser only ever emits indices into the ramp", () => {
   for (let i = 0; i < pixels.length; i += 4) {
     assert.equal(pixels[i + 3], 255, "every block is opaque");
     const colour = `${pixels[i]},${pixels[i + 1]},${pixels[i + 2]}`;
-    assert.ok(allowed.has(colour), `pixel ${i / 4} is ${colour}, not in the ramp`);
+    assert.ok(
+      allowed.has(colour),
+      `pixel ${i / 4} is ${colour}, not in the ramp`,
+    );
   }
 });
 
@@ -139,7 +160,10 @@ test("ramp indices stay inside the ramp for every tone count", () => {
   for (let tones = 2; tones <= RAMP.length; tones += 1) {
     for (let band = 0; band <= tones - 1; band += 1) {
       const index = rampIndex(band, tones);
-      assert.ok(index >= 0 && index < RAMP.length, `tones=${tones} band=${band} -> ${index}`);
+      assert.ok(
+        index >= 0 && index < RAMP.length,
+        `tones=${tones} band=${band} -> ${index}`,
+      );
     }
   }
 });
@@ -165,29 +189,51 @@ test("dither never moves a sample by more than one band", () => {
     }
   }
 
-  assert.ok(clampEngaged, "the test must exercise a case the clamp actually changes");
+  assert.ok(
+    clampEngaged,
+    "the test must exercise a case the clamp actually changes",
+  );
 });
 
 test("the clamp pulls an over-dithered sample back to one band", () => {
   const bands = [0.4, 0.5, 0.6];
   const value = 0.45;
 
-  assert.equal(rawToneIndex(value, bands, 1, 1), 3, "unclamped dither crosses every band");
-  assert.equal(toneIndex(value, bands, 1, 1), 2, "one band above the undithered result");
+  assert.equal(
+    rawToneIndex(value, bands, 1, 1),
+    3,
+    "unclamped dither crosses every band",
+  );
+  assert.equal(
+    toneIndex(value, bands, 1, 1),
+    2,
+    "one band above the undithered result",
+  );
 });
 
 test("dither dissolves a boundary instead of snapping it", () => {
   const bands = thresholds(SKY_DEFAULTS.tones, SKY_DEFAULTS.stark);
   const value = bands[0] + 0.001;
   const bandsHit = new Set(
-    BAYER4.map((bayer) => toneIndex(value, bands, SKY_DEFAULTS.dither / 100, bayer)),
+    BAYER4.map((bayer) =>
+      toneIndex(value, bands, SKY_DEFAULTS.dither / 100, bayer),
+    ),
   );
 
-  assert.ok(bandsHit.size > 1, "a threshold should spread across more than one band");
+  assert.ok(
+    bandsHit.size > 1,
+    "a threshold should spread across more than one band",
+  );
 });
 
 test("two consecutive frames differ", () => {
-  const field = createField({ cols: 360, rows: 200, cellPx: 2, scale: 150, seed: 12 });
+  const field = createField({
+    cols: 360,
+    rows: 200,
+    cellPx: 2,
+    scale: 150,
+    seed: 12,
+  });
   const first = renderFrame({ field, time: 0, offset: 0 });
   const next = renderFrame({
     field,
@@ -199,7 +245,13 @@ test("two consecutive frames differ", () => {
 });
 
 test("the evolution field is periodic on both axes and carries no bias", () => {
-  const field = createField({ cols: 240, rows: 140, cellPx: 2, scale: 150, seed: 12 });
+  const field = createField({
+    cols: 240,
+    rows: 140,
+    cellPx: 2,
+    scale: 150,
+    seed: 12,
+  });
 
   for (const [x, y] of [
     [0, 0],
@@ -217,21 +269,50 @@ test("the evolution field is periodic on both axes and carries no bias", () => {
     );
   }
 
-  const mean = field.evolve.reduce((sum, value) => sum + value, 0) / field.evolve.length;
+  const mean =
+    field.evolve.reduce((sum, value) => sum + value, 0) / field.evolve.length;
   assert.ok(Math.abs(mean) < 1e-6, `the flow must be centred, not ${mean}`);
 
   const spread = Math.max(...field.evolve) - Math.min(...field.evolve);
-  assert.ok(spread > 0.1, `the flow must vary across the field, spread is ${spread}`);
+  assert.ok(
+    spread > 0.1,
+    `the flow must vary across the field, spread is ${spread}`,
+  );
 });
 
 test("the masses swell in different places instead of breathing in step", () => {
-  const field = createField({ cols: 240, rows: 140, cellPx: 2, scale: 150, seed: 12 });
-  const config = { ...SKY_DEFAULTS, speed: 0, warp: 0, warpSpeed: 0, dither: 0, evolveSpeed: 0 };
+  const field = createField({
+    cols: 240,
+    rows: 140,
+    cellPx: 2,
+    scale: 150,
+    seed: 12,
+  });
+  const config = {
+    ...SKY_DEFAULTS,
+    speed: 0,
+    warp: 0,
+    warpSpeed: 0,
+    dither: 0,
+    evolveSpeed: 0,
+  };
   const still = new Uint8Array(field.cols * field.rows);
   const evolved = new Uint8Array(field.cols * field.rows);
 
-  renderFrame({ field, bands: still, config: { ...config, evolve: 0 }, time: 0, offset: 0 });
-  renderFrame({ field, bands: evolved, config: { ...config, evolve: 100 }, time: 0, offset: 0 });
+  renderFrame({
+    field,
+    bands: still,
+    config: { ...config, evolve: 0 },
+    time: 0,
+    offset: 0,
+  });
+  renderFrame({
+    field,
+    bands: evolved,
+    config: { ...config, evolve: 100 },
+    time: 0,
+    offset: 0,
+  });
 
   let grown = 0;
   let thinned = 0;
@@ -245,10 +326,27 @@ test("the masses swell in different places instead of breathing in step", () => 
 });
 
 test("a margin carries the sky above and below without changing the view", () => {
-  const bare = createField({ cols: 60, rows: 40, cellPx: 2, scale: 150, seed: 12 });
-  const roomy = createField({ cols: 60, rows: 40, cellPx: 2, scale: 150, seed: 12, margin: 20 });
+  const bare = createField({
+    cols: 60,
+    rows: 40,
+    cellPx: 2,
+    scale: 150,
+    seed: 12,
+  });
+  const roomy = createField({
+    cols: 60,
+    rows: 40,
+    cellPx: 2,
+    scale: 150,
+    seed: 12,
+    margin: 20,
+  });
 
-  assert.equal(roomy.height, roomy.rows + 40, "the margin adds rows on both sides");
+  assert.equal(
+    roomy.height,
+    roomy.rows + 40,
+    "the margin adds rows on both sides",
+  );
 
   for (const [x, y] of [
     [0, 0],
@@ -263,12 +361,28 @@ test("a margin carries the sky above and below without changing the view", () =>
   }
 
   const above = sampleField(roomy, 3, 0);
-  assert.ok(above > 0 && above < 1, "the margin holds real sky, not a flat edge");
+  assert.ok(
+    above > 0 && above < 1,
+    "the margin holds real sky, not a flat edge",
+  );
 });
 
 test("the lift pans the sky and stops at the margin", () => {
-  const field = createField({ cols: 80, rows: 60, cellPx: 2, scale: 150, seed: 12, margin: 24 });
-  const config = { ...SKY_DEFAULTS, speed: 0, warp: 0, warpSpeed: 0, evolve: 0 };
+  const field = createField({
+    cols: 80,
+    rows: 60,
+    cellPx: 2,
+    scale: 150,
+    seed: 12,
+    margin: 24,
+  });
+  const config = {
+    ...SKY_DEFAULTS,
+    speed: 0,
+    warp: 0,
+    warpSpeed: 0,
+    evolve: 0,
+  };
   const rest = renderFrame({ field, config, offsetY: 0 });
   const up = renderFrame({ field, config, offsetY: 12 });
   const down = renderFrame({ field, config, offsetY: -12 });
@@ -278,31 +392,90 @@ test("the lift pans the sky and stops at the margin", () => {
 
   const pinned = renderFrame({ field, config, offsetY: 500 });
   const pinnedSame = renderFrame({ field, config, offsetY: 200 });
-  assert.deepEqual([...pinned], [...pinnedSame], "past the margin it stops rather than wrapping");
+  assert.deepEqual(
+    [...pinned],
+    [...pinnedSame],
+    "past the margin it stops rather than wrapping",
+  );
 });
 
 test("the flow's feature size is built into the field", () => {
-  const small = createField({ cols: 240, rows: 140, cellPx: 2, scale: 150, seed: 12, evolveScale: 90 });
-  const large = createField({ cols: 240, rows: 140, cellPx: 2, scale: 150, seed: 12, evolveScale: 540 });
+  const small = createField({
+    cols: 240,
+    rows: 140,
+    cellPx: 2,
+    scale: 150,
+    seed: 12,
+    evolveScale: 90,
+  });
+  const large = createField({
+    cols: 240,
+    rows: 140,
+    cellPx: 2,
+    scale: 150,
+    seed: 12,
+    evolveScale: 540,
+  });
 
-  assert.ok(small.evolvePeriod > large.evolvePeriod, "a smaller flow sees more lattice cells");
+  assert.ok(
+    small.evolvePeriod > large.evolvePeriod,
+    "a smaller flow sees more lattice cells",
+  );
   assert.equal(small.evolvePeriodY > large.evolvePeriodY, true);
   assert.notDeepEqual([...small.evolve], [...large.evolve]);
 });
 
 test("the flow's tilt decides how much of its drift is vertical", () => {
-  const field = createField({ cols: 240, rows: 140, cellPx: 2, scale: 150, seed: 12 });
-  const config = { ...SKY_DEFAULTS, speed: 0, warp: 0, warpSpeed: 0, evolveSpeed: 60 };
+  const field = createField({
+    cols: 240,
+    rows: 140,
+    cellPx: 2,
+    scale: 150,
+    seed: 12,
+  });
+  const config = {
+    ...SKY_DEFAULTS,
+    speed: 0,
+    warp: 0,
+    warpSpeed: 0,
+    evolveSpeed: 60,
+  };
 
-  const sideways = renderFrame({ field, config: { ...config, evolveTilt: 0 }, time: 5, offset: 0 });
-  const upright = renderFrame({ field, config: { ...config, evolveTilt: 100 }, time: 5, offset: 0 });
+  const sideways = renderFrame({
+    field,
+    config: { ...config, evolveTilt: 0 },
+    time: 5,
+    offset: 0,
+  });
+  const upright = renderFrame({
+    field,
+    config: { ...config, evolveTilt: 100 },
+    time: 5,
+    offset: 0,
+  });
 
-  assert.notDeepEqual([...sideways], [...upright], "tilt changes where the flow has got to");
+  assert.notDeepEqual(
+    [...sideways],
+    [...upright],
+    "tilt changes where the flow has got to",
+  );
 });
 
 test("with evolve off the sky holds perfectly still", () => {
-  const field = createField({ cols: 160, rows: 100, cellPx: 2, scale: 150, seed: 12 });
-  const config = { ...SKY_DEFAULTS, evolve: 0, speed: 0, warp: 0, warpSpeed: 0 };
+  const field = createField({
+    cols: 160,
+    rows: 100,
+    cellPx: 2,
+    scale: 150,
+    seed: 12,
+  });
+  const config = {
+    ...SKY_DEFAULTS,
+    evolve: 0,
+    speed: 0,
+    warp: 0,
+    warpSpeed: 0,
+  };
 
   const first = renderFrame({ field, config, time: 0, offset: 0 });
   const later = renderFrame({ field, config, time: 30, offset: 0 });
@@ -311,15 +484,39 @@ test("with evolve off the sky holds perfectly still", () => {
 });
 
 test("the flow drifts with its own speed, independent of the sky's", () => {
-  const field = createField({ cols: 360, rows: 200, cellPx: 2, scale: 150, seed: 12 });
+  const field = createField({
+    cols: 360,
+    rows: 200,
+    cellPx: 2,
+    scale: 150,
+    seed: 12,
+  });
   const config = { ...SKY_DEFAULTS, speed: 0, warp: 0, warpSpeed: 0 };
 
-  const still = renderFrame({ field, config: { ...config, evolveSpeed: 0 }, time: 0, offset: 0 });
-  const holding = renderFrame({ field, config: { ...config, evolveSpeed: 0 }, time: 6, offset: 0 });
+  const still = renderFrame({
+    field,
+    config: { ...config, evolveSpeed: 0 },
+    time: 0,
+    offset: 0,
+  });
+  const holding = renderFrame({
+    field,
+    config: { ...config, evolveSpeed: 0 },
+    time: 6,
+    offset: 0,
+  });
   const drifted = renderFrame({ field, config, time: 6, offset: 0 });
 
-  assert.deepEqual([...still], [...holding], "with no evolve speed the flow holds still");
-  assert.notDeepEqual([...still], [...drifted], "evolveSpeed alone moves the flow");
+  assert.deepEqual(
+    [...still],
+    [...holding],
+    "with no evolve speed the flow holds still",
+  );
+  assert.notDeepEqual(
+    [...still],
+    [...drifted],
+    "evolveSpeed alone moves the flow",
+  );
 });
 
 test("frameLayout snaps a block to whole device pixels and covers the frame", () => {
@@ -331,21 +528,42 @@ test("frameLayout snaps a block to whole device pixels and covers the frame", ()
         Number.isInteger(layout.cellPx * dpr),
         `cell ${cell} at dpr ${dpr} lands on a device pixel`,
       );
-      assert.ok(layout.cols * layout.cellPx >= 390, "the columns cover the width");
-      assert.ok((layout.cols - 1) * layout.cellPx < 390, "and no column is wasted");
-      assert.ok(layout.rows * layout.cellPx >= 844, "the rows cover the height");
-      assert.ok((layout.rows - 1) * layout.cellPx < 844, "and no row is wasted");
+      assert.ok(
+        layout.cols * layout.cellPx >= 390,
+        "the columns cover the width",
+      );
+      assert.ok(
+        (layout.cols - 1) * layout.cellPx < 390,
+        "and no column is wasted",
+      );
+      assert.ok(
+        layout.rows * layout.cellPx >= 844,
+        "the rows cover the height",
+      );
+      assert.ok(
+        (layout.rows - 1) * layout.cellPx < 844,
+        "and no row is wasted",
+      );
     }
   }
 });
 
 test("createScene lifts by the config and carries the pannable margin", () => {
   const config = { ...SKY_DEFAULTS, offsetY: -220 };
-  const { field, offsetY } = createScene({ config, cols: 20, rows: 10, cellPx: 2 });
+  const { field, offsetY } = createScene({
+    config,
+    cols: 20,
+    rows: 10,
+    cellPx: 2,
+  });
 
   assert.equal(offsetY, -110);
   assert.equal(field.margin, Math.ceil(OFFSET_Y_LIMIT / 2));
-  assert.equal(field.height - field.rows, field.margin * 2, "the margin sits above and below");
+  assert.equal(
+    field.height - field.rows,
+    field.margin * 2,
+    "the margin sits above and below",
+  );
   assert.equal(field.scale, config.scale);
   assert.equal(field.seed, config.seed);
   assert.equal(field.evolveScale, config.evolveScale);

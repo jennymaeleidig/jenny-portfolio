@@ -1,18 +1,38 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { POSTER, posterHash } from "../../scripts/sky-poster.mjs";
 
-export const root = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+export const root = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+);
 export const buildScript = join(root, "scripts", "build.sh");
 
-export const RESET_SHA256 = "551206fddb1ee9ed889cc459ba4c96218edc1474299af7c02696a4f4b3f0b527";
+export const RESET_SHA256 =
+  "551206fddb1ee9ed889cc459ba4c96218edc1474299af7c02696a4f4b3f0b527";
 export const SKY_TOKENS = ["sky-1", "sky-2", "sky-3", "sky-4"];
-export const TOKENS = ["paper", "ink", "accent", "accent-bright", ...SKY_TOKENS];
+export const TOKENS = [
+  "paper",
+  "ink",
+  "accent",
+  "accent-bright",
+  ...SKY_TOKENS,
+];
 
 // The build reads one site, and the tests read a fixture site rather than the
 // real content: what a test asserts never depends on what Jenny has written
@@ -52,7 +72,8 @@ export function writeProject(content, slug, frontmatter, body) {
 }
 
 export function catalogueRows(html) {
-  const table = html.match(/<table class="catalogue"[\s\S]*?<\/table>/)?.[0] ?? "";
+  const table =
+    html.match(/<table class="catalogue"[\s\S]*?<\/table>/)?.[0] ?? "";
   return [...table.matchAll(/<tr>([\s\S]*?)<\/tr>/g)]
     .map(([, row]) => row.match(/<a href="([^"]+)"/)?.[1])
     .filter(Boolean);
@@ -63,34 +84,58 @@ export function escapeRegExp(value) {
 }
 
 export function tabBar(html) {
-  return html.match(/<nav class="tab-bar" aria-label="Work sections">([\s\S]*?)<\/nav>/)?.[1] ?? "";
+  return (
+    html.match(
+      /<nav class="tab-bar" aria-label="Work sections">([\s\S]*?)<\/nav>/,
+    )?.[1] ?? ""
+  );
 }
 
 export function currentTabs(html) {
-  return [...tabBar(html).matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map(([, href]) => href);
+  return [
+    ...tabBar(html).matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g),
+  ].map(([, href]) => href);
 }
 
 export function currentNavLinks(html) {
-  const nav = html.match(/<nav aria-label="Primary">([\s\S]*?)<\/nav>/)?.[1] ?? "";
-  return [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map(([, href]) => href);
+  const nav =
+    html.match(/<nav aria-label="Primary">([\s\S]*?)<\/nav>/)?.[1] ?? "";
+  return [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map(
+    ([, href]) => href,
+  );
 }
 
-export const CAREER_SECTIONS = ["experience", "volunteering", "education", "skills"];
+export const CAREER_SECTIONS = [
+  "experience",
+  "volunteering",
+  "education",
+  "skills",
+];
 
 export function filters(html) {
-  return html.match(/<nav aria-label="(?:Categories|Career sections)">([\s\S]*?)<\/nav>/)?.[1] ?? "";
+  return (
+    html.match(
+      /<nav aria-label="(?:Categories|Career sections)">([\s\S]*?)<\/nav>/,
+    )?.[1] ?? ""
+  );
 }
 
 export function filterLabels(html) {
-  return [...filters(html).matchAll(/<a href="[^"]+"[^>]*>([^<]+)<\/a>/g)].map(([, label]) => label);
+  return [...filters(html).matchAll(/<a href="[^"]+"[^>]*>([^<]+)<\/a>/g)].map(
+    ([, label]) => label,
+  );
 }
 
 export function currentFilters(html) {
-  return [...filters(html).matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map(([, href]) => href);
+  return [
+    ...filters(html).matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g),
+  ].map(([, href]) => href);
 }
 
 export function careerHeadings(html) {
-  return [...html.matchAll(/<h2 id="career-[^"]+">([^<]+)<\/h2>/g)].map(([, text]) => text);
+  return [...html.matchAll(/<h2 id="career-[^"]+">([^<]+)<\/h2>/g)].map(
+    ([, text]) => text,
+  );
 }
 
 export function careerSection(html, name) {
@@ -113,12 +158,16 @@ export function channel(value) {
 }
 
 export function luminance(hex) {
-  const [r, g, b] = [1, 3, 5].map((index) => parseInt(hex.slice(index, index + 2), 16));
+  const [r, g, b] = [1, 3, 5].map((index) =>
+    parseInt(hex.slice(index, index + 2), 16),
+  );
   return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
 }
 
 export function contrast(foreground, background) {
-  const [lighter, darker] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+  const [lighter, darker] = [luminance(foreground), luminance(background)].sort(
+    (a, b) => b - a,
+  );
   return (lighter + 0.05) / (darker + 0.05);
 }
 
@@ -169,12 +218,19 @@ export function articleSlugs() {
   const projects = FIXTURE_ENV.CONTENT_DIR;
   return readdirSync(projects)
     .filter((name) => name.endsWith(".md"))
-    .filter((name) => /^category:\s*articles\s*$/m.test(readFileSync(join(projects, name), "utf8")))
+    .filter((name) =>
+      /^category:\s*articles\s*$/m.test(
+        readFileSync(join(projects, name), "utf8"),
+      ),
+    )
     .map((name) => name.replace(/\.md$/, ""));
 }
 export function trackedFiles() {
   try {
-    return execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" })
+    return execFileSync("git", ["ls-files", "-z"], {
+      cwd: root,
+      encoding: "utf8",
+    })
       .split("\0")
       .filter(Boolean);
   } catch {
@@ -188,7 +244,13 @@ export const tracked = trackedFiles();
 // same pages, so the build is keyed by a fingerprint of what it was built
 // from: a stale tree is never reused, and the first file to need it builds it
 // while the others wait for the marker file rather than building again.
-const FINGERPRINT_SOURCES = ["scripts", "layouts", "assets", "vendor", "tests/fixtures/site"];
+const FINGERPRINT_SOURCES = [
+  "scripts",
+  "layouts",
+  "assets",
+  "vendor",
+  "tests/fixtures/site",
+];
 
 function fingerprint() {
   const hash = createHash("sha256");

@@ -24,14 +24,38 @@ brew install cmark-gfm gawk gnu-sed grep coreutils
 sudo apt-get install cmark-gfm
 ```
 
-Node is only needed to run the tests. The test suite builds the full site, so
-it needs no browser either.
+Node is needed to run the tests and to format the tree. The test suite builds
+the full site, so it needs no browser either.
 
 ```sh
+npm install  # Prettier, Husky and lint-staged, plus the hooks
+
 make build   # writes dist/, the same tree CI deploys
 make test    # builds into a temporary directory and checks the emitted files
 make clean
 ```
+
+### Formatting
+
+Prettier owns the formatting of Markdown, CSS, JavaScript and the config
+files. Markdown frontmatter is written with single quotes, the house style, and
+the build also reads the double-quoted scalars a formatter may produce, so a
+save cannot break a link. Fenced examples in the docs are left as written. Run
+it by hand with:
+
+```sh
+npm run format        # rewrite the tree
+npm run format:check  # fail if anything is unformatted
+```
+
+Husky installs two hooks on `npm install`:
+
+- **pre-commit** formats the staged files through lint-staged, then runs
+  `make build` so a broken page cannot be committed.
+- **pre-push** runs `make test`.
+
+The Prettier config is the project's, so an editor's format-on-save uses it and
+a save cannot flip the quotes the build expects.
 
 The tests are split by what they are about — project pages, fields, the
 catalogue, the record, the front page, reading the site, its assets, and the

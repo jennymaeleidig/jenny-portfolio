@@ -17,22 +17,144 @@ import { OFFSET_Y_LIMIT } from "/assets/sky-core.mjs";
 const controller = globalThis.skyLevers;
 
 const sliders = [
-  { key: "cell", label: "cell", min: 2, max: 14, step: 1, rebuild: true, hint: "block size in CSS px" },
-  { key: "scale", label: "scale", min: 20, max: 260, step: 2, rebuild: true, hint: "noise feature size in CSS px: clouds vs static" },
-  { key: "tones", label: "tones", min: 2, max: 4, step: 1, hint: "quantisation steps into the ramp" },
-  { key: "gain", label: "gain", min: 100, max: 400, step: 5, mul: 0.01, hint: "contrast stretch before quantisation" },
-  { key: "speed", label: "speed", min: 0, max: 60, step: 1, hint: "drift, CSS px/s" },
-  { key: "falloff", label: "falloff", min: 0, max: 100, step: 1, hint: "how much coverage thins toward the bottom" },
-  { key: "offsetY", label: "offset y", min: -OFFSET_Y_LIMIT, max: OFFSET_Y_LIMIT, step: 5, hint: "slides the whole sky up (+) or down (-)" },
-  { key: "dither", label: "dither", min: 0, max: 100, step: 1, hint: "ordered dither on the tone thresholds: 0 is a hard snap" },
-  { key: "sky", label: "sky", min: 0, max: 100, step: 1, hint: "trades white for blue: 50 is neutral" },
-  { key: "stark", label: "stark", min: 0, max: 100, step: 1, hint: "narrows the interior tones: 100 is nearly two colours" },
-  { key: "evolve", label: "evolve", min: 0, max: 100, step: 1, life: true, hint: "how far the masses swell and thin across the plane" },
-  { key: "evolveSpeed", label: "evolve speed", min: 0, max: 100, step: 1, life: true, hint: "how fast that pattern drifts and changes" },
-  { key: "evolveScale", label: "evolve scale", min: 60, max: 600, step: 10, life: true, rebuild: true, hint: "size of the flow's features: small patches vs whole regions" },
-  { key: "evolveTilt", label: "evolve tilt", min: 0, max: 100, step: 1, life: true, hint: "0 drifts sideways only, 100 drifts upright as steeply as it crosses" },
-  { key: "warp", label: "warp", min: 0, max: 100, step: 1, life: true, hint: "sideways wave amplitude" },
-  { key: "warpSpeed", label: "warp speed", min: 0, max: 100, step: 1, life: true, hint: "how fast the wave travels" },
+  {
+    key: "cell",
+    label: "cell",
+    min: 2,
+    max: 14,
+    step: 1,
+    rebuild: true,
+    hint: "block size in CSS px",
+  },
+  {
+    key: "scale",
+    label: "scale",
+    min: 20,
+    max: 260,
+    step: 2,
+    rebuild: true,
+    hint: "noise feature size in CSS px: clouds vs static",
+  },
+  {
+    key: "tones",
+    label: "tones",
+    min: 2,
+    max: 4,
+    step: 1,
+    hint: "quantisation steps into the ramp",
+  },
+  {
+    key: "gain",
+    label: "gain",
+    min: 100,
+    max: 400,
+    step: 5,
+    mul: 0.01,
+    hint: "contrast stretch before quantisation",
+  },
+  {
+    key: "speed",
+    label: "speed",
+    min: 0,
+    max: 60,
+    step: 1,
+    hint: "drift, CSS px/s",
+  },
+  {
+    key: "falloff",
+    label: "falloff",
+    min: 0,
+    max: 100,
+    step: 1,
+    hint: "how much coverage thins toward the bottom",
+  },
+  {
+    key: "offsetY",
+    label: "offset y",
+    min: -OFFSET_Y_LIMIT,
+    max: OFFSET_Y_LIMIT,
+    step: 5,
+    hint: "slides the whole sky up (+) or down (-)",
+  },
+  {
+    key: "dither",
+    label: "dither",
+    min: 0,
+    max: 100,
+    step: 1,
+    hint: "ordered dither on the tone thresholds: 0 is a hard snap",
+  },
+  {
+    key: "sky",
+    label: "sky",
+    min: 0,
+    max: 100,
+    step: 1,
+    hint: "trades white for blue: 50 is neutral",
+  },
+  {
+    key: "stark",
+    label: "stark",
+    min: 0,
+    max: 100,
+    step: 1,
+    hint: "narrows the interior tones: 100 is nearly two colours",
+  },
+  {
+    key: "evolve",
+    label: "evolve",
+    min: 0,
+    max: 100,
+    step: 1,
+    life: true,
+    hint: "how far the masses swell and thin across the plane",
+  },
+  {
+    key: "evolveSpeed",
+    label: "evolve speed",
+    min: 0,
+    max: 100,
+    step: 1,
+    life: true,
+    hint: "how fast that pattern drifts and changes",
+  },
+  {
+    key: "evolveScale",
+    label: "evolve scale",
+    min: 60,
+    max: 600,
+    step: 10,
+    life: true,
+    rebuild: true,
+    hint: "size of the flow's features: small patches vs whole regions",
+  },
+  {
+    key: "evolveTilt",
+    label: "evolve tilt",
+    min: 0,
+    max: 100,
+    step: 1,
+    life: true,
+    hint: "0 drifts sideways only, 100 drifts upright as steeply as it crosses",
+  },
+  {
+    key: "warp",
+    label: "warp",
+    min: 0,
+    max: 100,
+    step: 1,
+    life: true,
+    hint: "sideways wave amplitude",
+  },
+  {
+    key: "warpSpeed",
+    label: "warp speed",
+    min: 0,
+    max: 100,
+    step: 1,
+    life: true,
+    hint: "how fast the wave travels",
+  },
 ];
 
 const STYLE = `
@@ -260,11 +382,17 @@ if (controller) {
       for (const slider of sliders) {
         const input = rows.get(slider.key);
         input.value = position(slider);
-        input.parentNode.querySelector("output").textContent = format(slider, position(slider));
+        input.parentNode.querySelector("output").textContent = format(
+          slider,
+          position(slider),
+        );
       }
       setMode(initial.mode);
       for (const button of panel.querySelectorAll("[data-fps]")) {
-        button.setAttribute("aria-pressed", String(Number(button.dataset.fps) === config.maxFps));
+        button.setAttribute(
+          "aria-pressed",
+          String(Number(button.dataset.fps) === config.maxFps),
+        );
       }
       controller.rebuild();
       controller.restart();
@@ -280,10 +408,15 @@ if (controller) {
   function copyValues(button) {
     const entries = [
       ["mode", `"${config.mode}"`],
-      ...sliders.map((slider) => [slider.key, format(slider, position(slider))]),
+      ...sliders.map((slider) => [
+        slider.key,
+        format(slider, position(slider)),
+      ]),
       ["maxFps", config.maxFps],
     ];
-    const body = entries.map(([key, value]) => `  ${key}: ${value},`).join("\n");
+    const body = entries
+      .map(([key, value]) => `  ${key}: ${value},`)
+      .join("\n");
     const text = `// paste into SKY_DEFAULTS in assets/sky-core.mjs\n{\n${body}\n}`;
 
     console.log(text);
@@ -328,7 +461,10 @@ if (controller) {
 
   handle.addEventListener("pointermove", (event) => {
     if (!drag || event.pointerId !== drag.pointer) return;
-    place(drag.left + event.clientX - drag.x, drag.top + event.clientY - drag.y);
+    place(
+      drag.left + event.clientX - drag.x,
+      drag.top + event.clientY - drag.y,
+    );
   });
 
   function release(event) {

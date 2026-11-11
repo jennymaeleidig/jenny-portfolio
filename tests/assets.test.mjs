@@ -5,7 +5,18 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { POSTER, RESET_SHA256, SKY_TOKENS, TOKENS, build, contrast, posterHash, root, sharedSite, walk } from "./support/site.mjs";
+import {
+  POSTER,
+  RESET_SHA256,
+  SKY_TOKENS,
+  TOKENS,
+  build,
+  contrast,
+  posterHash,
+  root,
+  sharedSite,
+  walk,
+} from "./support/site.mjs";
 
 const { output, htmlFiles, siteCss } = await sharedSite();
 
@@ -14,17 +25,39 @@ test("the sky sits behind the sheet with its poster and gradient fallbacks", () 
 
   assert.match(home, /<div class="sky" aria-hidden="true">/);
   assert.match(home, /<canvas class="sky-canvas"><\/canvas>/);
-  assert.match(home, /<noscript><img[^>]*class="sky-poster"[^>]*src="\/assets\/sky-poster\.svg"[^>]*><\/noscript>/);
-  assert.match(home, /<script type="module" src="\/assets\/sky\.js"><\/script>/);
+  assert.match(
+    home,
+    /<noscript><img[^>]*class="sky-poster"[^>]*src="\/assets\/sky-poster\.svg"[^>]*><\/noscript>/,
+  );
+  assert.match(
+    home,
+    /<script type="module" src="\/assets\/sky\.js"><\/script>/,
+  );
 
-  assert.match(siteCss, /\.sky\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*-1;/s);
-  assert.match(siteCss, /\.sky\s*\{[^}]*linear-gradient\(180deg, var\(--sky-1\)/s);
+  assert.match(
+    siteCss,
+    /\.sky\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*-1;/s,
+  );
+  assert.match(
+    siteCss,
+    /\.sky\s*\{[^}]*linear-gradient\(180deg, var\(--sky-1\)/s,
+  );
   assert.match(siteCss, /\.sky-canvas\s*\{[^}]*image-rendering:\s*pixelated/s);
-  assert.match(siteCss, /\.sky--fallback\s*\{[^}]*url\("\/assets\/sky-poster\.svg"\)/s);
-  assert.match(siteCss, /\.sky--fallback\s+\.sky-canvas[^{]*\{[^}]*display:\s*none/s);
+  assert.match(
+    siteCss,
+    /\.sky--fallback\s*\{[^}]*url\("\/assets\/sky-poster\.svg"\)/s,
+  );
+  assert.match(
+    siteCss,
+    /\.sky--fallback\s+\.sky-canvas[^{]*\{[^}]*display:\s*none/s,
+  );
 
   for (const asset of ["sky.js", "sky-core.mjs", "sky-poster.svg", "nav.js"]) {
-    assert.equal(statSync(join(output, "assets", asset)).isFile(), true, `${asset} is emitted`);
+    assert.equal(
+      statSync(join(output, "assets", asset)).isFile(),
+      true,
+      `${asset} is emitted`,
+    );
   }
 });
 
@@ -32,7 +65,11 @@ test("the sky's levers are a development tool, not a shipped one", () => {
   const home = readFileSync(join(output, "index.html"), "utf8");
   const sky = readFileSync(join(output, "assets", "sky.js"), "utf8");
 
-  assert.doesNotMatch(home, /sky-levers/, "no production page points at the panel");
+  assert.doesNotMatch(
+    home,
+    /sky-levers/,
+    "no production page points at the panel",
+  );
   assert.equal(
     existsSync(join(output, "assets", "sky-levers.mjs")),
     false,
@@ -54,7 +91,11 @@ test("a SKY_LEVERS=1 build carries the levers on every page", () => {
 
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
-    assert.match(html, /<body data-sky-levers>/, `${relative(root, file)} marks the body`);
+    assert.match(
+      html,
+      /<body data-sky-levers>/,
+      `${relative(root, file)} marks the body`,
+    );
     assert.match(
       html,
       /<script type="module" src="\/assets\/sky-levers\.mjs"><\/script>/,
@@ -92,8 +133,16 @@ test("the committed poster is a static frame of the current sky", () => {
 
   const png = Buffer.from(base64, "base64");
   assert.equal(png.subarray(1, 4).toString("ascii"), "PNG");
-  assert.equal(png.readUInt32BE(16), POSTER.cols, "the poster is the shipped width");
-  assert.equal(png.readUInt32BE(20), POSTER.rows, "the poster is the shipped height");
+  assert.equal(
+    png.readUInt32BE(16),
+    POSTER.cols,
+    "the poster is the shipped width",
+  );
+  assert.equal(
+    png.readUInt32BE(20),
+    POSTER.rows,
+    "the poster is the shipped height",
+  );
 });
 
 test("the share card is the poster, unwrapped for a link preview", () => {
@@ -102,21 +151,30 @@ test("the share card is the poster, unwrapped for a link preview", () => {
   assert.ok(base64, "the poster embeds its PNG frame");
 
   const card = readFileSync(join(output, "assets", "sky-poster.png"));
-  assert.deepEqual(card, Buffer.from(base64, "base64"), "the card is the poster's own pixels, not a re-render");
+  assert.deepEqual(
+    card,
+    Buffer.from(base64, "base64"),
+    "the card is the poster's own pixels, not a re-render",
+  );
 
   const width = card.readUInt32BE(16);
   const height = card.readUInt32BE(20);
   const home = readFileSync(join(output, "index.html"), "utf8");
-  assert.match(home, new RegExp(`<meta property="og:image:width" content="${width}">`), "the card declares the width it ships");
-  assert.match(home, new RegExp(`<meta property="og:image:height" content="${height}">`), "the card declares the height it ships");
+  assert.match(
+    home,
+    new RegExp(`<meta property="og:image:width" content="${width}">`),
+    "the card declares the width it ships",
+  );
+  assert.match(
+    home,
+    new RegExp(`<meta property="og:image:height" content="${height}">`),
+    "the card declares the height it ships",
+  );
 });
 
 test("the reset is carried over verbatim", () => {
   const reset = readFileSync(join(output, "assets", "reset.css"));
-  assert.equal(
-    createHash("sha256").update(reset).digest("hex"),
-    RESET_SHA256,
-  );
+  assert.equal(createHash("sha256").update(reset).digest("hex"), RESET_SHA256);
 });
 
 test("the stylesheet is a light-only fork with the grid and its fallbacks", () => {
@@ -137,10 +195,17 @@ test("the stylesheet is a light-only fork with the grid and its fallbacks", () =
 });
 
 test("the sheet insets its content from its own border", () => {
-  assert.match(siteCss, /\.sheet\s*\{[^}]*padding:\s*var\(--sheet-pad-y\) var\(--sheet-pad-x\)/s);
+  assert.match(
+    siteCss,
+    /\.sheet\s*\{[^}]*padding:\s*var\(--sheet-pad-y\) var\(--sheet-pad-x\)/s,
+  );
   assert.match(siteCss, /\.sheet\s*\{[^}]*--sheet-pad-x:\s*3ch/s);
   const print = siteCss.slice(siteCss.indexOf("@media print"));
-  assert.match(print, /\.sheet\s*\{[^}]*padding:\s*0/s, "print drops the sheet padding");
+  assert.match(
+    print,
+    /\.sheet\s*\{[^}]*padding:\s*0/s,
+    "print drops the sheet padding",
+  );
 });
 
 test("the featured grid caps at three columns and collapses on a narrow viewport", () => {
@@ -150,7 +215,11 @@ test("the featured grid caps at three columns and collapses on a narrow viewport
     /\.featured\s*\{[^}]*align-items:\s*stretch/s,
     "cards in a row share one height so the closing rules sit square",
   );
-  assert.match(siteCss, /\.card\s*\{[^}]*border-top:/s, "each card opens on the light rule");
+  assert.match(
+    siteCss,
+    /\.card\s*\{[^}]*border-top:/s,
+    "each card opens on the light rule",
+  );
   assert.match(
     siteCss,
     /\.card:nth-child\(-n \+ 3\)\s*\{\s*border-top:\s*0/,
@@ -166,7 +235,10 @@ test("the featured grid caps at three columns and collapses on a narrow viewport
     /\.primary-links:last-child,\s*\n\.career-section > :last-child,\s*\n\.catalogue tbody tr:last-child > \*/,
     "a ruled run never closes on a rule of its own",
   );
-  assert.match(siteCss, /\.grid:has\(> :nth-child\(3\)\)\s*\{\s*--grid-cells:\s*3/);
+  assert.match(
+    siteCss,
+    /\.grid:has\(> :nth-child\(3\)\)\s*\{\s*--grid-cells:\s*3/,
+  );
   assert.doesNotMatch(siteCss, /:nth-child\([4-9]\)\)\s*\{\s*--grid-cells/);
   assert.match(
     siteCss,
@@ -200,14 +272,25 @@ test("the catalogue and the header stay readable on a narrow viewport", () => {
 });
 
 test("every page runs the palette strip in its header and its footer", () => {
-  const strip = /<div class="swatches" aria-hidden="true">((?:<span><\/span>){8})<\/div>/;
+  const strip =
+    /<div class="swatches" aria-hidden="true">((?:<span><\/span>){8})<\/div>/;
 
   for (const file of htmlFiles) {
     const html = readFileSync(file, "utf8");
-    const header = html.match(/<header class="site-header">[\s\S]*?<\/header>/)?.[0] ?? "";
-    const footer = html.match(/<footer class="site-footer">[\s\S]*?<\/footer>/)?.[0] ?? "";
-    assert.match(header, strip, `${relative(root, file)} header runs the strip`);
-    assert.match(footer, strip, `${relative(root, file)} footer runs the strip`);
+    const header =
+      html.match(/<header class="site-header">[\s\S]*?<\/header>/)?.[0] ?? "";
+    const footer =
+      html.match(/<footer class="site-footer">[\s\S]*?<\/footer>/)?.[0] ?? "";
+    assert.match(
+      header,
+      strip,
+      `${relative(root, file)} header runs the strip`,
+    );
+    assert.match(
+      footer,
+      strip,
+      `${relative(root, file)} footer runs the strip`,
+    );
   }
 
   assert.match(
@@ -220,7 +303,11 @@ test("every page runs the palette strip in its header and its footer", () => {
     /\.swatches\s*\{[^}]*position:\s*absolute[^}]*right:\s*var\(--sheet-pad-x\)/s,
     "the strip is set into the paper, inset the same as the header and footer",
   );
-  assert.match(siteCss, /\.sheet\s*\{[^}]*position:\s*relative/s, "the sheet anchors the strip");
+  assert.match(
+    siteCss,
+    /\.sheet\s*\{[^}]*position:\s*relative/s,
+    "the sheet anchors the strip",
+  );
   assert.match(
     siteCss,
     /\.site-header \.swatches\s*\{\s*top:\s*var\(--swatch-inset-y\)/s,
@@ -242,7 +329,11 @@ test("every page runs the palette strip in its header and its footer", () => {
     "every square is 1x1",
   );
   const sheetBlock = siteCss.match(/\.sheet\s*\{([^}]*)\}/s)?.[1] ?? "";
-  assert.match(sheetBlock, /--sheet-font-size:/, "the sheet names its own font size");
+  assert.match(
+    sheetBlock,
+    /--sheet-font-size:/,
+    "the sheet names its own font size",
+  );
   assert.doesNotMatch(
     sheetBlock,
     /(^|;|\s)font-size:/,
@@ -261,7 +352,9 @@ test("every page runs the palette strip in its header and its footer", () => {
   for (const [index, name] of TOKENS.entries()) {
     assert.match(
       siteCss,
-      new RegExp(`\\.swatches > :nth-child\\(${index + 1}\\)\\s*\\{\\s*background:\\s*var\\(--${name}\\)`),
+      new RegExp(
+        `\\.swatches > :nth-child\\(${index + 1}\\)\\s*\\{\\s*background:\\s*var\\(--${name}\\)`,
+      ),
       `square ${index + 1} is --${name}`,
     );
   }
@@ -298,7 +391,10 @@ test("the font and its licence sit beside each other", () => {
 
   assert.equal(statSync(font).isFile(), true);
   assert.equal(statSync(licence).isFile(), true);
-  assert.match(readFileSync(licence, "utf8"), /SIL OPEN FONT LICENSE Version 1\.1/);
+  assert.match(
+    readFileSync(licence, "utf8"),
+    /SIL OPEN FONT LICENSE Version 1\.1/,
+  );
 });
 
 test("the icon ships with the credit for the cloud it came from", () => {

@@ -9,7 +9,7 @@ tags:
   - plunderphonics
   - found sound
   - sound collage
-  - "56 kbit/s"
+  - '56 kbit/s'
   - DJ x86
 links:
   - title: 'Live'

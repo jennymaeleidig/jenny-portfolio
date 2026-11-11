@@ -20,7 +20,12 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 
-import { SKY_DEFAULTS, createScene, frameLayout, renderFrame } from "../assets/sky-core.mjs";
+import {
+  SKY_DEFAULTS,
+  createScene,
+  frameLayout,
+  renderFrame,
+} from "../assets/sky-core.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -86,7 +91,12 @@ export function posterArtifact() {
   const { cols, rows, cellPx } = POSTER;
   // The canvas carries sky above and below the window so the lift can pan;
   // building the scene the same way makes the poster the shipped framing.
-  const { field, offsetY } = createScene({ config: SKY_DEFAULTS, cols, rows, cellPx });
+  const { field, offsetY } = createScene({
+    config: SKY_DEFAULTS,
+    cols,
+    rows,
+    cellPx,
+  });
   const pixels = renderFrame({
     field,
     config: SKY_DEFAULTS,
@@ -125,7 +135,10 @@ export function posterSvg() {
 `;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
   const svg = posterSvg();
   writeFileSync(join(root, "assets", "sky-poster.svg"), svg);
   console.log(`assets/sky-poster.svg: ${svg.length} bytes`);

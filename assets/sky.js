@@ -10,7 +10,12 @@
  * gradient, so a canvas block still reads as sky.
  */
 
-import { SKY_DEFAULTS, createScene, frameLayout, renderFrame } from "/assets/sky-core.mjs";
+import {
+  SKY_DEFAULTS,
+  createScene,
+  frameLayout,
+  renderFrame,
+} from "/assets/sky-core.mjs";
 
 // A visit gets its own sky. The seed is chosen once per page load, so the
 // field stays put across internal navigation and is only new on a real load.
@@ -28,7 +33,9 @@ const canvas = document.querySelector(".sky-canvas");
 
 if (sky && canvas) {
   const context =
-    typeof canvas.getContext === "function" ? canvas.getContext("2d", { alpha: true }) : null;
+    typeof canvas.getContext === "function"
+      ? canvas.getContext("2d", { alpha: true })
+      : null;
 
   if (!context) {
     // No 2D context: show the poster over the gradient. The page is otherwise

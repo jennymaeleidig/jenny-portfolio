@@ -1,10 +1,23 @@
 // The build's guards: the failures that must name their file
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { build, buildFixture, root, sharedSite, tracked, writeProject } from "./support/site.mjs";
+import {
+  build,
+  buildFixture,
+  root,
+  sharedSite,
+  tracked,
+  writeProject,
+} from "./support/site.mjs";
 
 const { output, htmlFiles, siteCss } = await sharedSite();
 
@@ -31,9 +44,13 @@ test("the build fails, naming the file, when a required field is missing", () =>
 test("the build fails on a filename jenny would eval unsafely", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-filename-"));
   const dist = mkdtempSync(join(tmpdir(), "portfolio-filename-dist-"));
-  writeProject(content, "Broadcast Live", `year: 2026
+  writeProject(
+    content,
+    "Broadcast Live",
+    `year: 2026
 status: shipped
-category: games`);
+category: games`,
+  );
 
   const result = buildFixture(content, dist);
 
@@ -42,7 +59,10 @@ category: games`);
 });
 
 test("identity links come from one source that every page reads", () => {
-  const identity = join(mkdtempSync(join(tmpdir(), "portfolio-identity-")), "identity.sh");
+  const identity = join(
+    mkdtempSync(join(tmpdir(), "portfolio-identity-")),
+    "identity.sh",
+  );
   writeFileSync(
     identity,
     `FULL_NAME="Hello Example"
@@ -67,7 +87,11 @@ PRIMARY_LINKS=("Email=mailto:hello@example.com" "GitHub=https://example.com/gith
   assert.doesNotMatch(about, /jennymaeleidig@gmail\.com/);
   assert.match(home, /mailto:hello@example\.com/);
   assert.doesNotMatch(home, /jennymaeleidig@gmail\.com/);
-  assert.match(home, /<p class="lede">Test Tagline<\/p>/, "the front page lede is the tagline");
+  assert.match(
+    home,
+    /<p class="lede">Test Tagline<\/p>/,
+    "the front page lede is the tagline",
+  );
 });
 
 test("the build fails when a project page is not emitted", () => {
@@ -88,13 +112,20 @@ This page is scheduled, so jenny skips it.
 
   const result = buildFixture(content, dist);
 
-  assert.notEqual(result.status, 0, "the build must fail when a page is missing");
+  assert.notEqual(
+    result.status,
+    0,
+    "the build must fail when a page is missing",
+  );
   assert.match(result.stderr, /future-page/);
 });
 
 test("the build fails, naming the file, when a project cannot be staged", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-content-"));
-  writeFileSync(join(content, "broken.md"), "# No frontmatter\n\nThis project cannot be dated.\n");
+  writeFileSync(
+    join(content, "broken.md"),
+    "# No frontmatter\n\nThis project cannot be dated.\n",
+  );
   const dist = mkdtempSync(join(tmpdir(), "portfolio-broken-"));
 
   const result = buildFixture(content, dist);
@@ -114,25 +145,30 @@ test("the build cleans its output directory before generating", () => {
   assert.equal(statSync(join(dist, "index.html")).isFile(), true);
 });
 
-test("the only binaries committed are the self-hosted font and project images", { skip: tracked === null && "not a git checkout" }, () => {
-  const font = "assets/fonts/CommitMonoV143-VF.woff2";
-  // A photo has to be a real image, so the no-binaries rule has one other
-  // door: image files under assets/. The site icon and the About portrait are
-  // the two images that sit at the root of assets/ rather than in a
-  // subdirectory. Everything else stays text.
-  const image = /^assets\/(?:favicon\.png|portrait\.jpe?g|(?:[a-z0-9-]+\/)+[a-z0-9-]+\.(?:png|jpe?g|webp|gif))$/;
+test(
+  "the only binaries committed are the self-hosted font and project images",
+  { skip: tracked === null && "not a git checkout" },
+  () => {
+    const font = "assets/fonts/CommitMonoV143-VF.woff2";
+    // A photo has to be a real image, so the no-binaries rule has one other
+    // door: image files under assets/. The site icon and the About portrait are
+    // the two images that sit at the root of assets/ rather than in a
+    // subdirectory. Everything else stays text.
+    const image =
+      /^assets\/(?:favicon\.png|portrait\.jpe?g|(?:[a-z0-9-]+\/)+[a-z0-9-]+\.(?:png|jpe?g|webp|gif))$/;
 
-  assert.ok(tracked.includes(font), "the self-hosted font is committed");
+    assert.ok(tracked.includes(font), "the self-hosted font is committed");
 
-  for (const file of tracked) {
-    const contents = readFileSync(join(root, file));
-    if (file === font) {
-      assert.equal(contents.includes(0), true, "the font is binary");
-      continue;
+    for (const file of tracked) {
+      const contents = readFileSync(join(root, file));
+      if (file === font) {
+        assert.equal(contents.includes(0), true, "the font is binary");
+        continue;
+      }
+      if (image.test(file)) {
+        continue;
+      }
+      assert.equal(contents.includes(0), false, `${file} contains a NUL byte`);
     }
-    if (image.test(file)) {
-      continue;
-    }
-    assert.equal(contents.includes(0), false, `${file} contains a NUL byte`);
-  }
-});
+  },
+);

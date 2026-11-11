@@ -61,7 +61,8 @@
   --line-height: 1.5rem;
   --column: 80ch;
   --border-thickness: 2px;
-  --font-family: "Commit Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-family:
+    "Commit Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-bold: 600;
@@ -632,7 +633,9 @@ main > :last-child > :last-child {
    * paper's own inset stay one number. The strip never takes room from the
    * flow: the header and the footer lay out as if it were not there.
    */
-  --swatch-inset-y: calc(var(--sheet-pad-y) + (var(--line-height) - var(--swatch-size)) / 2);
+  --swatch-inset-y: calc(
+    var(--sheet-pad-y) + (var(--line-height) - var(--swatch-size)) / 2
+  );
   font-size: var(--sheet-font-size);
   position: absolute;
   right: var(--sheet-pad-x);
@@ -653,14 +656,30 @@ main > :last-child > :last-child {
   margin-top: 0;
 }
 
-.swatches > :nth-child(1) { background: var(--paper); }
-.swatches > :nth-child(2) { background: var(--ink); }
-.swatches > :nth-child(3) { background: var(--accent); }
-.swatches > :nth-child(4) { background: var(--accent-bright); }
-.swatches > :nth-child(5) { background: var(--sky-1); }
-.swatches > :nth-child(6) { background: var(--sky-2); }
-.swatches > :nth-child(7) { background: var(--sky-3); }
-.swatches > :nth-child(8) { background: var(--sky-4); }
+.swatches > :nth-child(1) {
+  background: var(--paper);
+}
+.swatches > :nth-child(2) {
+  background: var(--ink);
+}
+.swatches > :nth-child(3) {
+  background: var(--accent);
+}
+.swatches > :nth-child(4) {
+  background: var(--accent-bright);
+}
+.swatches > :nth-child(5) {
+  background: var(--sky-1);
+}
+.swatches > :nth-child(6) {
+  background: var(--sky-2);
+}
+.swatches > :nth-child(7) {
+  background: var(--sky-3);
+}
+.swatches > :nth-child(8) {
+  background: var(--sky-4);
+}
 
 .site-header .swatches {
   top: var(--swatch-inset-y);
@@ -802,9 +821,7 @@ nav + * > :first-child {
 th,
 td {
   border: var(--border-thickness) solid var(--ink);
-  padding:
-    calc(var(--line-height) / 2)
-    calc(1ch - var(--border-thickness) / 2)
+  padding: calc(var(--line-height) / 2) calc(1ch - var(--border-thickness) / 2)
     calc((var(--line-height) / 2) - var(--border-thickness));
   line-height: var(--line-height);
   vertical-align: top;
@@ -835,8 +852,12 @@ th {
   margin-top: 0;
 }
 
-.grid:has(> :nth-child(2)) { --grid-cells: 2; }
-.grid:has(> :nth-child(3)) { --grid-cells: 3; }
+.grid:has(> :nth-child(2)) {
+  --grid-cells: 2;
+}
+.grid:has(> :nth-child(3)) {
+  --grid-cells: 3;
+}
 
 @supports (width: calc(round(down, 100%, 1ch))) {
   .grid {
@@ -844,7 +865,13 @@ th {
   }
 
   .grid > * {
-    flex-basis: calc(round(down, (100% - (1ch * (var(--grid-cells) - 1))) / var(--grid-cells), 1ch));
+    flex-basis: calc(
+      round(
+        down,
+        (100% - (1ch * (var(--grid-cells) - 1))) / var(--grid-cells),
+        1ch
+      )
+    );
   }
 }
 

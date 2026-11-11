@@ -27,7 +27,13 @@ function syncHeader(nextDocument) {
 let controller = null;
 
 function isPageLink(link, event) {
-  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  ) {
     return false;
   }
   if (link.target && link.target !== "_self") return false;
@@ -98,7 +104,8 @@ document.addEventListener("click", (event) => {
   // The link to the page already on screen is not a reload. Swapping it back in
   // would restart the sky and throw away the reader's scroll for nothing.
   const url = new URL(link.href, location.href);
-  if (url.pathname === location.pathname && url.search === location.search) return;
+  if (url.pathname === location.pathname && url.search === location.search)
+    return;
 
   navigate(link.href);
 });

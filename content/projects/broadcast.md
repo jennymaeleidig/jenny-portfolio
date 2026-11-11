@@ -10,12 +10,12 @@ tags:
   - c++
   - narrative
 links:
-  - title: "Itch.io"
-    url: "https://jennyl.itch.io/broadcast"
-  - title: "Repo"
-    url: "https://github.com/jennymaeleidig/intro-game-engine-final"
-  - title: "Video"
-    url: "https://youtu.be/H1onwPht8JU"
+  - title: 'Itch.io'
+    url: 'https://jennyl.itch.io/broadcast'
+  - title: 'Repo'
+    url: 'https://github.com/jennymaeleidig/intro-game-engine-final'
+  - title: 'Video'
+    url: 'https://youtu.be/H1onwPht8JU'
 ---
 
 # Broadcast

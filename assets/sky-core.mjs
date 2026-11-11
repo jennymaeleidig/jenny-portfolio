@@ -60,8 +60,22 @@ export const SKY_DEFAULTS = Object.freeze({
  * rather than on them.
  */
 export const BAYER4 = Object.freeze([
-  -0.5, 0, -3 / 8, 1 / 8, 1 / 4, -1 / 4, 3 / 8, -1 / 8, -5 / 16, 3 / 16, -7 / 16, 1 / 16, 7 / 16,
-  -3 / 16, 5 / 16, -1 / 16,
+  -0.5,
+  0,
+  -3 / 8,
+  1 / 8,
+  1 / 4,
+  -1 / 4,
+  3 / 8,
+  -1 / 8,
+  -5 / 16,
+  3 / 16,
+  -7 / 16,
+  1 / 16,
+  7 / 16,
+  -3 / 16,
+  5 / 16,
+  -1 / 16,
 ]);
 
 function wrap(value, period) {
@@ -76,7 +90,10 @@ function wrap(value, period) {
 export function hash(x, y, seed, periodX, periodY = 0) {
   const hx = wrap(x, periodX);
   const hy = periodY ? wrap(y, periodY) : y | 0;
-  let h = Math.imul(hx, 374761393) ^ Math.imul(hy, 668265263) ^ Math.imul(seed | 0, 1442695041);
+  let h =
+    Math.imul(hx, 374761393) ^
+    Math.imul(hy, 668265263) ^
+    Math.imul(seed | 0, 1442695041);
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
 }
@@ -107,7 +124,14 @@ export function fbm(x, y, seed, periodX, octaves = 3, periodY = 0) {
 
   for (let i = 0; i < octaves; i += 1) {
     sum +=
-      amplitude * valueNoise(x * frequency, y * frequency, seed + i * 101, periodX, periodY);
+      amplitude *
+      valueNoise(
+        x * frequency,
+        y * frequency,
+        seed + i * 101,
+        periodX,
+        periodY,
+      );
     normaliser += amplitude;
     amplitude *= 0.5;
     frequency *= 2;
@@ -135,7 +159,12 @@ export const OFFSET_Y_LIMIT = 400;
  * snapped to whole device pixels, and the grid that covers the frame. A block
  * edge therefore lands on a device pixel rather than a fraction of one.
  */
-export function frameLayout({ width, height, dpr = 1, cell = SKY_DEFAULTS.cell }) {
+export function frameLayout({
+  width,
+  height,
+  dpr = 1,
+  cell = SKY_DEFAULTS.cell,
+}) {
   const cellPx = Math.max(1, Math.round(cell * dpr) / dpr);
   return {
     cellPx,
@@ -380,7 +409,8 @@ export function renderFrame({
   for (let y = 0; y < rows; y += 1) {
     const depth = rows > 1 ? y / (rows - 1) : 0;
     const falloffBias = fallBase * depth * 0.55;
-    const sampleOffset = drift + warpCells * Math.sin(y * 0.055 + time * warpSpeed);
+    const sampleOffset =
+      drift + warpCells * Math.sin(y * 0.055 + time * warpSpeed);
     const whole = Math.floor(sampleOffset);
     const fraction = sampleOffset - whole;
     const inverse = 1 - fraction;
@@ -412,10 +442,13 @@ export function renderFrame({
 
       let value;
       if (skyDepth === 0) {
-        value = data[skyRowData + a] * inverse + data[skyRowData + b] * fraction;
+        value =
+          data[skyRowData + a] * inverse + data[skyRowData + b] * fraction;
       } else {
-        const top = data[skyRowData + a] * inverse + data[skyRowData + b] * fraction;
-        const bottom = data[skyNextData + a] * inverse + data[skyNextData + b] * fraction;
+        const top =
+          data[skyRowData + a] * inverse + data[skyRowData + b] * fraction;
+        const bottom =
+          data[skyNextData + a] * inverse + data[skyNextData + b] * fraction;
         value = top * (1 - skyDepth) + bottom * skyDepth;
       }
       value = (value - 0.5) * gain + 0.5 - falloffBias - skyBias;
@@ -426,9 +459,11 @@ export function renderFrame({
         let eb = ea + 1;
         if (eb >= width) eb -= width;
         const here =
-          (flow[flowRowData + ea] * evolveInverse + flow[flowRowData + eb] * evolveFraction) *
+          (flow[flowRowData + ea] * evolveInverse +
+            flow[flowRowData + eb] * evolveFraction) *
             flowUp +
-          (flow[flowNextData + ea] * evolveInverse + flow[flowNextData + eb] * evolveFraction) *
+          (flow[flowNextData + ea] * evolveInverse +
+            flow[flowNextData + eb] * evolveFraction) *
             flowDepth;
         value -= here * 2 * evolveBias;
       }
@@ -437,7 +472,12 @@ export function renderFrame({
       else if (value > 1) value = 1;
       value = value * value * (3 - 2 * value);
 
-      const band = toneIndex(value, bandThresholds, dither, BAYER4[ditherRow + (x & 3)]);
+      const band = toneIndex(
+        value,
+        bandThresholds,
+        dither,
+        BAYER4[ditherRow + (x & 3)],
+      );
       if (bands) bands[y * cols + x] = band;
 
       const colour = RAMP[rampIndex(band, tones)];
