@@ -13,6 +13,9 @@ source "$SITE_ROOT/layouts/shell.sh"
 
 route=${1:?a route is required}
 indexable=${2:?an indexable flag is required}
+site_name=$(identity_value SITE_NAME) || exit 1
+full_name=$(identity_value FULL_NAME) || exit 1
+tagline=$(identity_value TAGLINE) || exit 1
 
 # Collect the featured cards first, so a project that is not featured never
 # reaches the grid. project_records puts the catalogue in canonical order and
@@ -25,10 +28,10 @@ cards=$(
   done < <(project_row_records href title blurb category year featured)
 )
 
-page_open "$SITE_NAME" home "$FULL_NAME — $TAGLINE." "$route" "$indexable"
+page_open "$site_name" home "$full_name — $tagline." "$route" "$indexable"
 cat <<EOF
-        <h1>$(html_escape "$SITE_NAME")</h1>
-        <p class="lede">$(html_escape "$TAGLINE")</p>
+        <h1>$(html_escape "$site_name")</h1>
+        <p class="lede">$(html_escape "$tagline")</p>
         <ul class="grid featured">
 EOF
 

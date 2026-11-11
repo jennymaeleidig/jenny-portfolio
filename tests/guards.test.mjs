@@ -97,7 +97,7 @@ EMAIL=hello@example.com
 GITHUB=https://example.com/github
 LINKEDIN=https://example.com/linkedin
 ITCH=https://example.com/itch
-PRIMARY_LINKS=("Email=mailto:hello@example.com" "GitHub=https://example.com/github" "LinkedIn=https://example.com/linkedin" "itch.io=https://example.com/itch")
+PRIMARY_LINKS=("Email"$'\t'"mailto:hello@example.com" "GitHub"$'\t'"https://example.com/github" "LinkedIn"$'\t'"https://example.com/linkedin" "itch.io"$'\t'"https://example.com/itch")
 `,
   );
   const dist = mkdtempSync(join(tmpdir(), "portfolio-identity-dist-"));

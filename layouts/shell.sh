@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # The shared HTML shell. Sourced by the page layouts.
 
-identity_file=${IDENTITY_FILE:-"$SITE_ROOT/content/identity.sh"}
 asset_base=${ASSET_BASE:-/assets}
 stylesheet=${STYLESHEET:-$asset_base/site.css}
 # The shell escapes and composes with the shared helpers, so it reads them
@@ -11,7 +10,7 @@ source "$SITE_ROOT/scripts/lib.sh"
 # shellcheck source=/dev/null
 source "$SITE_ROOT/scripts/routes.sh"
 # shellcheck source=/dev/null
-source "$identity_file"
+source "$SITE_ROOT/scripts/identity.sh"
 
 # The page head takes raw text: the title and description are composed and
 # escaped here, once, and the route the build emitted the page at is an
@@ -50,11 +49,13 @@ shell_head() {
   # The front page's title is the site name, so it stands alone; every other
   # page carries the site suffix. The share card shows the page's own title,
   # since og:site_name already names the site.
+  local site_name
+  site_name=$(identity_value SITE_NAME) || return 1
   local title
-  if [[ $raw_title == "$SITE_NAME" ]]; then
+  if [[ $raw_title == "$site_name" ]]; then
     title=$raw_title
   else
-    title="$raw_title, $SITE_NAME"
+    title="$raw_title, $site_name"
   fi
   title=$(html_escape "$title")
   local share_title
@@ -63,8 +64,8 @@ shell_head() {
   # paragraph, a project's blurb — handed over raw and escaped once here.
   local description
   description=$(html_escape "$raw_description")
-  local site_name
-  site_name=$(html_escape "$SITE_NAME")
+  local site_name_html
+  site_name_html=$(html_escape "$site_name")
   # The share card is the poster's pixels as a PNG, at the poster frame's size;
   # see scripts/post-build.sh. tests/assets.test.mjs reads the emitted PNG and
   # fails if these numbers drift from it.
@@ -89,7 +90,7 @@ shell_head() {
     <meta name="color-scheme" content="light">
     <title>$title</title>
     <meta name="description" content="$description">
-    <meta property="og:site_name" content="$site_name">
+    <meta property="og:site_name" content="$site_name_html">
     <meta property="og:title" content="$share_title">
     <meta property="og:description" content="$description">
     <meta property="og:type" content="website">
@@ -132,6 +133,9 @@ sky_levers_attr() {
 
 shell_sheet_open() {
   local section=${1:-}
+  local site_name site_name_html
+  site_name=$(identity_value SITE_NAME) || return 1
+  site_name_html=$(html_escape "$site_name")
   local home_href work_href about_href now_href
   home_href=$(route_address home) || return 1
   work_href=$(route_address work) || return 1
@@ -141,7 +145,7 @@ shell_sheet_open() {
     <div class="sheet">
       <header class="site-header">
         <nav aria-label="Primary">
-          <a href="$home_href"$(current_page_attr "$section" home)>$SITE_NAME</a>
+          <a href="$home_href"$(current_page_attr "$section" home)>$site_name_html</a>
           <a href="$work_href"$(current_page_attr "$section" work)>Work</a>
           <a href="$about_href"$(current_page_attr "$section" about)>About</a>
           <a href="$now_href"$(current_page_attr "$section" now)>Now</a>
@@ -153,6 +157,8 @@ EOF
 }
 
 shell_main_close() {
+  local email
+  email=$(identity_value EMAIL) || return 1
   printf '      </main>\n'
   # Citations in this tree follow the Joint Declaration of Data Citation
   # Principles (FORCE11): name every contributor, pin a version or commit, and
@@ -163,7 +169,7 @@ shell_main_close() {
   # Applied here: no page lists its sources yet, so a claim that rests on data
   # has nowhere to point. When one is added, it names the data and its locator.
   cat <<EOF
-      <footer class="site-footer"><a href="mailto:$(html_escape "$EMAIL")">$(html_escape "$EMAIL")</a>$(swatch_strip)</footer>
+      <footer class="site-footer"><a href="mailto:$(html_escape "$email")">$(html_escape "$email")</a>$(swatch_strip)</footer>
     </div>
 EOF
 }

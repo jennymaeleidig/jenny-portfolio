@@ -10,9 +10,11 @@ GITHUB=https://github.com/jennymaeleidig
 LINKEDIN=https://www.linkedin.com/in/jleidig/
 ITCH=https://jennyleidig.itch.io/
 
+# Each primary link is a title<TAB>url record, the same shape a project's
+# links use (ADR-0002). The title is printed verbatim.
 PRIMARY_LINKS=(
-	"Email=mailto:$EMAIL"
-	"GitHub=$GITHUB"
-	"LinkedIn=$LINKEDIN"
-	"itch.io=$ITCH"
+	"Email"$'\t'"mailto:$EMAIL"
+	"GitHub"$'\t'"$GITHUB"
+	"LinkedIn"$'\t'"$LINKEDIN"
+	"itch.io"$'\t'"$ITCH"
 )

@@ -53,18 +53,19 @@ trap cleanup EXIT
 meta_dir="$staging/.meta"
 mkdir -p "$meta_dir"
 
-# The identity file owns the site's name and host. IDENTITY_FILE lets a test
-# site supply its own, the same way the layouts do.
-identity_file=${IDENTITY_FILE:-"$root/content/identity.sh"}
+# The identity record owns the site's name and host. IDENTITY_FILE lets a
+# test site supply its own, the same way the layouts do.
 # shellcheck source=/dev/null
-source "$identity_file"
+source "$root/scripts/identity.sh"
+portfolio=$(identity_value PORTFOLIO) || exit 1
+site_name=$(identity_value SITE_NAME) || exit 1
 
 "$root/scripts/stage.sh" "$content_dir" "$staging" "$meta_dir" "$root"
 
 cat > "$staging/.blogrc" <<EOF
-export BLOG_HOST=$(printf '%q' "$PORTFOLIO")
-export SITE_HOST=$(printf '%q' "$PORTFOLIO")
-export BLOG_TITLE=$(printf '%q' "$SITE_NAME")
+export BLOG_HOST=$(printf '%q' "$portfolio")
+export SITE_HOST=$(printf '%q' "$portfolio")
+export BLOG_TITLE=$(printf '%q' "$site_name")
 export POSTS_PER_PAGE=1000
 export SUPPRESS_UTILS_WARN=1
 export DIST=$(printf '%q' "$dist")
