@@ -5,6 +5,7 @@ SITE_NAME="Jenny Leidig"
 TAGLINE="Software Engineer & Creative Technologist"
 LOCATION="Richmond, VA"
 PORTFOLIO=https://portfolio.jenny-page.online/
+SOURCE=https://github.com/jennymaeleidig/jenny-portfolio
 EMAIL=jennymaeleidig@gmail.com
 GITHUB=https://github.com/jennymaeleidig
 LINKEDIN=https://www.linkedin.com/in/jleidig/
@@ -17,4 +18,5 @@ PRIMARY_LINKS=(
 	"GitHub"$'\t'"$GITHUB"
 	"LinkedIn"$'\t'"$LINKEDIN"
 	"itch.io"$'\t'"$ITCH"
+	"Source"$'\t'"$SOURCE"
 )
