@@ -21,11 +21,7 @@ featured: true
 
 # 56 kbit/s
 
-An exploration into how technology has influenced music production, distribution and discovery—especially alongside the advent of home computers and the Internet. 56 kbit/s is the maximum theoretical transfer rate of dial-up modems. 56 kbit/s modems were widely available (and practical) to the consumer market as of 1998.
-
-“The Internet is at once a world-wide broadcasting capability, a mechanism for information dissemination, and a medium for collaboration and interaction between individuals and their computers without regard for geographic location.”
-
-– Internet Society (1997)
+An exploration into how technology has influenced music production, distribution and discovery—especially alongside the advent of home computers and the Internet.
 
 The show's homepage: [dj-x86.straw.page](https://dj-x86.straw.page/).
 
