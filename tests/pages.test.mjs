@@ -18,47 +18,86 @@ import {
 
 const { output, htmlFiles, siteCss } = await sharedSite();
 
-test("the build emits the hand-written page at its route", () => {
-  const home = join(output, "index.html");
-  const project = join(output, "projects", "example-project", "index.html");
+test("the build emits a project page at its route", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-routed-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-routed-dist-"));
+  writeProject(
+    content,
+    "routed-project",
+    `year: 2026
+status: shipped
+category: software
+featured: true`,
+  );
+
+  build(dist, { CONTENT_DIR: content });
+
+  const home = join(dist, "index.html");
+  const project = join(dist, "projects", "routed-project", "index.html");
 
   assert.equal(statSync(home).isFile(), true, "the front page is emitted");
   assert.equal(statSync(project).isFile(), true, "the project page is emitted");
 
-  assert.match(readFileSync(home, "utf8"), /example-project/);
-  assert.match(readFileSync(project, "utf8"), /<h1>Example Project<\/h1>/);
+  assert.match(readFileSync(home, "utf8"), /routed-project/);
+  assert.match(readFileSync(project, "utf8"), /<h1>routed-project<\/h1>/);
 });
 
 test("markdown is rendered without its frontmatter", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-body-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-body-dist-"));
+  writeProject(
+    content,
+    "with-frontmatter",
+    `year: 2026
+status: shipped
+category: software`,
+    "# With Frontmatter\n\nThe body is rendered on its own.\n",
+  );
+
+  buildFixture(content, dist);
+
   const page = readFileSync(
-    join(output, "projects", "example-project", "index.html"),
+    join(dist, "projects", "with-frontmatter", "index.html"),
     "utf8",
   );
 
-  assert.match(
-    page,
-    /<p>An example project, staged by the tests rather than read from the real content\.<\/p>/,
-  );
+  assert.match(page, /<p>The body is rendered on its own\.<\/p>/);
   assert.doesNotMatch(page, /^---$/m);
   assert.doesNotMatch(page, /^category:/m);
 });
 
 test("a project page renders its title, year, status, links and prose from one file", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-fields-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-fields-dist-"));
+  writeProject(
+    content,
+    "all-fields",
+    `year: 2026
+status: study
+category: games
+links:
+  - title: 'Itch.io'
+    url: 'https://example.com/itch'
+  - title: 'Repo'
+    url: 'https://example.com/repo'`,
+    "# All Fields\n\nProse from the same file.\n",
+  );
+
+  buildFixture(content, dist);
+
   const page = readFileSync(
-    join(output, "projects", "example-project", "index.html"),
+    join(dist, "projects", "all-fields", "index.html"),
     "utf8",
   );
 
-  assert.match(page, /<h1>Example Project<\/h1>/);
+  assert.match(page, /<h1>All Fields<\/h1>/);
   assert.match(
     page,
     /<p class="meta">games &middot; 2026 &middot; <span class="status">study<\/span><\/p>/,
   );
-  assert.match(page, /2026/);
-  assert.match(page, /study/);
   assert.match(page, /href="https:\/\/example\.com\/itch"/);
   assert.match(page, /href="https:\/\/example\.com\/repo"/);
-  assert.match(page, /a cover, two tags, two links/i);
+  assert.match(page, /Prose from the same file\./);
 });
 
 test("a link prints its title verbatim, so a project can title any link", () => {
@@ -109,8 +148,20 @@ links:
 });
 
 test("a project with no links leaves the link list out", () => {
+  const content = mkdtempSync(join(tmpdir(), "portfolio-no-links-"));
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-no-links-dist-"));
+  writeProject(
+    content,
+    "no-links",
+    `year: 2026
+status: shipped
+category: software`,
+  );
+
+  buildFixture(content, dist);
+
   const page = readFileSync(
-    join(output, "projects", "second-project", "index.html"),
+    join(dist, "projects", "no-links", "index.html"),
     "utf8",
   );
 

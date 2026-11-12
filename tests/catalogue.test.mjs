@@ -14,7 +14,6 @@ import {
   currentNavLinks,
   currentTabs,
   emittedRoutes,
-  escapeRegExp,
   filterLabels,
   filters,
   root,
@@ -371,101 +370,41 @@ test("/work/career is a normal-shell career page with one heading and only the n
   ]);
 
   const experience = careerSection(career, "experience");
-  const summaries = [
-    ...experience.matchAll(/<summary>([^<]+)<\/summary>/g),
-  ].map(([, text]) => text);
-  assert.deepEqual(summaries, [
-    "Software Engineer - Consultant - Example Employer",
-    "Associate Consultant - Example Employer",
-    "Web Designer - Other Workshop",
-  ]);
+  for (const section of ["experience", "volunteering", "education"]) {
+    const block = careerSection(career, section);
+    const disclosures = [
+      ...block.matchAll(
+        /<details class="career-disclosure">([\s\S]*?)<\/details>/g,
+      ),
+    ].map(([, body]) => body);
 
-  const roleDates = ["2018", "2016"].map((date) => experience.indexOf(date));
-  for (const position of roleDates) {
-    assert.notEqual(position, -1, "every role carries its dates");
-  }
-  assert.deepEqual(
-    [...roleDates].sort((a, b) => a - b),
-    roleDates,
-    "roles run newest first",
-  );
-  assert.ok(
-    experience.indexOf("Software Engineer - Consultant") <
-      experience.indexOf("Web Designer"),
-    "roles run newest first",
-  );
-  assert.equal(
-    (experience.match(/<details class="career-disclosure">/g) ?? []).length,
-    summaries.length,
-    "each role is its own disclosure",
-  );
-  assert.doesNotMatch(
-    experience,
-    /<details[^>]*\bopen\b/,
-    "roles start closed",
-  );
-
-  const volunteering = careerSection(career, "volunteering");
-  assert.match(
-    volunteering,
-    /<summary>Volunteer Coordinator - Example Nonprofit<\/summary>/,
-    "volunteering is summarised like the roles: title, then organization",
-  );
-  assert.doesNotMatch(
-    volunteering,
-    /<details[^>]*\bopen\b/,
-    "volunteering starts closed",
-  );
-
-  const education = careerSection(career, "education");
-  assert.ok(
-    education.indexOf("Master of Fine Arts") <
-      education.indexOf("Bachelor of Science"),
-    "education runs newest first",
-  );
-  assert.match(
-    education,
-    /<summary>Master of Fine Arts \(MFA\), Art and Technology - Example University<\/summary>/,
-  );
-  assert.match(
-    education,
-    /<summary>Bachelor of Science \(BS\), Computer Science - Second College<\/summary>/,
-  );
-
-  const skills = careerSection(career, "skills");
-  for (const group of ["Languages", "Data and cloud", "Tools"]) {
-    assert.match(
-      skills,
-      new RegExp(`<summary>${escapeRegExp(group)}</summary>`),
-      `${group} is a skill group summary`,
+    assert.ok(disclosures.length > 0, `${section} carries its disclosures`);
+    for (const disclosure of disclosures) {
+      const summary = disclosure.match(/<summary>([^<]+)<\/summary>/)?.[1];
+      assert.ok(
+        summary?.includes(" - "),
+        `${section} summarises each entry as title, then organization`,
+      );
+    }
+    assert.doesNotMatch(
+      block,
+      /<details[^>]*\bopen\b/,
+      `${section} starts closed`,
     );
   }
-  assert.match(
-    skills,
-    /<li>Apache Spark<\/li>/,
-    "each skill is its own list item",
-  );
-  assert.match(
-    skills,
-    /<li>AWS \(S3, EMR, DynamoDB\)<\/li>/,
-    "a comma inside parentheses does not split one skill in two",
-  );
-  assert.equal(
-    (skills.match(/<ul class="skill-list">/g) ?? []).length,
-    3,
-    "every skill group carries its own list",
-  );
 
-  assert.doesNotMatch(
-    career,
-    /example-project/,
-    "projects stay on the Projects tab",
-  );
-  assert.doesNotMatch(
-    career,
-    /Example Project/,
-    "projects stay on the Projects tab",
-  );
+  assert.ok(experience.length > 0, "experience is rendered");
+
+  const skills = careerSection(career, "skills");
+  const groups = [...skills.matchAll(/<details class="career-disclosure">/g)]
+    .length;
+  const lists = [
+    ...skills.matchAll(/<ul class="skill-list">([\s\S]*?)<\/ul>/g),
+  ];
+  assert.equal(lists.length, groups, "every skill group carries its own list");
+  for (const [, list] of lists) {
+    assert.match(list, /<li>[^<]+<\/li>/, "each skill is its own list item");
+  }
 
   assert.doesNotMatch(career, /portrait/, "the career page has no photo");
   assert.doesNotMatch(

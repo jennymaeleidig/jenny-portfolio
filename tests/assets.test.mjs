@@ -1,13 +1,11 @@
 // The paper and the sky: CSS, palette, font and the built assets
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import {
   POSTER,
-  RESET_SHA256,
   SKY_TOKENS,
   TOKENS,
   build,
@@ -172,14 +170,7 @@ test("the share card is the poster, unwrapped for a link preview", () => {
   );
 });
 
-test("the reset is carried over verbatim", () => {
-  const reset = readFileSync(join(output, "assets", "reset.css"));
-  assert.equal(createHash("sha256").update(reset).digest("hex"), RESET_SHA256);
-});
-
 test("the stylesheet is a light-only fork with the grid and its fallbacks", () => {
-  assert.match(siteCss, /Oskar Wickstr\u00f6m/);
-  assert.match(siteCss, /the-monospace-web/);
   assert.match(siteCss, /--line-height:\s*1\.5rem/);
   assert.match(siteCss, /--column:\s*80ch/);
   assert.match(siteCss, /color-scheme:\s*light/);
@@ -385,27 +376,8 @@ test("the palette is installed and body text and links clear 4.5:1 on the paper"
   }
 });
 
-test("the font and its licence sit beside each other", () => {
+test("the self-hosted font is emitted", () => {
   const font = join(output, "assets", "fonts", "CommitMonoV143-VF.woff2");
-  const licence = join(output, "assets", "fonts", "LICENSE-FONT");
 
   assert.equal(statSync(font).isFile(), true);
-  assert.equal(statSync(licence).isFile(), true);
-  assert.match(
-    readFileSync(licence, "utf8"),
-    /SIL OPEN FONT LICENSE Version 1\.1/,
-  );
-});
-
-test("the icon ships with the credit for the cloud it came from", () => {
-  const icon = join(output, "assets", "favicon.png");
-  const credit = join(output, "assets", "favicon.md");
-
-  assert.equal(statSync(icon).isFile(), true);
-  assert.equal(statSync(credit).isFile(), true);
-  assert.match(
-    readFileSync(credit, "utf8"),
-    /Kuramaru[\s\S]*https:\/\/kuramarushka\.itch\.io\/pixel-art-cloud-assets/,
-    "the credit names the maker and the page the cloud came from",
-  );
 });

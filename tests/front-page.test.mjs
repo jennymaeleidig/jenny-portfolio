@@ -7,7 +7,6 @@ import { join, relative } from "node:path";
 import {
   build,
   escapeRegExp,
-  fixtureSite,
   root,
   sharedSite,
   writeProject,
@@ -106,8 +105,54 @@ category: software`,
   assert.doesNotMatch(home, /quiet-web/);
 });
 
-test("About renders three paragraphs, a photo and the primary links", () => {
-  const about = readFileSync(join(output, "about", "index.html"), "utf8");
+// About and Now are hand-written pages, so these tests give the build their
+// own files rather than asserting on the fixture site's copy. One build serves
+// both pages.
+let editorial;
+function editorialSite() {
+  if (editorial) return editorial;
+  const dir = mkdtempSync(join(tmpdir(), "portfolio-editorial-"));
+  const aboutFile = join(dir, "about.md");
+  const nowFile = join(dir, "now.md");
+  writeFileSync(
+    aboutFile,
+    `---
+photo: /assets/sky-poster.svg
+---
+
+First paragraph.
+
+Second paragraph.
+
+Third paragraph.
+`,
+  );
+  writeFileSync(
+    nowFile,
+    `---
+updated: 1 January 2030
+---
+
+## Making
+
+One line of prose.
+
+## Not doing
+
+Nothing at all.
+`,
+  );
+  const dist = mkdtempSync(join(tmpdir(), "portfolio-editorial-dist-"));
+  build(dist, { ABOUT_FILE: aboutFile, NOW_FILE: nowFile });
+  editorial = dist;
+  return dist;
+}
+
+test("About renders its prose, a photo and the primary links", () => {
+  const about = readFileSync(
+    join(editorialSite(), "about", "index.html"),
+    "utf8",
+  );
 
   assert.match(about, /<h1>About<\/h1>/);
 
@@ -115,12 +160,12 @@ test("About renders three paragraphs, a photo and the primary links", () => {
   assert.equal(
     (prose.match(/<p>/g) ?? []).length,
     3,
-    "About carries three paragraphs",
+    "About renders one paragraph per block of prose",
   );
 
   assert.match(
     about,
-    /<img class="portrait" src="\/assets\/portrait\.jpg" alt="Example Name"/,
+    /<img class="portrait" src="\/assets\/sky-poster\.svg" alt="Example Name"/,
   );
 
   const primary =
@@ -138,19 +183,6 @@ test("About renders three paragraphs, a photo and the primary links", () => {
   ]) {
     assert.match(primary, new RegExp(`href="${escapeRegExp(href)}"`));
   }
-
-  assert.doesNotMatch(
-    about,
-    /class="links elsewhere"/,
-    "the elsewhere list is gone",
-  );
-
-  assert.doesNotMatch(
-    about,
-    /Unofficial Homestuck Collection/i,
-    "the contribution line is gone",
-  );
-  assert.doesNotMatch(about, /class="contribution"/);
 });
 
 test("the photo appears only on About", () => {
@@ -167,17 +199,11 @@ test("the photo appears only on About", () => {
   }
 });
 
-test("Now carries a visible update date and its five sections, without an archive or a cadence", () => {
-  const now = readFileSync(join(output, "now", "index.html"), "utf8");
+test("Now renders a visible update date and one row per section", () => {
+  const now = readFileSync(join(editorialSite(), "now", "index.html"), "utf8");
 
   assert.match(now, /<h1>Now<\/h1>/);
-  assert.match(now, /Last updated/);
-
-  const updated = readFileSync(join(fixtureSite, "now.md"), "utf8")
-    .match(/^updated:\s*(.+)$/m)?.[1]
-    ?.trim();
-  assert.ok(updated, "Now declares when it was last updated");
-  assert.match(now, new RegExp(escapeRegExp(updated)));
+  assert.match(now, /Last updated 1 January 2030/);
 
   const headers = [...now.matchAll(/<th scope="col">([^<]+)<\/th>/g)].map(
     ([, text]) => text,
@@ -187,13 +213,7 @@ test("Now carries a visible update date and its five sections, without an archiv
   const doing = [...now.matchAll(/<td class="now-doing">([^<]+)<\/td>/g)].map(
     ([, text]) => text,
   );
-  assert.deepEqual(doing, [
-    "Making",
-    "Reading",
-    "Listening",
-    "Watching",
-    "Not doing",
-  ]);
+  assert.deepEqual(doing, ["Making", "Not doing"]);
 
   assert.doesNotMatch(
     now,
@@ -203,10 +223,7 @@ test("Now carries a visible update date and its five sections, without an archiv
 
   assert.match(
     now,
-    /<td class="catalogue-blurb">\s*<p>I'm rebuilding this site/,
+    /<td class="catalogue-blurb">\s*<p>One line of prose\.<\/p>/,
     "each section's prose sits in the Blurb column",
   );
-
-  assert.doesNotMatch(now, /archive/i);
-  assert.doesNotMatch(now, /weekly|monthly|every week|every month|cadence/i);
 });

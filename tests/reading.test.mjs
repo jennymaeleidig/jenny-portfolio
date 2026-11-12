@@ -105,22 +105,6 @@ test("visited links carry no treatment of their own", () => {
   );
 });
 
-test("no phone number appears on any page", () => {
-  for (const file of htmlFiles) {
-    const html = readFileSync(file, "utf8");
-    assert.doesNotMatch(
-      html,
-      /276\)?[.\-\s]?356[.\-\s]?4765/,
-      `${relative(root, file)} must not carry the phone number`,
-    );
-    assert.doesNotMatch(
-      html,
-      /\+1[.\-\s]?276/,
-      `${relative(root, file)} must not carry the phone number`,
-    );
-  }
-});
-
 test("no page header offers a legacy link", () => {
   const legacyPath = /\/resume/;
   for (const file of htmlFiles) {

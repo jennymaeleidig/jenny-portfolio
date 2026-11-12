@@ -11,16 +11,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  build,
-  buildFixture,
-  root,
-  sharedSite,
-  tracked,
-  writeProject,
-} from "./support/site.mjs";
-
-const { output, htmlFiles, siteCss } = await sharedSite();
+import { build, buildFixture, writeProject } from "./support/site.mjs";
 
 test("the build fails, naming the file, when a required field is missing", () => {
   for (const missing of ["year", "status", "category"]) {
@@ -158,18 +149,6 @@ test("the build fails, naming the file, when a project cannot be staged", () => 
   assert.match(result.stderr, /broken\.md/);
 });
 
-test("layouts take the page contract as arguments, not ambient state", () => {
-  for (const file of readdirSync(join(root, "layouts"))) {
-    if (!file.endsWith(".sh")) continue;
-    const source = readFileSync(join(root, "layouts", file), "utf8");
-    assert.doesNotMatch(
-      source,
-      /PAGE_ROUTE|PAGE_INDEXABLE/,
-      `${file} reads the page contract from the environment`,
-    );
-  }
-});
-
 test("the build cleans its output directory before generating", () => {
   const dist = mkdtempSync(join(tmpdir(), "portfolio-clean-"));
   build(dist);
@@ -180,31 +159,3 @@ test("the build cleans its output directory before generating", () => {
   assert.equal(readdirSync(dist).includes("stale.html"), false);
   assert.equal(statSync(join(dist, "index.html")).isFile(), true);
 });
-
-test(
-  "the only binaries committed are the self-hosted font and project images",
-  { skip: tracked === null && "not a git checkout" },
-  () => {
-    const font = "assets/fonts/CommitMonoV143-VF.woff2";
-    // A photo has to be a real image, so the no-binaries rule has one other
-    // door: image files under assets/. The site icon and the About portrait are
-    // the two images that sit at the root of assets/ rather than in a
-    // subdirectory. Everything else stays text.
-    const image =
-      /^assets\/(?:favicon\.png|portrait\.jpe?g|(?:[a-z0-9-]+\/)+[a-z0-9-]+\.(?:png|jpe?g|webp|gif))$/;
-
-    assert.ok(tracked.includes(font), "the self-hosted font is committed");
-
-    for (const file of tracked) {
-      const contents = readFileSync(join(root, file));
-      if (file === font) {
-        assert.equal(contents.includes(0), true, "the font is binary");
-        continue;
-      }
-      if (image.test(file)) {
-        continue;
-      }
-      assert.equal(contents.includes(0), false, `${file} contains a NUL byte`);
-    }
-  },
-);

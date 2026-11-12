@@ -23,8 +23,6 @@ export const root = resolve(
 );
 export const buildScript = join(root, "scripts", "build.sh");
 
-export const RESET_SHA256 =
-  "551206fddb1ee9ed889cc459ba4c96218edc1474299af7c02696a4f4b3f0b527";
 export const SKY_TOKENS = ["sky-1", "sky-2", "sky-3", "sky-4"];
 export const TOKENS = [
   "paper",
@@ -225,20 +223,6 @@ export function articleSlugs() {
     )
     .map((name) => name.replace(/\.md$/, ""));
 }
-export function trackedFiles() {
-  try {
-    return execFileSync("git", ["ls-files", "-z"], {
-      cwd: root,
-      encoding: "utf8",
-    })
-      .split("\0")
-      .filter(Boolean);
-  } catch {
-    return null;
-  }
-}
-
-export const tracked = trackedFiles();
 
 // The fixture site, built once for the whole run. Every test file reads the
 // same pages, so the build is keyed by a fingerprint of what it was built

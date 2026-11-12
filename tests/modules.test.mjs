@@ -48,36 +48,59 @@ function shellStrict(module, script, env = {}) {
   );
 }
 
+const vocabularyDir = mkdtempSync(join(tmpdir(), "vocabulary-fixture-"));
+writeFileSync(
+  join(vocabularyDir, "statuses"),
+  "# The statuses the fixture accepts\nactive=active\nwip=work in progress\n",
+);
+writeFileSync(
+  join(vocabularyDir, "categories"),
+  "# The categories the fixture accepts, in canonical order\ngames=Games\nsound=Sound\n",
+);
+writeFileSync(
+  join(vocabularyDir, "career-sections"),
+  "# The career sections the fixture accepts\nexperience=Experience\nskills=Skills\n",
+);
+
 const VOCABULARIES = [
   {
     domain: "statuses",
-    words: ["active", "shipped", "wip", "archived", "study"],
+    words: ["active", "wip"],
   },
   {
     domain: "categories",
-    words: ["games", "sound", "hardware", "software", "articles"],
+    words: ["games", "sound"],
   },
   {
     domain: "career-sections",
-    words: ["experience", "volunteering", "education", "skills"],
+    words: ["experience", "skills"],
   },
 ];
 
 for (const vocabulary of VOCABULARIES) {
   test(`${vocabulary.domain} come from one file, in canonical order`, () => {
     const expected = vocabulary.words.map((word) => `${word}\n`).join("");
-    assert.equal(shell(`vocabulary_words ${vocabulary.domain}`), expected);
+    assert.equal(
+      shell(`vocabulary_words ${vocabulary.domain}`, {
+        VOCABULARY_DIR: vocabularyDir,
+      }),
+      expected,
+    );
   });
 
   test(`${vocabulary.domain}: every word is accepted and carries a label`, () => {
     for (const word of vocabulary.words) {
       assert.equal(
-        shell(`vocabulary_has ${vocabulary.domain} ${word} && echo yes`),
+        shell(`vocabulary_has ${vocabulary.domain} ${word} && echo yes`, {
+          VOCABULARY_DIR: vocabularyDir,
+        }),
         "yes\n",
         `${word} belongs`,
       );
       assert.notEqual(
-        shell(`vocabulary_label ${vocabulary.domain} ${word}`),
+        shell(`vocabulary_label ${vocabulary.domain} ${word}`, {
+          VOCABULARY_DIR: vocabularyDir,
+        }),
         "",
         `${word} has a label`,
       );
@@ -96,12 +119,16 @@ test("markdown is rendered with the pinned table and autolink extensions", () =>
 test("an unknown word is rejected and carries no label", () => {
   for (const vocabulary of VOCABULARIES) {
     assert.equal(
-      shell(`vocabulary_has ${vocabulary.domain} nonsense || echo no`),
+      shell(`vocabulary_has ${vocabulary.domain} nonsense || echo no`, {
+        VOCABULARY_DIR: vocabularyDir,
+      }),
       "no\n",
       vocabulary.domain,
     );
     assert.equal(
-      shell(`vocabulary_label ${vocabulary.domain} nonsense`),
+      shell(`vocabulary_label ${vocabulary.domain} nonsense`, {
+        VOCABULARY_DIR: vocabularyDir,
+      }),
       "",
       vocabulary.domain,
     );
@@ -129,9 +156,24 @@ test("only http and https are links", () => {
 });
 
 test("a label may differ from its word, and a comment or blank line is not an entry", () => {
-  assert.equal(shell("vocabulary_label statuses wip"), "work in progress\n");
-  assert.equal(shell("vocabulary_label categories games"), "Games\n");
-  assert.equal(shell("vocabulary_label career-sections skills"), "Skills\n");
+  assert.equal(
+    shell("vocabulary_label statuses wip", {
+      VOCABULARY_DIR: vocabularyDir,
+    }),
+    "work in progress\n",
+  );
+  assert.equal(
+    shell("vocabulary_label categories games", {
+      VOCABULARY_DIR: vocabularyDir,
+    }),
+    "Games\n",
+  );
+  assert.equal(
+    shell("vocabulary_label career-sections skills", {
+      VOCABULARY_DIR: vocabularyDir,
+    }),
+    "Skills\n",
+  );
 
   const dir = mkdtempSync(join(tmpdir(), "vocabulary-"));
   writeFileSync(join(dir, "toys"), "# a comment\n\nblocks=Blocks # trailing\n");
