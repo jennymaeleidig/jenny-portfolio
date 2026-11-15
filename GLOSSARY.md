@@ -66,7 +66,8 @@ One education entry: institution, degree, dates and an optional note.
 _Avoid_: degree (that is one field), education entry
 
 **Skills group**:
-One bold-labelled line of `skills.md` and the skills listed under it.
+One bold-labelled line of `content/career/skills.md` and the skills listed
+under it.
 _Avoid_: skill category, skill set
 
 **Career disclosure**:
@@ -75,8 +76,8 @@ reader scans, and it opens without JavaScript.
 _Avoid_: accordion, card, panel
 
 **Identity**:
-The name, tagline, location, email and links in `content/identity.sh` that
-every page reads.
+The name, tagline, location, email and links in `content/identity.sh`. The
+footer prints the email and the location.
 _Avoid_: site config, profile, settings
 
 **Sky**:

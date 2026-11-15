@@ -77,7 +77,7 @@ publication: <url>
 ---
 ```
 
-- `order` — integer. Pins the project above the catalogue, lowest first.
+- `order` — non-negative integer. Pins the project above the catalogue, lowest first.
 - `featured` — `true` puts it on the front page as a card. Six is the number
   the page is designed around.
 
@@ -102,9 +102,10 @@ career-sections   experience, volunteering, education, skills
 
 Each line is `word=Label`, where the label is what the page prints. `#` starts a
 comment. Adding a status or category word is a one-line change here and needs no
-code; the build reads the files, so the catalogue tabs, the category routes and
-`scripts/stage.sh`'s validation all follow. Order in a file is the order the
-site shows: the catalogue's category filter and the career tabs both read it.
+code; the build reads the files, so the catalogue's category filter, the
+category routes and `scripts/stage.sh`'s validation all follow. Order in a file
+is the order the site shows: the catalogue's category filter and the career
+filter both read it.
 
 The exception is `articles`, which the build treats specially — no page of its
 own, a `publication` instead — so a category that should behave like an article
@@ -112,8 +113,8 @@ is a code change, not a line here.
 
 ## Body
 
-The first line is `# Title`. The title is the H1 rather than frontmatter because
-jenny reads the H1.
+The body carries a `# Title` line; the build takes the first one. The title is
+the H1 rather than frontmatter because jenny reads the H1.
 
 The first paragraph is the blurb: the catalogue row and the featured card. Write
 it to stand alone.

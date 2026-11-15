@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 # The career record's facts, read as disclosure records.
 #
-# The layout renders one disclosure per record; it never switches on a record
-# kind to decode a column order, and it never re-reads a file the module has
-# already read. `career_section_records` takes the section name and the career
+# The layout renders one disclosure per record; the record kinds are the
+# module's interface, and it never re-reads a file the module has already read. `career_section_records` takes the section name and the career
 # directory, so its tests cross the same interface the layout does.
 #
 # A record is unit-separated because a disclosure may have an empty note or no
 # body in the middle of its fields:
 #
 #   disclosure <summary> <location> <dates> <note> <body-file>
-#   item       <group>   <skill>
+#   group      <group>
+#   item       <skill>
 #
-# Source: window into the vocabulary entries above; no record is a map, so the
-# bash 3.2 floor in ADR-0001 still holds.
+# No record is a map, so the bash 3.2 floor in ADR-0001 still holds.
 
 # shellcheck source=/dev/null
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
@@ -178,7 +177,7 @@ career_education_records() {
   done <<< "$rows"
 }
 
-# One item per skill. Each category is a bullet of the hand-written
+# One item per skill. Each skills group is a bullet of the hand-written
 # skills.md of the form `- **Category:** skill, skill, ...`; a comma inside
 # parentheses, as in `AWS (S3, EMR, DynamoDB)`, is part of one skill.
 career_skill_records() {

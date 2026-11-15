@@ -24,9 +24,8 @@ rows=$(
     { print }
     END { printf "\036" }
   ' | while IFS= read -r -d $'\036' section; do
-    # The first record is the blank line after the frontmatter, and the last is
-    # the END marker. Only text before a heading is skipped, not trailing
-    # whitespace, or the empty record would render as a blank row.
+    # Whitespace-only records are skipped: the text before the first heading
+    # and the END marker would otherwise render as blank rows.
     [[ $section == *[![:space:]]* ]] || continue
     doing=${section%%$'\n'*}
     body=${section#*$'\n'}

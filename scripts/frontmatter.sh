@@ -4,8 +4,8 @@
 # items, one level of mappings, and the links list, whose items carry a title
 # and a url. Everything else is reported, never silently dropped, so the caller
 # decides whether that is an error. This is also the one place the links
-# grammar lives: a title and its url are single-quoted YAML scalars, so a title
-# may carry any single-line text without needing a delimiter.
+# grammar lives: a title and its url are quoted YAML scalars, single or double,
+# so a title may carry any single-line text without needing a delimiter.
 
 # Emit the frontmatter as tab-separated records, one per line:
 #   scalar <key> <value>

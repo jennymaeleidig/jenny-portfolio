@@ -7,7 +7,7 @@
  * as a PNG data URI so the committed file stays text and stays inside the
  * no-binaries rule, while costing a fraction of an equivalent vector poster.
  *
- * The SVG records a hash of the raw frame. tests/build.test.mjs recomputes it
+ * The SVG records a hash of the raw frame. tests/assets.test.mjs recomputes it
  * from the core, so a changed seed or palette fails the suite instead of
  * quietly shipping a stale fallback.
  *

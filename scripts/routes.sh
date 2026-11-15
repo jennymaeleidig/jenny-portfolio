@@ -7,9 +7,10 @@
 # lives. An article has no page, so the project record's publishability rule
 # keeps it out of the table rather than leaving a second check in the renderer.
 #
-# Records are unit-separated, the same as the project and career modules:
+# Records are unit-separated, the same as the project and career modules. A
+# row carries these named fields, emitted in the order the caller lists them:
 #
-#   address <output> <indexable> <kind> <layout> <argument> <source>
+#   address, output, indexable, kind, layout, argument, source
 #
 # `indexable=false` means the page claims no canonical URL and does not appear
 # in the sitemap (the 404). `kind` is `layout` for a page rendered through a

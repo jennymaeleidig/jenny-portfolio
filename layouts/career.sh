@@ -35,7 +35,7 @@ fi
 
 # One entry in the career record: the index line the reader scans, then
 # location, dates and an optional note, then the entry's prose when it has a
-# body. Education has no body, so it passes an empty file.
+# body. Education has no body, so it passes an empty body field.
 career_disclosure() {
   local summary=$1 location=$2 dates=$3 note=$4 file=$5
   printf '          <details class="career-disclosure">\n'

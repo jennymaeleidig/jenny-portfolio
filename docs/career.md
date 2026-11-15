@@ -12,10 +12,12 @@ the page. One file per entry, in four sections, each with its own route:
 
 The four sections and their labels are declared in `vocabulary/career-sections`
 at the repository root, `word=Label` per line in canonical order — the same file
-the tab bar and the routes read, and where a section is added or renamed.
+the career filter bar and the routes read. Adding or renaming a section also
+needs a case in `scripts/career.sh`.
 
-Nothing validates these files: a missing field renders as nothing. Build and
-look at the page.
+Required fields are not validated: a missing value renders as nothing, except a
+missing date, which prints `Present`. An unknown field fails the build naming
+the file. Build and look at the page.
 
 ## Experience
 

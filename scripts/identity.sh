@@ -51,7 +51,7 @@ identity_links() {
 
 identity_check() {
   local key value
-  for key in FULL_NAME SITE_NAME TAGLINE PORTFOLIO EMAIL; do
+  for key in FULL_NAME SITE_NAME TAGLINE LOCATION PORTFOLIO EMAIL; do
     value=$(identity_value "$key") || return 1
     if [[ -z $value ]]; then
       echo "error: $identity_file: missing required key '$key'" >&2

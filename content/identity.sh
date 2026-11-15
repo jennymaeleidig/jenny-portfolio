@@ -14,7 +14,6 @@ ITCH=https://jennyl.itch.io/
 # Each primary link is a title<TAB>url record, the same shape a project's
 # links use (ADR-0002). The title is printed verbatim.
 PRIMARY_LINKS=(
-	"Email"$'\t'"mailto:$EMAIL"
 	"GitHub"$'\t'"$GITHUB"
 	"LinkedIn"$'\t'"$LINKEDIN"
 	"itch.io"$'\t'"$ITCH"

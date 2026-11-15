@@ -11,7 +11,6 @@ LINKEDIN=https://example.com/linkedin
 ITCH=https://example.com/itch
 
 PRIMARY_LINKS=(
-  "Email"$'\t'"mailto:$EMAIL"
   "GitHub"$'\t'"$GITHUB"
   "LinkedIn"$'\t'"$LINKEDIN"
   "itch.io"$'\t'"$ITCH"

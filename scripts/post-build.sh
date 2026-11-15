@@ -33,8 +33,8 @@ render_route() {
   fi
 }
 
-# The feed is out of scope; jenny's feed and its extra route trees are
-# discarded after the route table has moved the project pages out of post/.
+# The feed is out of scope; jenny's feed goes first, and its extra route trees
+# are discarded after the route table has moved the project pages out of post/.
 rm -f "$DIST/feed.xml"
 
 mkdir -p "$DIST/assets"
@@ -87,7 +87,7 @@ while IFS=$'\037' read -r kind address output indexable layout argument source; 
   esac
 done < <(route_records kind address output indexable layout argument source)
 
-# Nothing outside the route table survives the post-build step.
+# Discard the route trees the route table did not claim.
 rm -rf "$DIST/post" "$DIST/page" "$DIST/tag"
 
 # /404 is a route like any other, and GitHub Pages also serves a root 404.html

@@ -55,13 +55,12 @@ Husky installs two hooks on `npm install`:
 - **pre-push** runs `make test`.
 
 The Prettier config is the project's, so an editor's format-on-save uses it and
-a save cannot flip the quotes the build expects. The language-server setup is
-in [`docs/agents/lsp.md`](docs/agents/lsp.md).
+a save cannot flip the quotes the build expects.
 
-The tests are split by what they are about — project pages, fields, the
-catalogue, the record, the front page, reading the site, its assets, and the
-build's guards, alongside `modules` and `sky` for the shell and JavaScript —
-so `node --test` runs the files side by side. Each file builds only the content
+The tests are split by what they are about: project pages, fields, the
+catalogue and its rows, the front page, reading the site, its assets, and the
+build's guards, alongside `modules` and `sky` for the shell and JavaScript.
+`node --test` runs the files side by side. Each file builds only the content
 it needs; the fixture site is built once for the whole run and reused, keyed by
 a fingerprint (path, size and mtime) of the scripts, layouts, assets, vendored
 generator and fixtures it was built from.

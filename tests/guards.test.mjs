@@ -78,7 +78,7 @@ category: games`,
   assert.match(result.stderr, /Broadcast Live\.md/);
 });
 
-test("identity links come from one source that every page reads", () => {
+test("identity links come from one source that About and the front page read", () => {
   const identity = join(
     mkdtempSync(join(tmpdir(), "portfolio-identity-")),
     "identity.sh",
@@ -89,11 +89,12 @@ test("identity links come from one source that every page reads", () => {
 SITE_NAME="Hello Example"
 PORTFOLIO=https://example.com
 TAGLINE="Test Tagline"
+LOCATION="Example City, EX"
 EMAIL=hello@example.com
 GITHUB=https://example.com/github
 LINKEDIN=https://example.com/linkedin
 ITCH=https://example.com/itch
-PRIMARY_LINKS=("Email"$'\t'"mailto:hello@example.com" "GitHub"$'\t'"https://example.com/github" "LinkedIn"$'\t'"https://example.com/linkedin" "itch.io"$'\t'"https://example.com/itch")
+PRIMARY_LINKS=("GitHub"$'\t'"https://example.com/github" "LinkedIn"$'\t'"https://example.com/linkedin" "itch.io"$'\t'"https://example.com/itch")
 `,
   );
   const dist = mkdtempSync(join(tmpdir(), "portfolio-identity-dist-"));
@@ -102,11 +103,16 @@ PRIMARY_LINKS=("Email"$'\t'"mailto:hello@example.com" "GitHub"$'\t'"https://exam
 
   const about = readFileSync(join(dist, "about", "index.html"), "utf8");
   const home = readFileSync(join(dist, "index.html"), "utf8");
-  assert.match(about, /hello@example\.com/);
-  assert.match(about, /https:\/\/example\.com\/github/);
-  assert.doesNotMatch(about, /jennymaeleidig@gmail\.com/);
-  assert.match(home, /mailto:hello@example\.com/);
-  assert.doesNotMatch(home, /jennymaeleidig@gmail\.com/);
+  const primary =
+    about.match(/<ul class="links primary-links"[^>]*>([\s\S]*?)<\/ul>/)?.[1] ??
+    "";
+  assert.doesNotMatch(primary, /mailto:/);
+  assert.match(primary, /https:\/\/example\.com\/github/);
+  assert.match(
+    home,
+    /<footer class="site-footer"><a href="mailto:hello@example\.com">hello@example\.com<\/a><span class="site-location">· Example City, EX<\/span>/,
+    "the footer shows the email and, after a dot, the location as plain text",
+  );
   assert.match(
     home,
     /<p class="lede">Test Tagline<\/p>/,

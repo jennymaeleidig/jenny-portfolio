@@ -12,9 +12,9 @@ import {
   writeProject,
 } from "./support/site.mjs";
 
-const { output, htmlFiles, siteCss } = await sharedSite();
+const { output, htmlFiles } = await sharedSite();
 
-test("the front page lists the featured projects and links to every page", () => {
+test("the front page lists the featured projects and leaves the others off", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-featured-"));
   const dist = mkdtempSync(join(tmpdir(), "portfolio-featured-dist-"));
   writeFileSync(
@@ -171,10 +171,15 @@ test("About renders its prose, a photo and the primary links", () => {
   const primary =
     about.match(/<ul class="links primary-links"[^>]*>([\s\S]*?)<\/ul>/)?.[1] ??
     "";
-  assert.match(primary, /<a href="mailto:hello@example\.com">Email<\/a>/);
+  assert.doesNotMatch(
+    primary,
+    /mailto:/,
+    "the footer carries the email, not the About links",
+  );
   assert.ok(
-    primary.indexOf("mailto:") < primary.indexOf("https://example.com/github"),
-    "email is the first primary link",
+    primary.indexOf("https://example.com/github") <
+      primary.indexOf("https://example.com/linkedin"),
+    "GitHub is the first primary link",
   );
   for (const href of [
     "https://example.com/github",

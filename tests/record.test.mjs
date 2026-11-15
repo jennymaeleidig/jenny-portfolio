@@ -1,4 +1,4 @@
-// The record: catalogue rows, blurbs and articles that link out
+// The catalogue: rows, blurbs and articles that link out
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, statSync } from "node:fs";
@@ -11,7 +11,7 @@ import {
   writeProject,
 } from "./support/site.mjs";
 
-test("the catalogue is a three-column table with a header for each column", () => {
+test("the catalogue is a four-column table and a category page has three", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-headers-"));
   const dist = mkdtempSync(join(tmpdir(), "portfolio-headers-dist-"));
   writeProject(

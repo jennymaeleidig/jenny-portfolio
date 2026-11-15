@@ -7,9 +7,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // The shell modules are tested through the same interface a layout crosses:
-// source the module, call the accessor, read the output. Nothing here knows
-// whether vocabulary is a file or a table, or how a record stream is
-// represented.
+// source the module, call the accessor, read the output.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const lib = join(root, "scripts", "lib.sh");
 const identity = join(root, "scripts", "identity.sh");
@@ -500,6 +498,7 @@ test("identity facts are read through one interface", () => {
     `FULL_NAME="Example Name"
 SITE_NAME="Example Site"
 TAGLINE="Test Tagline"
+LOCATION="Example City, EX"
 PORTFOLIO=https://example.com
 EMAIL=hello@example.com
 PRIMARY_LINKS=("Email"$'\\t'"mailto:hello@example.com" "GitHub"$'\\t'"https://example.com/github")
@@ -771,7 +770,7 @@ test("the route table names every page the build emits, in one order", () => {
       META_DIR: dir,
       DIST: dist,
     }),
-    [
+    `${[
       "/\u001ftrue",
       "/work/\u001ftrue",
       "/work/games/\u001ftrue",
@@ -788,7 +787,7 @@ test("the route table names every page the build emits, in one order", () => {
       "/now/\u001ftrue",
       "/404/\u001ffalse",
       "/projects/alpha/\u001ftrue",
-    ].join("\n") + "\n",
+    ].join("\n")}\n`,
   );
 });
 
@@ -807,7 +806,7 @@ test("a route record carries what renders it, and an article has no page route",
       META_DIR: dir,
       DIST: dist,
     }),
-    [
+    `${[
       "layout\u001fhome\u001f\u001f",
       "layout\u001fwork\u001f\u001f",
       "layout\u001fwork\u001fgames\u001f",
@@ -824,7 +823,7 @@ test("a route record carries what renders it, and an article has no page route",
       "layout\u001fnow\u001f\u001f",
       "layout\u001f404\u001f\u001f",
       `project\u001f\u001f\u001f${join(dist, "post", "alpha.html")}`,
-    ].join("\n") + "\n",
+    ].join("\n")}\n`,
   );
 });
 
@@ -838,7 +837,7 @@ test("a route's output is its address under the dist tree", () => {
       META_DIR: dir,
       DIST: dist,
     }),
-    [
+    `${[
       `/\u001f${join(dist, "index.html")}`,
       `/work/\u001f${join(dist, "work", "index.html")}`,
       `/work/games/\u001f${join(dist, "work", "games", "index.html")}`,
@@ -855,7 +854,7 @@ test("a route's output is its address under the dist tree", () => {
       `/now/\u001f${join(dist, "now", "index.html")}`,
       `/404/\u001f${join(dist, "404", "index.html")}`,
       `/projects/alpha/\u001f${join(dist, "projects", "alpha", "index.html")}`,
-    ].join("\n") + "\n",
+    ].join("\n")}\n`,
   );
 });
 
@@ -890,7 +889,7 @@ test("a project page asks the route table for its address and indexability", () 
 });
 
 // The page head takes raw text and owns composition and escaping, so these
-// tests cross page_open rather than reading six layouts' conventions.
+// tests cross page_open rather than reading seven layouts' conventions.
 function pageHead(script) {
   return shellIn(shellModule, script, {
     SITE_ROOT: root,

@@ -157,19 +157,16 @@ EOF
 }
 
 shell_main_close() {
-  local email
+  local email location location_html=''
   email=$(identity_value EMAIL) || return 1
+  location=$(identity_value LOCATION) || return 1
+  if [[ -n $location ]]; then
+    location_html="<span class=\"site-location\">· $(html_escape "$location")</span>"
+  fi
   printf '      </main>\n'
-  # Citations in this tree follow the Joint Declaration of Data Citation
-  # Principles (FORCE11): name every contributor, pin a version or commit, and
-  # give a stable locator, so a reader can check the claim and not just the
-  # credit. That is the yardstick for the source comments in this repo, not a
-  # source in its own right.
-  #
-  # Applied here: no page lists its sources yet, so a claim that rests on data
-  # has nowhere to point. When one is added, it names the data and its locator.
+  # The footer pairs the email with the location, which stays plain text.
   cat <<EOF
-      <footer class="site-footer"><a href="mailto:$(html_escape "$email")">$(html_escape "$email")</a>$(swatch_strip)</footer>
+      <footer class="site-footer"><a href="mailto:$(html_escape "$email")">$(html_escape "$email")</a>${location_html}$(swatch_strip)</footer>
     </div>
 EOF
 }

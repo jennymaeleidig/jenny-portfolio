@@ -231,7 +231,7 @@ test("the work pages carry Projects and Career tabs, marking only the current pa
   ]);
 });
 
-test("each career filter lists exactly its own section, and All lists every one", () => {
+test("each career filter marks its own section, and All marks every one", () => {
   const all = readFileSync(
     join(output, "work", "career", "index.html"),
     "utf8",

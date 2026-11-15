@@ -226,8 +226,8 @@ export function articleSlugs() {
 
 // The fixture site, built once for the whole run. Every test file reads the
 // same pages, so the build is keyed by a fingerprint of what it was built
-// from: a stale tree is never reused, and the first file to need it builds it
-// while the others wait for the marker file rather than building again.
+// from: a stale tree is never reused. Each process without the marker builds
+// its own staging tree and the first rename wins; the rest discard theirs.
 const FINGERPRINT_SOURCES = [
   "scripts",
   "layouts",
@@ -262,7 +262,7 @@ export async function sharedSite() {
     try {
       renameSync(staging, dir);
     } catch (error) {
-      // Another file finished first: its tree is the same tree.
+      // Another file finished first and built the same tree.
       rmSync(staging, { recursive: true, force: true });
     }
     const deadline = Date.now() + 120_000;

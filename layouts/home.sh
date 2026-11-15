@@ -18,7 +18,7 @@ full_name=$(identity_value FULL_NAME) || exit 1
 tagline=$(identity_value TAGLINE) || exit 1
 
 # Collect the featured cards first, so a project that is not featured never
-# reaches the grid. project_records puts the catalogue in canonical order and
+# reaches the grid. project_row_records puts the catalogue in canonical order and
 # answers the named facts; the card filters on the featured flag itself.
 cards=$(
   while IFS=$'\037' read -r href title blurb category year featured; do
