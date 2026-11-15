@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "es2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "baseUrl": ".",
+    "paths": {
+      "/assets/*": ["./assets/*"]
+    }
+  },
+  "include": [
+    "assets/**/*.js",
+    "assets/**/*.mjs",
+    "scripts/**/*.mjs",
+    "tests/**/*.mjs"
+  ],
+  "exclude": ["build", "dist", "node_modules", "vendor"]
+}

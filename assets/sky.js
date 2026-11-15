@@ -28,7 +28,9 @@ function randomSeed() {
 
 const config = { ...SKY_DEFAULTS, seed: randomSeed() };
 
+/** @type {HTMLElement | null} */
 const sky = document.querySelector(".sky");
+/** @type {HTMLCanvasElement | null} */
 const canvas = document.querySelector(".sky-canvas");
 
 if (sky && canvas) {
@@ -37,7 +39,7 @@ if (sky && canvas) {
       ? canvas.getContext("2d", { alpha: true })
       : null;
 
-  if (!context) {
+  if (context === null) {
     // No 2D context: show the poster over the gradient. The page is otherwise
     // untouched.
     sky.classList.add("sky--fallback");
@@ -168,7 +170,7 @@ if (sky && canvas) {
 
     window.addEventListener("resize", () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
+      resizeTimer = window.setTimeout(() => {
         resize();
         start();
       }, 120);

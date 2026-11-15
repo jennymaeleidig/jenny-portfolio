@@ -15,14 +15,13 @@ import {
   currentTabs,
   emittedRoutes,
   filterLabels,
-  filters,
   root,
   sharedSite,
   tabBar,
   writeProject,
 } from "./support/site.mjs";
 
-const { output, htmlFiles, siteCss } = await sharedSite();
+const { output, siteCss } = await sharedSite();
 
 test("/work lists every project, newest first, with order pinning above newer work", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-catalogue-"));
@@ -280,17 +279,23 @@ test("each career filter lists exactly its own section, and All lists every one"
 });
 
 test("the page header marks the current section, and current links stay ink", () => {
+  /** @type {Array<[string, string[]]>} */
   const routes = [
     [join(output, "index.html"), ["/"]],
     [join(output, "404.html"), []],
     [join(output, "work", "index.html"), ["/work/"]],
     [join(output, "work", "career", "index.html"), ["/work/"]],
-    ...CAREER_SECTIONS.map((section) => [
-      join(output, "work", "career", section, "index.html"),
-      ["/work/"],
-    ]),
-    ...["games", "sound", "hardware", "software", "articles"].map(
-      (category) => [join(output, "work", category, "index.html"), ["/work/"]],
+    .../** @type {Array<[string, string[]]>} */ (
+      CAREER_SECTIONS.map((section) => [
+        join(output, "work", "career", section, "index.html"),
+        ["/work/"],
+      ])
+    ),
+    .../** @type {Array<[string, string[]]>} */ (
+      ["games", "sound", "hardware", "software", "articles"].map((category) => [
+        join(output, "work", category, "index.html"),
+        ["/work/"],
+      ])
     ),
     [join(output, "projects", "example-project", "index.html"), ["/work/"]],
     [join(output, "about", "index.html"), ["/about/"]],

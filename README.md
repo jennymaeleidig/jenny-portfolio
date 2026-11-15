@@ -28,7 +28,7 @@ Node is needed to run the tests and to format the tree. The test suite builds
 the full site, so it needs no browser either.
 
 ```sh
-npm install  # Prettier, Husky and lint-staged, plus the hooks
+npm install  # Prettier, Husky, lint-staged and the editor language servers
 
 make build   # writes dist/, the same tree CI deploys
 make test    # builds into a temporary directory and checks the emitted files
@@ -55,7 +55,8 @@ Husky installs two hooks on `npm install`:
 - **pre-push** runs `make test`.
 
 The Prettier config is the project's, so an editor's format-on-save uses it and
-a save cannot flip the quotes the build expects.
+a save cannot flip the quotes the build expects. The language-server setup is
+in [`docs/agents/lsp.md`](docs/agents/lsp.md).
 
 The tests are split by what they are about — project pages, fields, the
 catalogue, the record, the front page, reading the site, its assets, and the

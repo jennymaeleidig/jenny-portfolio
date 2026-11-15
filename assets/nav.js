@@ -96,7 +96,10 @@ async function navigate(url, { push = true, scrollY = 0 } = {}) {
 
 document.addEventListener("click", (event) => {
   if (event.defaultPrevented) return;
-  const link = event.target.closest?.("a[href]");
+  if (!(event.target instanceof Element)) return;
+  const link = /** @type {HTMLAnchorElement | null} */ (
+    event.target.closest("a[href]")
+  );
   if (!link || !isPageLink(link, event)) return;
 
   event.preventDefault();
@@ -124,7 +127,9 @@ const reopened = [];
 
 window.addEventListener("beforeprint", () => {
   reopened.length = 0;
-  for (const details of document.querySelectorAll("details:not([open])")) {
+  for (const details of /** @type {NodeListOf<HTMLDetailsElement>} */ (
+    document.querySelectorAll("details:not([open])")
+  )) {
     reopened.push(details);
     details.open = true;
   }

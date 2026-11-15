@@ -247,6 +247,7 @@ function nearestStep(slider, value) {
 
 if (controller) {
   const { config } = controller;
+  /** @type {HTMLCanvasElement | null} */
   const canvas = document.querySelector(".sky-canvas");
   const initial = { ...config };
 
@@ -332,8 +333,12 @@ if (controller) {
   document.body.append(root);
 
   for (const slider of sliders) {
-    const input = panel.querySelector(`#sky-levers-${slider.key}`);
-    const output = input.parentNode.querySelector("output");
+    const input = /** @type {HTMLInputElement} */ (
+      panel.querySelector(`#sky-levers-${slider.key}`)
+    );
+    const output = /** @type {HTMLOutputElement} */ (
+      input.parentNode.querySelector("output")
+    );
     const apply = () => {
       const raw = Number(input.value);
       config[slider.key] = raw * (slider.mul ?? 1);
@@ -353,30 +358,41 @@ if (controller) {
       canvas.style.display = mode === "off" ? "none" : "";
       canvas.style.opacity = mode === "wash" ? "0.42" : "";
     }
-    for (const button of panel.querySelectorAll("[data-mode]")) {
+    for (const button of /** @type {NodeListOf<HTMLElement>} */ (
+      panel.querySelectorAll("[data-mode]")
+    )) {
       button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
     }
     controller.restart();
   }
 
   panel.addEventListener("click", (event) => {
-    const mode = event.target.closest("[data-mode]");
+    if (!(event.target instanceof Element)) return;
+    const mode = /** @type {HTMLElement | null} */ (
+      event.target.closest("[data-mode]")
+    );
     if (mode) {
       setMode(mode.dataset.mode);
       return;
     }
 
-    const fps = event.target.closest("[data-fps]");
+    const fps = /** @type {HTMLElement | null} */ (
+      event.target.closest("[data-fps]")
+    );
     if (fps) {
       config.maxFps = Number(fps.dataset.fps);
-      for (const button of panel.querySelectorAll("[data-fps]")) {
+      for (const button of /** @type {NodeListOf<HTMLElement>} */ (
+        panel.querySelectorAll("[data-fps]")
+      )) {
         button.setAttribute("aria-pressed", String(button === fps));
       }
       controller.restart();
       return;
     }
 
-    const action = event.target.closest("[data-action]")?.dataset.action;
+    const action = /** @type {HTMLElement | null} */ (
+      event.target.closest("[data-action]")
+    )?.dataset.action;
     if (action === "reset") {
       Object.assign(config, initial);
       for (const slider of sliders) {
@@ -388,7 +404,9 @@ if (controller) {
         );
       }
       setMode(initial.mode);
-      for (const button of panel.querySelectorAll("[data-fps]")) {
+      for (const button of /** @type {NodeListOf<HTMLElement>} */ (
+        panel.querySelectorAll("[data-fps]")
+      )) {
         button.setAttribute(
           "aria-pressed",
           String(Number(button.dataset.fps) === config.maxFps),
@@ -433,7 +451,9 @@ if (controller) {
   // measured against the viewport rather than the page so it also holds on a
   // phone. The pointer is captured, so the drag survives leaving the handle and
   // the panel cannot lose track of it.
-  const handle = panel.querySelector(".sky-levers-handle");
+  const handle = /** @type {HTMLElement} */ (
+    panel.querySelector(".sky-levers-handle")
+  );
   const EDGE = 8;
   let drag = null;
 
@@ -446,6 +466,7 @@ if (controller) {
   }
 
   handle.addEventListener("pointerdown", (event) => {
+    if (!(event.target instanceof Element)) return;
     if (event.button !== 0 || event.target.closest("button")) return;
     const rect = root.getBoundingClientRect();
     drag = {

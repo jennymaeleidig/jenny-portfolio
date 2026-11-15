@@ -32,7 +32,37 @@ export const RAMP = Object.freeze([
   Object.freeze([33, 87, 204]), // #2157CC
 ]);
 
-/** The values the site ships with, as last tuned with the levers. */
+/**
+ * The tuning values the sky reads. Every value is a plain number so a caller
+ * can compute an override; only `mode` is categorical.
+ *
+ * @typedef {object} SkyConfig
+ * @property {string} mode
+ * @property {number} cell
+ * @property {number} tones
+ * @property {number} scale
+ * @property {number} gain
+ * @property {number} speed
+ * @property {number} falloff
+ * @property {number} offsetY
+ * @property {number} evolve
+ * @property {number} evolveSpeed
+ * @property {number} evolveScale
+ * @property {number} evolveTilt
+ * @property {number} warp
+ * @property {number} warpSpeed
+ * @property {number} dither
+ * @property {number} sky
+ * @property {number} stark
+ * @property {number} seed
+ * @property {number} maxFps
+ */
+
+/**
+ * The values the site ships with, as last tuned with the levers.
+ *
+ * @type {Readonly<SkyConfig>}
+ */
 export const SKY_DEFAULTS = Object.freeze({
   mode: "frame",
   cell: 2, // CSS px per block
@@ -368,8 +398,8 @@ export function rampIndex(band, tones) {
  */
 export function renderFrame({
   field,
-  out,
-  bands,
+  out = undefined,
+  bands = undefined,
   config = SKY_DEFAULTS,
   time = 0,
   offset = 0,

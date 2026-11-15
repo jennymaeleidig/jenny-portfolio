@@ -14,9 +14,15 @@
     "*.{md,css,js,mjs,json,yml,yaml,html}": "prettier --write"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
+    "bash-language-server": "^5.8.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
-    "prettier": "^3.10.0"
+    "prettier": "^3.10.0",
+    "typescript": "^5.9.3",
+    "typescript-language-server": "^6.1.0",
+    "vscode-langservers-extracted": "^4.10.0",
+    "yaml-language-server": "^2.0.0"
   },
   "engines": {
     "node": ">=20.17"

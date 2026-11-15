@@ -28,6 +28,7 @@ links:
 });
 
 test("the build refuses a link without a valid title or http url", () => {
+  /** @type {Array<[string, string, RegExp]>} */
   const cases = [
     ["no-url", "  - title: 'Repo'", /cannot parse frontmatter line/],
     [

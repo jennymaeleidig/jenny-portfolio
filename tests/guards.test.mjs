@@ -52,7 +52,12 @@ colour: blue
 
   assert.throws(
     () => build(dist, { CAREER_DIR: career }),
-    (error) => /typo\.md/.test(String(error.stderr ?? error.message)),
+    (error) => {
+      const failure = /** @type {{ stderr?: string, message?: string }} */ (
+        error
+      );
+      return /typo\.md/.test(String(failure.stderr ?? failure.message));
+    },
   );
 });
 

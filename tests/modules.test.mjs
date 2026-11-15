@@ -307,6 +307,7 @@ test("a link may be double-quoted, as a formatter writes it", () => {
 });
 
 test("links must be quoted, paired title and url records", () => {
+  /** @type {Array<[string, string[], string]>} */
   const cases = [
     [
       "unquoted title",
@@ -536,8 +537,14 @@ PRIMARY_LINKS=("Email"$'\\t'"mailto:hello@example.com")
       shellStrict(identity, "identity_value SITE_NAME", {
         IDENTITY_FILE: file,
       }),
-    (error) =>
-      /identity\.sh.*TAGLINE/.test(String(error.stderr ?? error.message)),
+    (error) => {
+      const failure = /** @type {{ stderr?: string, message?: string }} */ (
+        error
+      );
+      return /identity\.sh.*TAGLINE/.test(
+        String(failure.stderr ?? failure.message),
+      );
+    },
   );
 });
 
@@ -745,7 +752,12 @@ test("an unknown career field fails, naming the file", () => {
 
   assert.throws(
     () => shellIn(career, `career_section_records experience "${dir}"`),
-    (error) => /typo\.md/.test(String(error.stderr ?? error.message)),
+    (error) => {
+      const failure = /** @type {{ stderr?: string, message?: string }} */ (
+        error
+      );
+      return /typo\.md/.test(String(failure.stderr ?? failure.message));
+    },
   );
 });
 
