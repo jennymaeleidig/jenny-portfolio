@@ -110,7 +110,7 @@ PRIMARY_LINKS=("GitHub"$'\t'"https://example.com/github" "LinkedIn"$'\t'"https:/
   assert.match(primary, /https:\/\/example\.com\/github/);
   assert.match(
     home,
-    /<footer class="site-footer"><a href="mailto:hello@example\.com">hello@example\.com<\/a><span class="site-location">· Example City, EX<\/span>/,
+    /<footer class="site-footer"><a href="mailto:hello@example\.com">hello@example\.com<\/a><span class="site-separator" aria-hidden="true">·<\/span><span class="site-location">Example City, EX<\/span>/,
     "the footer shows the email and, after a dot, the location as plain text",
   );
   assert.match(

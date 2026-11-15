@@ -161,7 +161,7 @@ shell_main_close() {
   email=$(identity_value EMAIL) || return 1
   location=$(identity_value LOCATION) || return 1
   if [[ -n $location ]]; then
-    location_html="<span class=\"site-location\">· $(html_escape "$location")</span>"
+    location_html="<span class=\"site-separator\" aria-hidden=\"true\">·</span><span class=\"site-location\">$(html_escape "$location")</span>"
   fi
   printf '      </main>\n'
   # The footer pairs the email with the location, which stays plain text.
