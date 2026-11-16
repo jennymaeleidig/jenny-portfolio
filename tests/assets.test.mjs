@@ -5,6 +5,7 @@ import { existsSync, mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { DARK, LIGHT } from "../assets/theme-core.mjs";
+import { PERSPECTIVE } from "../assets/wheel-core.mjs";
 import {
   POSTER,
   TOKENS,
@@ -62,6 +63,7 @@ test("the sky sits behind the sheet with its poster and gradient fallbacks", () 
     "sky-poster-dark.svg",
     "theme.js",
     "theme-core.mjs",
+    "wheel-core.mjs",
     "nav.js",
   ]) {
     assert.equal(
@@ -364,8 +366,8 @@ test("every page runs the palette strip in its header and its footer", () => {
   );
   assert.match(
     siteCss,
-    /\.palette-strip > \*\s*\{[^}]*width:\s*var\(--swatch-size\)[^}]*height:\s*var\(--swatch-size\)/s,
-    "every square is 1x1",
+    /\.palette-strip > \*:not\(\.wheel-viewport\)\s*\{[^}]*width:\s*var\(--swatch-size\)[^}]*height:\s*var\(--swatch-size\)/s,
+    "every static square is 1x1 and the wheel viewport is excluded",
   );
   const sheetBlock = siteCss.match(/\.sheet\s*\{([^}]*)\}/s)?.[1] ?? "";
   assert.match(
@@ -395,6 +397,86 @@ test("every page runs the palette strip in its header and its footer", () => {
         `\\.palette-strip > :nth-child\\(${index + 1}\\)\\s*\\{\\s*background:\\s*var\\(--${name}\\)`,
       ),
       `square ${index + 1} is --${name}`,
+    );
+  }
+});
+
+test("the strip's turn stays inside its reserved box and stays flat", () => {
+  assert.match(
+    siteCss,
+    /\.palette-strip\.is-wheeling > span:not\(\.wheel-viewport\)\s*\{\s*visibility:\s*hidden/s,
+    "the static squares hide during the turn, but not the viewport",
+  );
+  assert.match(
+    siteCss,
+    new RegExp(
+      `\\.wheel-viewport\\s*\\{[^}]*position:\\s*absolute[^}]*inset:\\s*0[^}]*perspective:\\s*${PERSPECTIVE}px[^}]*pointer-events:\\s*none`,
+      "s",
+    ),
+    "the viewport fills the strip, carries the wheel's perspective and ignores the pointer",
+  );
+  assert.match(
+    siteCss,
+    /\.wheel-stage\s*\{[^}]*top:\s*50%[^}]*left:\s*50%[^}]*width:\s*0[^}]*height:\s*0[^}]*transform-style:\s*preserve-3d/s,
+    "the stage is a zero-size 3D centre point",
+  );
+  assert.match(
+    siteCss,
+    /\.wheel-notch\s*\{[^}]*background:\s*var\(--notch-color\)[^}]*backface-visibility:\s*hidden/s,
+    "each notch takes a palette colour and hides its back face",
+  );
+  assert.match(
+    siteCss,
+    /\.wheel-notch::before\s*\{[^}]*inset:\s*0 calc\(var\(--bleed\) \* -1\)[^}]*background:\s*inherit/s,
+    "the hairline bleed grows the notch and inherits its colour",
+  );
+
+  const forbidden = [
+    "border",
+    "border-radius",
+    "box-shadow",
+    "background-image",
+    "filter",
+    "backdrop-filter",
+    "opacity",
+    "overflow",
+    "clip-path",
+    "mask",
+  ];
+  for (const selector of [
+    ".wheel-viewport",
+    ".wheel-stage",
+    ".wheel-notch",
+    ".wheel-notch::before",
+  ]) {
+    const start = siteCss.indexOf(`${selector} {`);
+    assert.ok(start >= 0, `${selector} is styled`);
+    const body = siteCss.slice(start, siteCss.indexOf("}", start));
+    assert.doesNotMatch(body, /linear-gradient|radial-gradient/, selector);
+    for (const property of forbidden) {
+      assert.doesNotMatch(
+        body,
+        new RegExp(`(?:^|[;{])\\s*${property}\\s*:`),
+        `${selector} adds no ${property}`,
+      );
+    }
+  }
+
+  assert.match(
+    siteCss,
+    /@media screen and \(max-width: 560px\)\s*\{[\s\S]*?--swatch-size:\s*1rem/s,
+    "the mobile strip keeps its 16 px square",
+  );
+  assert.equal(
+    existsSync(join(output, "prototypes")),
+    false,
+    "no prototype tree",
+  );
+  for (const file of walk(output)) {
+    assert.doesNotMatch(
+      relative(output, file),
+      /prototype/,
+      `${file} is not a prototype`,
     );
   }
 });

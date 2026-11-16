@@ -652,6 +652,8 @@ main > :last-child > :last-child {
  * not there, and anything that needs the space draws over it. Vertically it
  * sits on the text line it belongs to, so it reads as part of that line.
  * Colours are assigned in token order, so the palette lives in one place.
+ * During a turn the static squares are hidden and the generated wheel paints
+ * in their place; the wheel viewport is excluded from the square rule below.
  */
 .palette-strip {
   /*
@@ -678,7 +680,7 @@ main > :last-child > :last-child {
   cursor: pointer;
 }
 
-.palette-strip > * {
+.palette-strip > *:not(.wheel-viewport) {
   display: block;
   flex: 0 0 var(--swatch-size);
   width: var(--swatch-size);
@@ -727,6 +729,54 @@ main > :last-child > :last-child {
   bottom: var(--swatch-inset-y);
   left: var(--sheet-pad-x);
   flex-direction: row-reverse;
+}
+
+/*
+ * The wheel's structural CSS. The viewport carries the perspective and the
+ * stage is a zero-size centre point that preserves the 3D context. Nothing
+ * here clips, masks, filters or shades: the 120 degree arc stays inside the
+ * strip's reserved eight-square box. Each notch's colour is set inline from
+ * the static spans' computed backgrounds, so the tokens stay in this file.
+ */
+.palette-strip.is-wheeling > span:not(.wheel-viewport) {
+  visibility: hidden;
+}
+
+.wheel-viewport {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  perspective: 900px;
+  perspective-origin: 50% 50%;
+  pointer-events: none;
+}
+
+.wheel-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  margin: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.wheel-notch {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: var(--notch-color);
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  --bleed: 0px;
+}
+
+.wheel-notch::before {
+  content: "";
+  position: absolute;
+  inset: 0 calc(var(--bleed) * -1);
+  background: inherit;
 }
 
 /*
