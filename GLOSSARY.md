@@ -80,17 +80,34 @@ The name, tagline, location, email and links in `content/identity.sh`. The
 footer prints the email and the location.
 _Avoid_: site config, profile, settings
 
+**Theme**:
+The active palette, light or dark, chosen with the palette strip and stored in
+the browser. Light is the default.
+_Avoid_: colour scheme, mode, skin
+
+**Palette strip**:
+The eight 1x1 token squares in the header and footer. Both strips are the theme
+switch.
+_Avoid_: swatches
+
 **Sky**:
-The pixelated, drifting background behind the sheet.
+The pixelated, drifting background behind the sheet: clouds in both themes,
+stars in the dark.
 _Avoid_: background, canvas, gradient
 
+**Star layer**:
+The generated stars painted over the clear band of the dark sky. It is built
+once per layout and seed, then twinkled by gain.
+_Avoid_: starfield, particle layer
+
 **Poster**:
-The static image of the sky shown when the canvas cannot run.
+The static image of the sky shown when the canvas cannot run: a light poster
+and a dark poster.
 _Avoid_: fallback image, still
 
 **Share card**:
-The image a link preview shows: the poster's pixels written as a PNG at build
-time, because a preview crawler does not render SVG.
+The image a link preview shows: the light poster's pixels written as a PNG at
+build time, because a preview crawler does not render SVG or run JavaScript.
 _Avoid_: preview image, thumbnail, og:image
 
 **Description**:
