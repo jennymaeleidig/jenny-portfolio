@@ -2,9 +2,10 @@
  * Development levers for the sky. Emitted only by a SKY_LEVERS=1 build.
  *
  * The prototype's tuning panel, wired to the config the canvas already reads.
- * `scripts/post-build.sh` copies this file only when the flag is set, and
- * `layouts/shell.sh` only writes the tag and the body attribute when it is
- * set; a production tree has neither, so this module cannot be reached.
+ * `scripts/post-build.sh` copies the asset tree and deletes this file unless
+ * the flag is set, and `layouts/shell.sh` only writes the tag and body
+ * attribute when it is set; a production tree has neither, so this module
+ * cannot be reached.
  *
  * `assets/sky.js` publishes the live controller as `globalThis.skyLevers` when
  * it sees the attribute. Tuning belongs in `SKY_DEFAULTS` in
@@ -193,7 +194,7 @@ const sliders = [
     step: 1,
     rebuild: true,
     group: "stars",
-    hint: "share of stars with the full five-block shape",
+    hint: "share of stars shaped as the full plus with dim corners",
   },
   {
     key: "starYellow",
@@ -231,7 +232,7 @@ const sliders = [
     max: 100,
     step: 1,
     group: "stars",
-    hint: "how far a large star dims: 0 freezes the sky",
+    hint: "how deep the dim step goes: 0 stops the twinkle",
   },
   {
     key: "starTwinkleSpeed",
@@ -240,7 +241,7 @@ const sliders = [
     max: 300,
     step: 5,
     group: "stars",
-    hint: "multiplier on the twinkle periods",
+    hint: "multiplier on the twinkle speed",
   },
   {
     key: "starTwinkleSize",
@@ -249,7 +250,7 @@ const sliders = [
     max: 3,
     step: 1,
     group: "stars",
-    hint: "smallest star that twinkles, in blocks",
+    hint: "smallest star tier that twinkles: 1 is one block, 3 is the plus",
   },
 ];
 

@@ -7,8 +7,9 @@
  * links without a repaint. Every link is a real link: without this file, or
  * when a fetch fails, the browser navigates normally.
  *
- * The swap is intentionally narrow. Head, styles, header, footer and scripts
- * all stay put; only the page body, the title and the history entry change.
+ * The swap is intentionally narrow. Head, styles, footer and scripts stay put;
+ * the header and the page body are replaced, and the title and history entry
+ * change with them.
  */
 
 const sheet = document.querySelector("main");

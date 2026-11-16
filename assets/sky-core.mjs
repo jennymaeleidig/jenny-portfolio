@@ -10,8 +10,10 @@
  *   1. sampling is interpolated, never rounded;
  *   2. the field is periodic in x, so the drift wraps with no pop;
  *   3. tone bands are dithered, so boundaries dissolve instead of snapping;
- *   4. the cloud quantiser only ever emits indices into the canonical ramp;
- *      the optional star layer paints its own tints over the clear band.
+ *   4. the cloud quantiser only ever emits indices into the canonical ramp.
+ *
+ * The optional star layer paints its own tints over the clear band; tests do
+ * not cover it yet.
  *
  * The browser layer (assets/sky.js) is the only part that touches the DOM.
  *
@@ -118,17 +120,17 @@ export const SKY_DEFAULTS = Object.freeze({
   starCell: 67, // jittered grid spacing, CSS px
   starDensity: 67, // share of cells that hold a star, %
   starMedium: 27, // share of stars two blocks across, %
-  starLarge: 12, // share of stars the full five-block shape, %
+  starLarge: 12, // share of stars shaped as the full plus with dim corners, %
   starYellow: 37, // share of stars with the yellow core, %
   starBright: 90, // peak intensity, %
   starDither: 24, // ordered dither on the star bands, %
-  starTwinkle: 70, // how far a large star dims, %
-  starTwinkleSpeed: 220, // multiplier on the twinkle periods, %
-  starTwinkleSize: 2, // smallest star that twinkles, in blocks
+  starTwinkle: 70, // how deep the dim step goes, %
+  starTwinkleSpeed: 220, // multiplier on the twinkle speed, %
+  starTwinkleSize: 2, // smallest size tier that twinkles (1-3)
 });
 
 /**
- * 4x4 ordered dither, centred on zero so thresholds sit between blocks
+ * 4x4 ordered dither, offset 1/32 below zero so thresholds sit between blocks
  * rather than on them.
  */
 export const BAYER4 = Object.freeze([
@@ -212,17 +214,6 @@ export function fbm(x, y, seed, periodX, octaves = 3, periodY = 0) {
   return sum / normaliser;
 }
 
-/**
- * The evolution field: a second, much larger noise field that decides where
- * the tone thresholds are pushed up and where they are pulled down.
- *
- * The first field is the clouds. This one is the weather over them: sampled by
- * the same machinery, but with features `evolveScale` CSS px wide, and drifting
- * on both axes at a rate set by `evolveSpeed` and `evolveTilt`. Because it
- * varies across the plane, masses swell in one place while they thin in
- * another, and because it drifts continuously, no fixed spot simply breathes in
- * and out.
- */
 /** How far the sky may be slid up or down, in CSS px, either way. */
 export const OFFSET_Y_LIMIT = 400;
 
@@ -247,8 +238,8 @@ export function frameLayout({
 
 /**
  * One sky scene: the field for a frame, plus the lift in cells that goes with
- * it. The canvas and the poster both build their frame here, so the shipped
- * fallback is the sky the canvas would draw at time 0.
+ * it. The canvas and the poster both build their frame here, so the fallback
+ * is built the same way as the canvas at time 0.
  */
 export function createScene({ config = SKY_DEFAULTS, cols, rows, cellPx }) {
   return {
@@ -447,7 +438,7 @@ export function updateStarGains(starLayer, config = SKY_DEFAULTS, time = 0) {
 const EVOLVE = Object.freeze({
   scaleRatio: 1.8, // × the sky's feature size, when evolveScale is not given
   octaves: 2,
-  amount: 1, // bias at evolve = 100, in field units
+  amount: 1, // half the bias at evolve = 100; renderFrame applies it twice
   driftX: 42, // cells/s at evolveSpeed = 100
 });
 
@@ -464,6 +455,13 @@ const EVOLVE = Object.freeze({
  * without changing a single value in the band the page shows. The text of the
  * field is unchanged by a margin: row `y + margin` is row `y` of a field built
  * without one.
+ *
+ * The evolution field is a second, much larger noise field that decides where
+ * tone thresholds are pushed up and pulled down. It is sampled by the same
+ * machinery, with features `evolveScale` CSS px wide, drifting on both axes at
+ * a rate set by `evolveSpeed` and `evolveTilt`. Because it varies across the
+ * plane, masses swell in one place while they thin in another; because it
+ * drifts continuously, no fixed spot breathes in and out.
  */
 const GUTTER = 16;
 
@@ -739,7 +737,7 @@ export function renderFrame({
 
       let colour = ramp[rampIndex(band, tones)];
 
-      // Stars live only in the clear band, the darkest of the four. The cloud
+      // Stars live only in the clear band, the darkest band. The cloud
       // band's own edge is already dithered, so stars dissolve into it.
       if (stars && band === 0) {
         const starIndex = y * cols + x;

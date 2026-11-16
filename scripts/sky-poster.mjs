@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 /**
- * Regenerate assets/sky-poster.svg from the sky core.
+ * Regenerate assets/sky-poster.svg and assets/sky-poster-dark.svg from the sky
+ * core.
  *
- * The poster is a static frame at the shipped cell size: the same field, seed,
- * palette, tuned values and lift as the canvas, rendered at time 0. It is embedded
- * as a PNG data URI so the committed file stays text and stays inside the
- * no-binaries rule, while costing a fraction of an equivalent vector poster.
+ * The posters are static frames at the shipped cell size: the field, palette,
+ * tuned values and lift from SKY_DEFAULTS, rendered at time 0. They are
+ * embedded as PNG data URIs so the committed files stay text, while costing a
+ * fraction of an equivalent vector poster.
  *
- * The SVG records a hash of the raw frame. tests/assets.test.mjs recomputes it
- * from the core, so a changed seed or palette fails the suite instead of
- * quietly shipping a stale fallback.
+ * Each SVG records a hash of the raw frame. tests/assets.test.mjs recomputes
+ * the light poster's hash from the core, so a changed seed or light palette
+ * fails the suite instead of quietly shipping a stale fallback. The dark
+ * poster has no matching assertion yet.
  *
  *   node scripts/sky-poster.mjs
  */

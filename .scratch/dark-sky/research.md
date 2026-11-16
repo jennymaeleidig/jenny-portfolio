@@ -2,8 +2,9 @@
 
 Scope: replace the blue sky with stars on the existing CPU pipeline — integer
 hash → value noise → fBm → `toneIndex` → 4×4 Bayer, one block per ~2 CSS px
-(`assets/sky-core.mjs:28`, `:92`, `:371`). Clouds keep their generation; stars do
-not scroll; a new seed per page load already exists (`assets/sky.js`).
+(`hash`, `BAYER4`, and `toneIndex` in `assets/sky-core.mjs`). Clouds keep their
+generation; stars do not scroll; a new seed per page load already exists
+(`assets/sky.js`).
 
 ## 1. What the three sources do
 
@@ -106,7 +107,7 @@ only techniques, which this note credits.
 ### 2.1 Feed stars into the scalar, before the quantiser
 
 Do **not** stamp star colours over the finished ImageData. Add star intensity to
-the field value and let the existing `toneIndex` (`assets/sky-core.mjs:371`)
+the field value and let the existing `toneIndex` in `assets/sky-core.mjs`
 choose a palette entry:
 
 ```js
@@ -220,8 +221,8 @@ rest state.
 
 - The star sprite is a continuous intensity sampled on the block grid. There is
   no anti-aliasing step to undo — the block _is_ the pixel.
-- Edge blocks are resolved by `BAYER4`, already indexed by `(y&3, x&3)`
-  (`assets/sky-core.mjs:92`). Because the pattern is spatial and static, a star
+- Edge blocks are resolved by `BAYER4`, already indexed by `(y&3, x&3)`.
+  Because the pattern is spatial and static, a star
   edge is a fixed checker/diagonal, not a shimmer.
 - Twinkle must be quantised too. Feeding continuous `i(t)` into the quantiser
   makes a 2×2 star boil as `i` crosses a threshold: one block flips, then
@@ -235,7 +236,7 @@ rest state.
 ## 3. Pitfalls
 
 **Repeat at the field period.** `createField` sets
-`periodX = round(width*cellPx/scale)` (`assets/sky-core.mjs:261`) and samples in
+`periodX = round(width*cellPx/scale)` and samples in
 lattice units; stars keyed to that lattice repeat every `periodX` blocks and slide
 whenever `width` changes. Anchor stars in CSS pixels on a virtual plane whose
 origin is the document, and hash integer block coordinates from that origin.
@@ -245,8 +246,8 @@ stable — but star positions derived from `cols`/`rows` are not. Hash
 `floor(cssX / cellPx)` from a fixed origin; a height-only change (mobile URL bar)
 then moves nothing.
 
-**Twinkle aliasing.** `maxFps` is 60 (`assets/sky-core.mjs:85`,
-`assets/sky.js:134`); a 2 Hz twinkle is 30 samples per cycle at 60 fps but 15 at
+**Twinkle aliasing.** `maxFps` in `SKY_DEFAULTS` is 60; a 2 Hz twinkle is 30
+samples per cycle at 60 fps but 15 at
 30 fps, and a resumed tab delivers one huge delta. Drive twinkle from a clock
 whose delta is clamped (≤100 ms) and keep angular rates ≤ ~2 rad/s.
 
@@ -261,7 +262,7 @@ regression; adding 400 stars × ≤9 block writes is not. Precompute the star fi
 once per layout, keep `starPeak: Float32Array`, `starId: Int16Array`, and a
 per-star `gain[]`, and touch only `gain[]` per frame.
 
-**Reduced motion.** `assets/sky.js:47` already skips the loop and draws one frame
+**Reduced motion.** `assets/sky.js` already skips the loop and draws one frame
 when `prefers-reduced-motion: reduce`. Draw that frame at `t = 0` (or with
 twinkle frozen at each star's hash-chosen level) so the still image has stars at
 a sensible brightness rather than all mid-transition.

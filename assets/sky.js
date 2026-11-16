@@ -5,9 +5,10 @@
  * frame loop, and the three reasons to stop: the tab is hidden, the canvas is
  * out of view, or the reader asked for reduced motion.
  *
- * No content depends on this file. Without it the poster image still covers
- * the viewport. Without a 2D context the layer shows the poster over its CSS
- * gradient, so a canvas block still reads as sky.
+ * No content depends on this file. Without JavaScript the poster image covers
+ * the viewport; if this module fails to load, the CSS gradient remains. Without
+ * a 2D context the layer shows the poster over that gradient, so a canvas block
+ * still reads as sky.
  */
 
 import { isDark } from "./theme-core.mjs";
@@ -175,7 +176,8 @@ if (sky && canvas) {
     reducedMotion.addEventListener("change", start);
 
     // The palette strip flips the theme without touching the field or the
-    // seed; the same clouds and stars simply paint from the other ramp.
+    // seed; the clouds repaint from the other ramp, and stars appear only in
+    // dark.
     document.addEventListener("themechange", () => {
       const next = isDark(document.documentElement.dataset.theme);
       if (next === dark) return;

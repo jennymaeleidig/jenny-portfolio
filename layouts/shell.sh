@@ -63,8 +63,8 @@ shell_head() {
   title=$(html_escape "$title")
   local share_title
   share_title=$(html_escape "$raw_title")
-  # A page's description is one line of prose — the tagline, an opening
-  # paragraph, a project's blurb — handed over raw and escaped once here.
+  # A page's description is one line of prose: the tagline, an opening
+  # paragraph, or a project's blurb, handed over raw and escaped once here.
   local description
   description=$(html_escape "$raw_description")
   local site_name_html
@@ -199,7 +199,7 @@ page_open() {
   shell_head "$title" "$description" "$route" "$indexable"
   cat <<EOF
     <div class="sky" aria-hidden="true">
-      <noscript><img class="sky-poster" src="$asset_base/sky-poster.svg" alt="" width="1600" height="1000"></noscript>
+      <noscript><img class="sky-poster" src="$asset_base/sky-poster.svg" alt="" width="1440" height="900"></noscript>
       <canvas class="sky-canvas"></canvas>
     </div>
 EOF

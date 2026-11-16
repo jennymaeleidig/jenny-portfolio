@@ -2,8 +2,9 @@
  * Grid forked from The Monospace Web
  * By Oskar Wickström
  *
- * Forked for jenny-portfolio: light-only tokens, self-hosted Commit Mono,
- * the grid with its round(down) fallbacks, and no debug or image-padding code.
+ * Forked for jenny-portfolio: light and dark token pairs, self-hosted Commit
+ * Mono, the grid with its round(down) fallbacks, and no debug or image-padding
+ * code.
  * Forked 2026-11-08 from https://github.com/owickstrom/the-monospace-web/
  *
  * The upstream MIT notice is reproduced here in full, because the licence
@@ -144,10 +145,9 @@ body {
 }
 
 /*
- * The sky: a poster image and a canvas, both fixed behind the sheet at
- * z-index -1. The gradient underneath is the fallback when there is no 2D
- * context; without JavaScript the poster covers it, and the canvas covers the
- * poster once it has painted.
+ * The sky layer sits behind the sheet at z-index -1. Its gradient is the
+ * fallback when there is no 2D context; without JavaScript the poster image
+ * covers it, and with JavaScript the canvas paints over the gradient.
  */
 .sky {
   position: fixed;
