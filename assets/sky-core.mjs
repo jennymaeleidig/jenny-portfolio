@@ -18,6 +18,16 @@
  *
  * The browser layer (assets/sky.js) is the only part that touches the DOM.
  *
+ * Star sources (FORCE11):
+ *   Joy-less. (2025). AnimatedStarfieldShader [Computer software]. GitHub.
+ *     https://github.com/Joy-less/AnimatedStarfieldShader
+ *   xcv145336. (2025). [2D] Sparkling star effect (Version 2.1) [Computer
+ *     software]. Godot Shaders.
+ *     https://godotshaders.com/shader/2d-sparkling-star-effect-ver-2-0/
+ *   xcv145336. (2025). [2D] Starfield in the sky with scrolling effect (Version
+ *     1.0) [Computer software]. Godot Shaders.
+ *     https://godotshaders.com/shader/2d-starfield-in-the-sky-with-scrolling-effect-ver-1-0/
+ *
  * Source (visual reference only, no code copied):
  *   Paper, "Paper Shaders: ultra-fast zero-dependency shaders",
  *   Apache-2.0, https://shaders.paper.design/
