@@ -155,6 +155,102 @@ const sliders = [
     life: true,
     hint: "how fast the wave travels",
   },
+  {
+    key: "starCell",
+    label: "star cell",
+    min: 12,
+    max: 80,
+    step: 1,
+    rebuild: true,
+    group: "stars",
+    hint: "jittered grid spacing, CSS px: fewer, larger gaps as it grows",
+  },
+  {
+    key: "starDensity",
+    label: "star density",
+    min: 0,
+    max: 100,
+    step: 1,
+    rebuild: true,
+    group: "stars",
+    hint: "share of grid cells that hold a star",
+  },
+  {
+    key: "starMedium",
+    label: "medium stars",
+    min: 0,
+    max: 50,
+    step: 1,
+    rebuild: true,
+    group: "stars",
+    hint: "share of stars that are two blocks across",
+  },
+  {
+    key: "starLarge",
+    label: "large stars",
+    min: 0,
+    max: 30,
+    step: 1,
+    rebuild: true,
+    group: "stars",
+    hint: "share of stars with the full five-block shape",
+  },
+  {
+    key: "starYellow",
+    label: "yellow share",
+    min: 0,
+    max: 100,
+    step: 1,
+    rebuild: true,
+    group: "stars",
+    hint: "share of stars with the yellow core: 0 is all white",
+  },
+  {
+    key: "starBright",
+    label: "star bright",
+    min: 0,
+    max: 100,
+    step: 1,
+    rebuild: true,
+    group: "stars",
+    hint: "peak star intensity",
+  },
+  {
+    key: "starDither",
+    label: "star dither",
+    min: 0,
+    max: 100,
+    step: 1,
+    group: "stars",
+    hint: "ordered dither on the star bands: 0 is a hard edge",
+  },
+  {
+    key: "starTwinkle",
+    label: "twinkle",
+    min: 0,
+    max: 100,
+    step: 1,
+    group: "stars",
+    hint: "how far a large star dims: 0 freezes the sky",
+  },
+  {
+    key: "starTwinkleSpeed",
+    label: "twinkle speed",
+    min: 0,
+    max: 300,
+    step: 5,
+    group: "stars",
+    hint: "multiplier on the twinkle periods",
+  },
+  {
+    key: "starTwinkleSize",
+    label: "twinkle from",
+    min: 1,
+    max: 3,
+    step: 1,
+    group: "stars",
+    hint: "smallest star that twinkles, in blocks",
+  },
 ];
 
 const STYLE = `
@@ -286,10 +382,11 @@ if (controller) {
       <output for="sky-levers-${slider.key}"></output>
     </div>`;
 
-  const sky = sliders.filter((slider) => !slider.life);
+  const sky = sliders.filter((slider) => !slider.life && !slider.group);
+  const stars = sliders.filter((slider) => slider.group === "stars");
   const life = sliders.filter((slider) => slider.life);
 
-  panel.innerHTML = `
+  const markup = `
     <div class="sky-levers-handle" tabindex="0"
          title="drag to move · double-click to reset">
       <span>sky levers</span>
@@ -321,12 +418,19 @@ if (controller) {
     </div>
     <h4>life</h4>
     ${life.map(sliderMarkup).join("")}
+    <h4>stars</h4>
+    ${stars.map(sliderMarkup).join("")}
     <div class="sky-levers-actions">
       <button type="button" data-action="copy">copy values</button>
       <button type="button" data-action="reset">reset</button>
     </div>
     <p class="sky-levers-note">development build · SKY_LEVERS=1</p>
   `;
+
+  const parsed = new DOMParser().parseFromString(markup, "text/html");
+  for (const node of [...parsed.body.childNodes]) {
+    panel.append(document.adoptNode(node));
+  }
 
   root.append(panel, toggle);
   document.head.append(style);

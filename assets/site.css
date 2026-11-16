@@ -74,6 +74,18 @@
   font-size: 16px;
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #4a484b;
+  --ink: #ddd0c5;
+  --accent: #ffab77;
+  --accent-bright: #f8cd70;
+  --sky-1: #c0bbac;
+  --sky-2: #777578;
+  --sky-3: #414042;
+  --sky-4: #1b1a16;
+}
+
 *,
 *::before,
 *::after {
@@ -146,6 +158,10 @@ body {
   background: linear-gradient(180deg, var(--sky-1) 0%, var(--paper) 55%);
 }
 
+:root[data-theme="dark"] .sky {
+  background: linear-gradient(180deg, var(--sky-4) 0%, var(--paper) 55%);
+}
+
 .sky-poster,
 .sky-canvas {
   position: fixed;
@@ -174,6 +190,12 @@ body {
     url("/assets/sky-poster.svg") center / cover no-repeat,
     linear-gradient(180deg, var(--sky-1) 0%, var(--paper) 55%);
   image-rendering: pixelated;
+}
+
+:root[data-theme="dark"] .sky--fallback {
+  background:
+    url("/assets/sky-poster-dark.svg") center / cover no-repeat,
+    linear-gradient(180deg, var(--sky-4) 0%, var(--paper) 55%);
 }
 
 .sky--fallback .sky-canvas {
@@ -287,6 +309,10 @@ a:hover {
 ::selection {
   background: var(--accent-bright);
   color: var(--ink);
+}
+
+:root[data-theme="dark"] ::selection {
+  color: var(--sky-4);
 }
 
 h1,
@@ -642,7 +668,14 @@ main > :last-child > :last-child {
   display: flex;
   flex-wrap: nowrap;
   justify-content: flex-end;
-  pointer-events: none;
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .swatches > * {
@@ -1050,6 +1083,18 @@ th {
 }
 
 @media print {
+  :root,
+  :root[data-theme="dark"] {
+    --paper: #fff;
+    --ink: #000;
+    --accent: #b83d05;
+    --accent-bright: #ff9767;
+    --sky-1: #dfe5e7;
+    --sky-2: #c5d5e5;
+    --sky-3: #9ec8e4;
+    --sky-4: #2157cc;
+  }
+
   :root {
     --line-height: 1rem;
     --border-thickness: 1px;

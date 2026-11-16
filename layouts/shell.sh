@@ -87,6 +87,13 @@ shell_head() {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+      try {
+        if (localStorage.getItem("theme") === "dark") {
+          document.documentElement.dataset.theme = "dark";
+        }
+      } catch (error) {}
+    </script>
     <meta name="color-scheme" content="light">
     <title>$title</title>
     <meta name="description" content="$description">
@@ -173,14 +180,15 @@ EOF
 
 # The palette strip: eight empty squares. site.css paints them in token
 # order, so the colours stay in one place and the markup carries none. The
-# strip is decoration, so it is hidden from assistive technology.
+# strip is the theme control: clicking it swaps the palette, and its pressed
+# state follows the theme boot script's choice.
 swatch_strip() {
-  local i
-  printf '<div class="swatches" aria-hidden="true">'
-  for i in 1 2 3 4 5 6 7 8; do
+  local _
+  printf '<button class="swatches" type="button" aria-pressed="false" aria-label="Dark theme" title="Switch to dark theme">'
+  for _ in 1 2 3 4 5 6 7 8; do
     printf '<span></span>'
   done
-  printf '</div>'
+  printf '</button>'
 }
 
 page_open() {
@@ -199,6 +207,7 @@ page_close() {
   shell_main_close
   cat <<EOF
     <script type="module" src="/assets/sky.js"></script>
+    <script type="module" src="/assets/theme.js"></script>
 EOF
   if [[ ${SKY_LEVERS:-} == 1 ]]; then
     printf '    <script type="module" src="/assets/sky-levers.mjs"></script>\n'

@@ -75,6 +75,7 @@ async function navigate(url, { push = true, scrollY = 0 } = {}) {
       document.title = nextDocument.title;
       sheet.innerHTML = next.innerHTML;
       syncHeader(nextDocument);
+      document.dispatchEvent(new Event("theme-sync"));
       focusMain();
     };
 

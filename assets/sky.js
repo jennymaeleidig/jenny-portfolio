@@ -11,6 +11,8 @@
  */
 
 import {
+  DARK_RAMP,
+  RAMP,
   SKY_DEFAULTS,
   createScene,
   frameLayout,
@@ -47,6 +49,8 @@ if (sky && canvas) {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     let field = null;
+    let starLayer = null;
+    let dark = document.documentElement.dataset.theme === "dark";
     let image = null;
     let pixels = null;
     let cellPx = 4;
@@ -79,6 +83,9 @@ if (sky && canvas) {
         time: elapsed,
         offset,
         offsetY,
+        ramp: dark ? DARK_RAMP : RAMP,
+        starLayer,
+        starfield: dark,
       });
       context.putImageData(image, 0, 0);
     }
@@ -114,6 +121,7 @@ if (sky && canvas) {
         cellPx,
       });
       field = scene.field;
+      starLayer = scene.starLayer;
       offsetY = scene.offsetY;
       image = context.createImageData(layout.cols, layout.rows);
       pixels = image.data;
@@ -167,6 +175,15 @@ if (sky && canvas) {
     }
 
     reducedMotion.addEventListener("change", start);
+
+    // The palette strip flips the theme without touching the field or the
+    // seed; the same clouds and stars simply paint from the other ramp.
+    document.addEventListener("themechange", () => {
+      const next = document.documentElement.dataset.theme === "dark";
+      if (next === dark) return;
+      dark = next;
+      if (field) draw();
+    });
 
     window.addEventListener("resize", () => {
       clearTimeout(resizeTimer);

@@ -21,6 +21,8 @@ import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 
 import {
+  DARK_RAMP,
+  RAMP,
   SKY_DEFAULTS,
   createScene,
   frameLayout,
@@ -87,11 +89,12 @@ function encodePng(cols, rows, rgb) {
 }
 
 /** The poster's frame, hash and embedded PNG. Pure and deterministic. */
-export function posterArtifact() {
+export function posterArtifact(theme = "light") {
+  const dark = theme === "dark";
   const { cols, rows, cellPx } = POSTER;
   // The canvas carries sky above and below the window so the lift can pan;
   // building the scene the same way makes the poster the shipped framing.
-  const { field, offsetY } = createScene({
+  const { field, starLayer, offsetY } = createScene({
     config: SKY_DEFAULTS,
     cols,
     rows,
@@ -103,6 +106,9 @@ export function posterArtifact() {
     time: 0,
     offset: 0,
     offsetY,
+    ramp: dark ? DARK_RAMP : RAMP,
+    starLayer,
+    starfield: dark,
   });
 
   const rgb = Buffer.alloc(cols * rows * 3);
@@ -121,12 +127,12 @@ export function posterArtifact() {
   };
 }
 
-export function posterHash() {
-  return posterArtifact().hash;
+export function posterHash(theme = "light") {
+  return posterArtifact(theme).hash;
 }
 
-export function posterSvg() {
-  const { cols, rows, cellPx, hash, png } = posterArtifact();
+export function posterSvg(theme = "light") {
+  const { cols, rows, cellPx, hash, png } = posterArtifact(theme);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${cols} ${rows}" width="${cols * cellPx}" height="${rows * cellPx}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
   <metadata>sky-poster sha256:${hash} cell:${cellPx}</metadata>
@@ -139,7 +145,12 @@ if (
   process.argv[1] &&
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
-  const svg = posterSvg();
-  writeFileSync(join(root, "assets", "sky-poster.svg"), svg);
-  console.log(`assets/sky-poster.svg: ${svg.length} bytes`);
+  for (const [theme, file] of [
+    ["light", "sky-poster.svg"],
+    ["dark", "sky-poster-dark.svg"],
+  ]) {
+    const svg = posterSvg(theme);
+    writeFileSync(join(root, "assets", file), svg);
+    console.log(`assets/${file}: ${svg.length} bytes`);
+  }
 }

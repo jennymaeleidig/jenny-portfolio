@@ -32,6 +32,27 @@ export const RAMP = Object.freeze([
   Object.freeze([33, 87, 204]), // #2157CC
 ]);
 
+/** The dark ramp, lightest first. Matches the dark --sky-* tokens. */
+export const DARK_RAMP = Object.freeze([
+  Object.freeze([192, 187, 172]), // #C0BBAC
+  Object.freeze([119, 117, 120]), // #777578
+  Object.freeze([65, 64, 66]), // #414042
+  Object.freeze([27, 26, 22]), // #1B1A16
+]);
+
+/**
+ * A star's two paints: its core, chosen per star, and the same dim edge for
+ * both tints. The core colours are the dark palette's ink and accent-bright.
+ */
+export const STAR_TINTS = Object.freeze({
+  1: Object.freeze([221, 208, 197]), // #DDD0C5, lighter white
+  2: Object.freeze([248, 205, 112]), // #F8CD70, yellow
+});
+export const STAR_DIM = Object.freeze([192, 187, 172]); // #C0BBAC, sky-1
+
+/** Star intensity bands: dim edge, then core. The dither straddles both. */
+export const STAR_THRESHOLDS = Object.freeze([0.28, 0.5]);
+
 /**
  * The tuning values the sky reads. Every value is a plain number so a caller
  * can compute an override; only `mode` is categorical.
@@ -56,6 +77,16 @@ export const RAMP = Object.freeze([
  * @property {number} stark
  * @property {number} seed
  * @property {number} maxFps
+ * @property {number} starCell
+ * @property {number} starDensity
+ * @property {number} starMedium
+ * @property {number} starLarge
+ * @property {number} starYellow
+ * @property {number} starBright
+ * @property {number} starDither
+ * @property {number} starTwinkle
+ * @property {number} starTwinkleSpeed
+ * @property {number} starTwinkleSize
  */
 
 /**
@@ -83,6 +114,16 @@ export const SKY_DEFAULTS = Object.freeze({
   stark: 77,
   seed: 12,
   maxFps: 60,
+  starCell: 36, // jittered grid spacing, CSS px
+  starDensity: 62, // share of cells that hold a star, %
+  starMedium: 20, // share of stars two blocks across, %
+  starLarge: 6, // share of stars the full five-block shape, %
+  starYellow: 30, // share of stars with the yellow core, %
+  starBright: 90, // peak intensity, %
+  starDither: 24, // ordered dither on the star bands, %
+  starTwinkle: 40, // how far a large star dims, %
+  starTwinkleSpeed: 100, // multiplier on the twinkle periods, %
+  starTwinkleSize: 3, // smallest star that twinkles, in blocks
 });
 
 /**
@@ -220,8 +261,157 @@ export function createScene({ config = SKY_DEFAULTS, cols, rows, cellPx }) {
       // Sky above and below the window, so the lift can pan without repeating.
       margin: Math.ceil(OFFSET_Y_LIMIT / cellPx),
     }),
+    starLayer: createStarLayer({ cols, rows, cellPx, config }),
     offsetY: config.offsetY / cellPx,
   };
+}
+
+const STAR_PERIOD = 1 << 30;
+
+function starHash(x, y, seed, offset) {
+  return hash(x, y, (seed + offset) | 0, STAR_PERIOD);
+}
+
+function clamp01(value) {
+  return value < 0 ? 0 : value > 1 ? 1 : value;
+}
+
+function stamp(peak, tint, ref, cols, rows, x, y, value, color, star) {
+  if (x < 0 || y < 0 || x >= cols || y >= rows) return;
+  const index = y * cols + x;
+  if (value <= peak[index]) return;
+  peak[index] = value;
+  tint[index] = color;
+  ref[index] = star;
+}
+
+/**
+ * One star layer, built once per layout and seed.
+ *
+ * Stars sit on a jittered grid in block coordinates anchored at the viewport
+ * origin, so a resize reveals new cells instead of moving or reseeding the
+ * ones already on screen. A star is one block, a two-block pair, or a five
+ * block plus with dim corners; the Bayer dither in renderFrame decides which
+ * of those blocks actually paint.
+ */
+export function createStarLayer({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
+  const cell = Math.max(2, Math.round(config.starCell / cellPx));
+  const seed = (config.seed ^ 0x9e3779b9) >>> 0;
+  const peak = new Float32Array(cols * rows);
+  const tint = new Uint8Array(cols * rows);
+  const ref = new Int32Array(cols * rows).fill(-1);
+  const stars = [];
+
+  const density = clamp01(config.starDensity / 100) * 100;
+  const large = clamp01(config.starLarge / 100) * 100;
+  const medium = clamp01(config.starMedium / 100) * 100;
+  const yellow = clamp01(config.starYellow / 100) * 100;
+  const bright = clamp01(config.starBright / 100);
+
+  const cellCols = Math.ceil(cols / cell);
+  const cellRows = Math.ceil(rows / cell);
+
+  for (let cy = 0; cy < cellRows; cy += 1) {
+    for (let cx = 0; cx < cellCols; cx += 1) {
+      if (starHash(cx, cy, seed, 0) * 100 >= density) continue;
+
+      const bx = Math.min(
+        cols - 1,
+        Math.floor((cx + 0.15 + 0.7 * starHash(cx, cy, seed, 1)) * cell),
+      );
+      const by = Math.min(
+        rows - 1,
+        Math.floor((cy + 0.15 + 0.7 * starHash(cx, cy, seed, 2)) * cell),
+      );
+
+      const sizeRoll = starHash(cx, cy, seed, 3) * 100;
+      const size = sizeRoll < large ? 3 : sizeRoll < large + medium ? 2 : 1;
+      const color = starHash(cx, cy, seed, 4) * 100 < yellow ? 2 : 1;
+      const phase = starHash(cx, cy, seed, 5) * Math.PI * 2;
+      const variance = 0.8 + 0.2 * starHash(cx, cy, seed, 6);
+      const index = stars.length;
+      stars.push({ phase, size, color, gain: 1 });
+
+      const core = bright * variance;
+      const edge = core * (0.5 + 0.1 * starHash(cx, cy, seed, 7));
+      stamp(peak, tint, ref, cols, rows, bx, by, core, color, index);
+
+      if (size === 2) {
+        const direction = Math.floor(starHash(cx, cy, seed, 8) * 8);
+        const dx = [1, -1, 0, 0, 1, 1, -1, -1][direction];
+        const dy = [0, 0, 1, -1, 1, -1, 1, -1][direction];
+        stamp(
+          peak,
+          tint,
+          ref,
+          cols,
+          rows,
+          bx + dx,
+          by + dy,
+          edge,
+          color,
+          index,
+        );
+      } else if (size === 3) {
+        stamp(peak, tint, ref, cols, rows, bx + 1, by, edge, color, index);
+        stamp(peak, tint, ref, cols, rows, bx - 1, by, edge, color, index);
+        stamp(peak, tint, ref, cols, rows, bx, by + 1, edge, color, index);
+        stamp(peak, tint, ref, cols, rows, bx, by - 1, edge, color, index);
+        const corner = edge * 0.52;
+        for (const [dx, dy] of [
+          [1, 1],
+          [1, -1],
+          [-1, 1],
+          [-1, -1],
+        ]) {
+          stamp(
+            peak,
+            tint,
+            ref,
+            cols,
+            rows,
+            bx + dx,
+            by + dy,
+            corner,
+            color,
+            index,
+          );
+        }
+      }
+    }
+  }
+
+  return { peak, tint, ref, stars, cols, rows, cell, cellPx };
+}
+
+/**
+ * The twinkle: three incommensurate sines per star, so no loop is visible, and
+ * only stars at or above `starTwinkleSize` move. The gain never exceeds one, so
+ * a star dims from its resting brightness rather than blooming.
+ */
+export function updateStarGains(starLayer, config = SKY_DEFAULTS, time = 0) {
+  const amount = clamp01(config.starTwinkle / 100);
+  const speed = Math.max(0.01, config.starTwinkleSpeed / 100);
+  const minimum = config.starTwinkleSize;
+  const t = time * speed;
+  const TAU = Math.PI * 2;
+
+  for (let i = 0; i < starLayer.stars.length; i += 1) {
+    const star = starLayer.stars[i];
+    if (amount === 0 || star.size < minimum) {
+      star.gain = 1;
+      continue;
+    }
+    const phase = star.phase;
+    const wave =
+      0.5 +
+      0.22 * Math.sin((t * TAU) / 7.3 + phase) +
+      0.14 * Math.sin((t * TAU) / 3.1 + phase * 1.7) +
+      0.08 * Math.sin((t * TAU) / 11.7 + phase * 2.3);
+    star.gain = 1 - amount * (1 - clamp01(wave));
+  }
+
+  return starLayer;
 }
 
 const EVOLVE = Object.freeze({
@@ -404,6 +594,9 @@ export function renderFrame({
   time = 0,
   offset = 0,
   offsetY = 0,
+  ramp = RAMP,
+  starLayer = null,
+  starfield = false,
 }) {
   const { data, evolve: flow, width, cols, rows, height, margin } = field;
   const pixels = out ?? new Uint8ClampedArray(cols * rows * 4);
@@ -423,6 +616,10 @@ export function renderFrame({
   const warpCells = (config.warp / 100) * 14;
   const warpSpeed = (config.warpSpeed / 100) * 0.8;
   const drift = wrap(offset, width);
+
+  const stars = starfield && starLayer ? starLayer : null;
+  const starDither = stars ? config.starDither / 100 : 0;
+  if (stars) updateStarGains(stars, config, time);
 
   // The evolution field keeps its own clock, and drifts on both axes so the
   // pattern passes rather than pulses. Sampling it per cell is what makes the
@@ -510,7 +707,26 @@ export function renderFrame({
       );
       if (bands) bands[y * cols + x] = band;
 
-      const colour = RAMP[rampIndex(band, tones)];
+      let colour = ramp[rampIndex(band, tones)];
+
+      // Stars live only in the clear band, the darkest of the four. The cloud
+      // band's own edge is already dithered, so stars dissolve into it.
+      if (stars && band === 0) {
+        const starIndex = y * cols + x;
+        const owner = stars.ref[starIndex];
+        if (owner >= 0) {
+          const value = stars.peak[starIndex] * stars.stars[owner].gain;
+          const level = toneIndex(
+            value,
+            STAR_THRESHOLDS,
+            starDither,
+            BAYER4[ditherRow + (x & 3)],
+          );
+          if (level === 2) colour = STAR_TINTS[stars.tint[starIndex]];
+          else if (level === 1) colour = STAR_DIM;
+        }
+      }
+
       pixels[pixel] = colour[0];
       pixels[pixel + 1] = colour[1];
       pixels[pixel + 2] = colour[2];
