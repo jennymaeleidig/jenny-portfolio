@@ -113,16 +113,16 @@ export const SKY_DEFAULTS = Object.freeze({
   sky: 87,
   stark: 77,
   seed: 12,
-  maxFps: 60,
-  starCell: 36, // jittered grid spacing, CSS px
-  starDensity: 62, // share of cells that hold a star, %
-  starMedium: 20, // share of stars two blocks across, %
-  starLarge: 6, // share of stars the full five-block shape, %
-  starYellow: 30, // share of stars with the yellow core, %
+  maxFps: 24,
+  starCell: 67, // jittered grid spacing, CSS px
+  starDensity: 67, // share of cells that hold a star, %
+  starMedium: 27, // share of stars two blocks across, %
+  starLarge: 12, // share of stars the full five-block shape, %
+  starYellow: 37, // share of stars with the yellow core, %
   starBright: 90, // peak intensity, %
   starDither: 24, // ordered dither on the star bands, %
-  starTwinkle: 40, // how far a large star dims, %
-  starTwinkleSpeed: 100, // multiplier on the twinkle periods, %
+  starTwinkle: 67, // how far a large star dims, %
+  starTwinkleSpeed: 170, // multiplier on the twinkle periods, %
   starTwinkleSize: 3, // smallest star that twinkles, in blocks
 });
 
