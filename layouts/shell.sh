@@ -92,7 +92,7 @@ shell_head() {
         if (localStorage.getItem("theme") === "dark") {
           document.documentElement.dataset.theme = "dark";
         }
-      } catch (error) {}
+      } catch {}
     </script>
     <meta name="color-scheme" content="light">
     <title>$title</title>
@@ -184,7 +184,7 @@ EOF
 # state follows the theme boot script's choice.
 swatch_strip() {
   local _
-  printf '<button class="swatches" type="button" aria-pressed="false" aria-label="Dark theme" title="Switch to dark theme">'
+  printf '<button class="swatches" type="button" aria-pressed="false" aria-label="Switch to dark theme" title="Switch to dark theme">'
   for _ in 1 2 3 4 5 6 7 8; do
     printf '<span></span>'
   done

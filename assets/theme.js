@@ -16,12 +16,11 @@ function isDark() {
 
 function sync() {
   const dark = isDark();
+  const label = dark ? "Switch to light theme" : "Switch to dark theme";
   for (const control of document.querySelectorAll(".swatches")) {
     control.setAttribute("aria-pressed", String(dark));
-    control.setAttribute(
-      "title",
-      dark ? "Switch to light theme" : "Switch to dark theme",
-    );
+    control.setAttribute("aria-label", label);
+    control.setAttribute("title", label);
   }
 }
 

@@ -10,7 +10,8 @@
  *   1. sampling is interpolated, never rounded;
  *   2. the field is periodic in x, so the drift wraps with no pop;
  *   3. tone bands are dithered, so boundaries dissolve instead of snapping;
- *   4. the quantiser only ever emits indices into the canonical ramp.
+ *   4. the cloud quantiser only ever emits indices into the canonical ramp;
+ *      the optional star layer paints its own tints over the clear band.
  *
  * The browser layer (assets/sky.js) is the only part that touches the DOM.
  *
@@ -381,7 +382,7 @@ export function createStarLayer({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
     }
   }
 
-  return { peak, tint, ref, stars, cols, rows, cell, cellPx };
+  return { peak, tint, ref, stars };
 }
 
 /**
