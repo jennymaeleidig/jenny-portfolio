@@ -362,10 +362,14 @@ const STYLE = `
   .sky-levers .sky-levers-collapse:hover {
     color: var(--ink, #14140f); border-color: var(--levers-track);
   }
-  .sky-levers-toggle {
+  /* Collapsed, the panel is a floating control rather than a surface, so it
+     inverts the theme: ink fill, paper label, in both palettes. */
+  .sky-levers .sky-levers-toggle {
     font: inherit; padding: 6px 10px; border-radius: 8px; cursor: pointer;
-    border: 1px solid var(--levers-border); color: var(--levers-muted);
-    background: var(--levers-surface);
+    border: 1px solid var(--ink, #14140f);
+    color: var(--paper, #f4f4ed);
+    background: var(--ink, #14140f);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--ink, #14140f) 30%, transparent);
   }
   @media print { .sky-levers { display: none; } }
 `;
