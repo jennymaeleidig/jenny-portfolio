@@ -2,8 +2,8 @@
  * Client-side navigation, as progressive enhancement.
  *
  * The sky is a fixed canvas outside the sheet. Reloading the document restarts
- * it, which reads as a flash of bare paper between pages. Swapping only
- * <main> keeps the same canvas running, so the sky carries across internal
+ * it, which reads as a flash of bare paper between pages. Swapping the page body
+ * in place keeps the same canvas running, so the sky carries across internal
  * links without a repaint. Every link is a real link: without this file, or
  * when a fetch fails, the browser navigates normally.
  *
@@ -121,7 +121,7 @@ document.addEventListener("click", (event) => {
   event.preventDefault();
 
   // The link to the page already on screen is not a reload. Swapping it back in
-  // would restart the sky and throw away the reader's scroll for nothing.
+  // would throw away the reader's scroll for nothing.
   const url = new URL(link.href, location.href);
   if (url.pathname === location.pathname && url.search === location.search)
     return;

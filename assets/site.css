@@ -1177,8 +1177,8 @@ th {
 
 /*
  * Narrow viewports. The site is one column above this, so the featured grid
- * and the catalogue keep their reading order and simply stop sitting side by
- * side. The header and filters move to their own lines rather than leaving a
+ * and the catalogue keep their reading order and stop sitting side by side.
+ * The header and filters move to their own lines rather than leaving a
  * single word orphaned on a second row.
  */
 @media screen and (max-width: 760px) {

@@ -69,7 +69,7 @@ shell_head() {
   description=$(html_escape "$raw_description")
   local site_name_html
   site_name_html=$(html_escape "$site_name")
-  # The share card is the poster's pixels as a PNG, at the poster frame's size;
+  # The share card is the poster's PNG pixels at the poster's pixel-grid size;
   # see scripts/post-build.sh. tests/assets.test.mjs reads the emitted PNG and
   # fails if these numbers drift from it.
   local share_width=720

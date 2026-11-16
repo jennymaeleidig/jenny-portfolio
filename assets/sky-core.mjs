@@ -5,12 +5,13 @@
  * stretch, smoothstep and tone banding with a 4x4 ordered dither. It is
  * computed once per configuration change; each frame only re-quantises it.
  *
- * Four properties are load-bearing and tested in tests/sky.test.mjs:
+ * Four properties are load-bearing:
  *
  *   1. sampling is interpolated, never rounded;
  *   2. the field is periodic in x, so the drift wraps with no pop;
  *   3. tone bands are dithered, so boundaries dissolve instead of snapping;
- *   4. the cloud quantiser only ever emits indices into the canonical ramp.
+ *   4. the cloud quantiser only ever emits indices into the active theme's
+ *      ramp.
  *
  * The optional star layer paints its own tints over the clear band; its layout
  * and twinkle are tested in tests/sky.test.mjs.

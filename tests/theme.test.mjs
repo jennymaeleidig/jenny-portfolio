@@ -16,7 +16,7 @@ const { output, siteCss } = await sharedSite();
 const theme = readFileSync(join(root, "assets", "theme.js"), "utf8");
 const shell = readFileSync(join(root, "layouts", "shell.sh"), "utf8");
 
-test("the theme's stored name has one owner", () => {
+test("the theme module names its storage key and tokens", () => {
   assert.equal(THEME_STORAGE_KEY, "theme");
   assert.equal(DARK, "dark");
   assert.equal(LIGHT, "light");
@@ -50,7 +50,7 @@ test("the shell boot script carries the same key and dark token", () => {
   );
 });
 
-test("the pages start light and leave the choice to the boot script", () => {
+test("the home page starts light and leaves the choice to the boot script", () => {
   const home = readFileSync(join(output, "index.html"), "utf8");
 
   assert.doesNotMatch(

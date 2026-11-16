@@ -56,7 +56,7 @@ the no-canvas fallback, while the share card stays the light poster.
 ### Build modes
 
 There are two ways to build, and the only difference is the sky's tuning
-panel. Everything else — content, routes, CSS, the sky itself — is identical.
+panel. Everything else (content, routes, CSS, the sky itself) is identical.
 
 |                         | `make build` (production) | `make dev` (development)               |
 | ----------------------- | ------------------------- | -------------------------------------- |
@@ -77,8 +77,11 @@ The output is static, so any file server will do. Build with the flag and point
 a server at it:
 
 ```sh
-make dev && python3 -m http.server -d dist 8000 && open http://localhost:8000/
+make dev
+python3 -m http.server -d dist 8000
 ```
+
+Then open `http://localhost:8000/` in a browser.
 
 ## Deployment
 
