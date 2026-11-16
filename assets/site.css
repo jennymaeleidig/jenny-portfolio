@@ -645,7 +645,7 @@ main > :last-child > :last-child {
 }
 
 /*
- * The palette strip: the eight tokens as 1x1 squares, butted edge to edge with
+ * The palette strip: the seven tokens as 1x1 squares, butted edge to edge with
  * no gap, in one row that never wraps and never shrinks. It is taken out of
  * flow and set into the paper, so it is furniture printed on the sheet rather
  * than content: the header and the footer wrap and measure as though it were
@@ -692,27 +692,24 @@ main > :last-child > :last-child {
 }
 
 .palette-strip > :nth-child(1) {
-  background: var(--paper);
-}
-.palette-strip > :nth-child(2) {
   background: var(--ink);
 }
-.palette-strip > :nth-child(3) {
+.palette-strip > :nth-child(2) {
   background: var(--accent);
 }
-.palette-strip > :nth-child(4) {
+.palette-strip > :nth-child(3) {
   background: var(--accent-bright);
 }
-.palette-strip > :nth-child(5) {
+.palette-strip > :nth-child(4) {
   background: var(--sky-1);
 }
-.palette-strip > :nth-child(6) {
+.palette-strip > :nth-child(5) {
   background: var(--sky-2);
 }
-.palette-strip > :nth-child(7) {
+.palette-strip > :nth-child(6) {
   background: var(--sky-3);
 }
-.palette-strip > :nth-child(8) {
+.palette-strip > :nth-child(7) {
   background: var(--sky-4);
 }
 
@@ -721,7 +718,7 @@ main > :last-child > :last-child {
 }
 
 /*
- * The footer strip runs the other way, deep blue to paper, and hangs off the
+ * The footer strip runs the other way, deep blue to ink, and hangs off the
  * left edge so the palette closes the sheet the way the header opens it.
  */
 .site-footer .palette-strip {
@@ -734,8 +731,8 @@ main > :last-child > :last-child {
 /*
  * The wheel's structural CSS. The viewport carries the perspective and the
  * stage is a zero-size centre point that preserves the 3D context. Nothing
- * here clips, masks, filters or shades: the 120 degree arc stays inside the
- * strip's reserved eight-square box. Each notch's colour is set inline from
+ * here clips, masks, filters or shades: the 105 degree arc stays inside the
+ * strip's reserved seven-square box. Each notch's colour is set inline from
  * the static spans' computed backgrounds, so the tokens stay in this file.
  */
 .palette-strip.is-wheeling > span:not(.wheel-viewport) {

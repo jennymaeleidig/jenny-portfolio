@@ -1,10 +1,10 @@
 /**
  * The palette strip's turn, as pure functions.
  *
- * The strip is a two-position drum: each palette is eight notches, adjacent
- * notches are 15 degrees apart, and the two palettes sit one 120 degree turn
- * from each other. Only the central eight notches face the viewer; the wheel
- * carries sixteen.
+ * The strip is a two-position drum: each palette is seven notches, adjacent
+ * notches are 15 degrees apart, and the two palettes sit one 105 degree turn
+ * from each other. Only the central seven notches face the viewer; the wheel
+ * carries fourteen.
  *
  * The browser layer (assets/theme.js) owns the DOM, the clock and reduced
  * motion. This module owns the geometry and the timeline, so both can be
@@ -12,12 +12,12 @@
  */
 
 /** The notches in one palette row. */
-export const NOTCH_COUNT = 8;
+export const NOTCH_COUNT = 7;
 
-/** The angle between adjacent notches, not 360 / 8. */
+/** The angle between adjacent notches, not 360 / 7. */
 export const ANGLE_PER_NOTCH = 15;
 
-/** The visible arc: eight notches at 15 degrees each. */
+/** The visible arc: seven notches at 15 degrees each. */
 export const ARC = NOTCH_COUNT * ANGLE_PER_NOTCH;
 
 /** The viewport's perspective, in pixels. */
@@ -56,7 +56,7 @@ export const TURN_MS = PINCH_MS + ROTATE_MS + SETTLE_MS;
  * Radius is half the square divided by tan(7.5 degrees), so notches butt
  * together on a 24-face cylinder. A light header turns left toward dark and a
  * dark header turns right toward light; the footer mirrors each turn. The
- * incoming palette starts eight positions away, on the side the turn comes
+ * incoming palette starts seven positions away, on the side the turn comes
  * from.
  *
  * @param {number} size The measured square size, in pixels.
@@ -89,7 +89,7 @@ const easeInOutCubic = (value) =>
 /**
  * The wheel's pose at an elapsed time.
  *
- * At 0 the outgoing row is flat and the incoming eight are already bent onto
+ * At 0 the outgoing row is flat and the incoming seven are already bent onto
  * the drum but transparent. The outgoing group fades only after 55 percent of
  * the rotation. By TURN_MS the wheel is the flat incoming row. Times outside
  * the turn clamp to its two flat ends.

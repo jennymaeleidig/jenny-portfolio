@@ -16,7 +16,7 @@ preview crawler does not run JavaScript.
 
 ## Why
 
-The palette strip was already page furniture: eight token squares overlaid on
+The palette strip was already page furniture: token squares overlaid on
 the header and footer text lines. Making the strip the control adds no new
 chrome and puts the switch at both ends of the sheet. The footer strip would be
 confusing if it looked the same but did nothing.

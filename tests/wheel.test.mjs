@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 
 import {
   ANGLE_PER_NOTCH,
+  ARC,
   NOTCH_COUNT,
   PERSPECTIVE,
   PINCH_DEPTH,
@@ -21,10 +22,11 @@ const close = (actual, expected, message) =>
     `${message}: expected ${expected}, got ${actual}`,
   );
 
-test("the wheel turns one eight-notch step of 15 degrees", () => {
-  assert.equal(NOTCH_COUNT, 8);
+test("the wheel turns one seven-notch step of 15 degrees", () => {
+  assert.equal(NOTCH_COUNT, 7);
   assert.equal(ANGLE_PER_NOTCH, 15);
-  assert.equal(NOTCH_COUNT * ANGLE_PER_NOTCH, 120);
+  assert.equal(NOTCH_COUNT * ANGLE_PER_NOTCH, 105);
+  assert.equal(ARC, 105);
   assert.equal(PERSPECTIVE, 900);
   assert.equal(PINCH_DEPTH, 12);
   assert.equal(PINCH_MS + ROTATE_MS + SETTLE_MS, 640);
@@ -39,10 +41,10 @@ test("the radius follows the square's real size", () => {
 test("each strip turns toward the incoming palette", () => {
   /** @type {Array<[import("../assets/wheel-core.mjs").Theme, import("../assets/wheel-core.mjs").Role, number, number]>} */
   const cases = [
-    ["light", "header", -120, 8],
-    ["dark", "header", 120, -8],
-    ["light", "footer", 120, -8],
-    ["dark", "footer", -120, 8],
+    ["light", "header", -105, 7],
+    ["dark", "header", 105, -7],
+    ["light", "footer", 105, -7],
+    ["dark", "footer", -105, 7],
   ];
 
   for (const [outgoing, role, rotation, incomingOffset] of cases) {

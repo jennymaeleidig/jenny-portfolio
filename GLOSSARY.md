@@ -86,18 +86,18 @@ the browser. Light is the default.
 _Avoid_: colour scheme, mode, skin
 
 **Palette strip**:
-The eight 1x1 token squares in the header and footer. Both strips are the
+The seven 1x1 token squares in the header and footer. Both strips are the
 theme switch, and a click turns them as a wheel onto the other palette.
 _Avoid_: swatches
 
 **Wheel**:
-The temporary 3D drum the palette strip becomes during a turn: two eight-notch
-palettes on a 120° arc, one turn apart.
+The temporary 3D drum the palette strip becomes during a turn: two seven-notch
+palettes on a 105° arc, one turn apart.
 _Avoid_: carousel, picker, ring
 
 **Notch**:
-One square on the wheel. Eight notches make a palette row, and the rows sit one
-120° turn apart.
+One square on the wheel. Seven notches make a palette row, and the rows sit one
+105° turn apart.
 _Avoid_: face, swatch
 
 **Sky**:

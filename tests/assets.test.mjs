@@ -8,6 +8,7 @@ import { DARK, LIGHT } from "../assets/theme-core.mjs";
 import { PERSPECTIVE } from "../assets/wheel-core.mjs";
 import {
   POSTER,
+  SWATCH_TOKENS,
   TOKENS,
   build,
   contrast,
@@ -309,7 +310,7 @@ test("the catalogue and the header stay readable on a narrow viewport", () => {
 
 test("every page runs the palette strip in its header and its footer", () => {
   const strip =
-    /<button class="palette-strip" type="button" aria-pressed="false" aria-label="Switch to dark theme" title="Switch to dark theme">((?:<span><\/span>){8})<\/button>/;
+    /<button class="palette-strip" type="button" aria-pressed="false" aria-label="Switch to dark theme" title="Switch to dark theme">((?:<span><\/span>){7})<\/button>/;
 
   for (const file of htmlFiles) {
     const html = readFileSync(file, "utf8");
@@ -390,7 +391,7 @@ test("every page runs the palette strip in its header and its footer", () => {
     /\.site-header nav a,\s*\n\.site-footer a\s*\{[^}]*background-color:\s*var\(--paper\)/s,
     "type over the strip carries its own paper backing, so it stays legible",
   );
-  for (const [index, name] of TOKENS.entries()) {
+  for (const [index, name] of SWATCH_TOKENS.entries()) {
     assert.match(
       siteCss,
       new RegExp(
@@ -399,6 +400,11 @@ test("every page runs the palette strip in its header and its footer", () => {
       `square ${index + 1} is --${name}`,
     );
   }
+  assert.doesNotMatch(
+    siteCss,
+    /\\.palette-strip > :nth-child\\(\\d+\\)\\s*\\{\\s*background:\\s*var\\(--paper\\)/,
+    "paper is the sheet, not a swatch",
+  );
 });
 
 test("the strip's turn stays inside its reserved box and stays flat", () => {

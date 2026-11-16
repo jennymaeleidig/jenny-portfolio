@@ -32,6 +32,10 @@ export const TOKENS = [
   ...SKY_TOKENS,
 ];
 
+// The palette strip omits paper: it is the sheet behind the squares, not one
+// of the colours the strip shows.
+export const SWATCH_TOKENS = ["ink", "accent", "accent-bright", ...SKY_TOKENS];
+
 // The build reads one site, and the tests read a fixture site rather than the
 // real content: what a test asserts never depends on what Jenny has written
 // this week. Each test that cares writes its own projects into a temp

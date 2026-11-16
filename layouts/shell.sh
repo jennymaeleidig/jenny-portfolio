@@ -181,14 +181,14 @@ shell_main_close() {
 EOF
 }
 
-# The palette strip: eight empty squares. site.css paints them in token
+# The palette strip: seven empty squares. site.css paints them in token
 # order, so the colours stay in one place and the markup carries none. The
 # strip is the theme control: clicking it swaps the palette, and its pressed
 # state follows the theme boot script's choice.
 swatch_strip() {
   local _
   printf '<button class="palette-strip" type="button" aria-pressed="false" aria-label="Switch to dark theme" title="Switch to dark theme">'
-  for _ in 1 2 3 4 5 6 7 8; do
+  for _ in 1 2 3 4 5 6 7; do
     printf '<span></span>'
   done
   printf '</button>'
