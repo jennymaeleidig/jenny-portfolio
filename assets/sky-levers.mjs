@@ -255,6 +255,11 @@ const sliders = [
 
 const STYLE = `
   .sky-levers {
+    --levers-muted: color-mix(in srgb, var(--ink, #14140f) 70%, var(--paper, #f4f4ed));
+    --levers-rule: color-mix(in srgb, var(--ink, #14140f) 16%, var(--paper, #f4f4ed));
+    --levers-border: color-mix(in srgb, var(--ink, #14140f) 24%, var(--paper, #f4f4ed));
+    --levers-track: color-mix(in srgb, var(--ink, #14140f) 38%, var(--paper, #f4f4ed));
+    --levers-surface: color-mix(in srgb, var(--paper, #f4f4ed) 96%, transparent);
     position: fixed; left: 16px; top: 16px; z-index: 10;
     margin: 0;
     font: 11px/1.25 var(--font-family, ui-monospace, monospace);
@@ -270,32 +275,32 @@ const STYLE = `
     max-height: calc(100dvh - 32px);
     overflow-y: auto; overscroll-behavior: contain;
     padding: 10px 12px;
-    background: rgba(251, 250, 248, .96);
+    background: var(--levers-surface);
     border: var(--border-thickness, 2px) solid var(--sky-2, #c5d5e5);
     border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(20, 20, 15, .12);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--ink, #14140f) 18%, transparent);
   }
   .sky-levers-panel[hidden] { display: none; }
   .sky-levers-handle {
     display: flex; align-items: center; justify-content: space-between;
     gap: 8px; padding-bottom: 6px; margin-bottom: 7px;
-    border-bottom: 1px solid #e6e5d9;
+    border-bottom: 1px solid var(--levers-rule);
     font-size: 10px; line-height: 1.2; letter-spacing: .04em;
-    text-transform: uppercase; color: #5c5b52;
+    text-transform: uppercase; color: var(--levers-muted);
     cursor: grab; touch-action: none; user-select: none;
   }
   .sky-levers.dragging .sky-levers-handle { cursor: grabbing; }
   .sky-levers-grip {
     width: 12px; height: 9px;
-    background: repeating-linear-gradient(180deg, #b9b8ad 0 1px, transparent 1px 4px);
+    background: repeating-linear-gradient(180deg, var(--levers-muted) 0 1px, transparent 1px 4px);
   }
   .sky-levers h4 {
     font-size: 10px; line-height: 1.2; letter-spacing: .04em;
-    text-transform: uppercase; color: #5c5b52;
+    text-transform: uppercase; color: var(--levers-muted);
     margin-bottom: 5px;
   }
   .sky-levers h4:not(:first-child) {
-    margin-top: 9px; padding-top: 7px; border-top: 1px solid #e6e5d9;
+    margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--levers-rule);
   }
   .sky-levers-row {
     display: grid; grid-template-columns: 96px 1fr 38px; gap: 8px;
@@ -305,19 +310,35 @@ const STYLE = `
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .sky-levers input[type=range] {
+    appearance: none;
     width: 100%; height: 14px; margin: 0; padding: 0;
-    accent-color: var(--accent, #b83d05);
+    background: transparent; cursor: pointer;
+  }
+  .sky-levers input[type=range]::-webkit-slider-runnable-track {
+    height: 6px; border-radius: 999px; background: var(--levers-track);
+  }
+  .sky-levers input[type=range]::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px; height: 14px; margin-top: -4px;
+    border: 0; border-radius: 50%; background: var(--accent, #b83d05);
+  }
+  .sky-levers input[type=range]::-moz-range-track {
+    height: 6px; border-radius: 999px; background: var(--levers-track);
+  }
+  .sky-levers input[type=range]::-moz-range-thumb {
+    width: 14px; height: 14px; border: 0; border-radius: 50%;
+    background: var(--accent, #b83d05);
   }
   .sky-levers output {
-    text-align: right; color: #5c5b52; font-variant-numeric: tabular-nums;
+    text-align: right; color: var(--levers-muted); font-variant-numeric: tabular-nums;
   }
   .sky-levers-row.seg { grid-template-columns: 96px 1fr; }
   .sky-levers-seg { display: flex; gap: 4px; }
   .sky-levers-seg > * { margin: 0; }
   .sky-levers button {
     font: inherit; line-height: 1.2; padding: 2px 8px; cursor: pointer;
-    border: 1px solid #dad9ce; border-radius: 5px;
-    background: transparent; color: #5c5b52;
+    border: 1px solid var(--levers-border); border-radius: 5px;
+    background: transparent; color: var(--levers-muted);
   }
   .sky-levers button[aria-pressed=true] {
     background: var(--ink, #14140f); color: var(--paper, #f4f4ed);
@@ -325,17 +346,16 @@ const STYLE = `
   }
   .sky-levers-actions {
     display: flex; gap: 4px; margin-top: 9px; padding-top: 7px;
-    border-top: 1px solid #e6e5d9;
+    border-top: 1px solid var(--levers-rule);
   }
-  .sky-levers-note { color: #5c5b52; font-size: 10px; line-height: 1.3; padding-top: 6px; }
+  .sky-levers-note { color: var(--levers-muted); font-size: 10px; line-height: 1.3; padding-top: 6px; }
   .sky-levers-toggle {
     font: inherit; padding: 6px 10px; border-radius: 8px; cursor: pointer;
-    border: 1px solid #dad9ce; color: #5c5b52;
-    background: rgba(251, 250, 248, .96);
+    border: 1px solid var(--levers-border); color: var(--levers-muted);
+    background: var(--levers-surface);
   }
   @media print { .sky-levers { display: none; } }
 `;
-
 function nearestStep(slider, value) {
   const steps = Math.round((value - slider.min) / slider.step);
   return slider.min + steps * slider.step;
