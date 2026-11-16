@@ -3,6 +3,9 @@
 
 asset_base=${ASSET_BASE:-/assets}
 stylesheet=${STYLESHEET:-$asset_base/site.css}
+# The boot script and assets/theme-core.mjs carry the same two values.
+theme_storage_key=theme
+theme_dark=dark
 # The shell escapes and composes with the shared helpers, so it reads them
 # itself rather than relying on every caller to source lib.sh first.
 # shellcheck source=/dev/null
@@ -89,8 +92,8 @@ shell_head() {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
       try {
-        if (localStorage.getItem("theme") === "dark") {
-          document.documentElement.dataset.theme = "dark";
+        if (localStorage.getItem("$theme_storage_key") === "$theme_dark") {
+          document.documentElement.dataset.theme = "$theme_dark";
         }
       } catch {}
     </script>

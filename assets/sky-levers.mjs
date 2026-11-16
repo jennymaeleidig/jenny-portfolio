@@ -12,7 +12,7 @@
  * clipboard in that shape.
  */
 
-import { OFFSET_Y_LIMIT } from "/assets/sky-core.mjs";
+import { OFFSET_Y_LIMIT } from "./sky-core.mjs";
 
 const controller = globalThis.skyLevers;
 

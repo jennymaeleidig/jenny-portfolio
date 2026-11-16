@@ -20,9 +20,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 
+import { DARK, LIGHT, isDark } from "../assets/theme-core.mjs";
 import {
-  DARK_RAMP,
-  RAMP,
   SKY_DEFAULTS,
   createScene,
   frameLayout,
@@ -89,8 +88,8 @@ function encodePng(cols, rows, rgb) {
 }
 
 /** The poster's frame, hash and embedded PNG. Pure and deterministic. */
-export function posterArtifact(theme = "light") {
-  const dark = theme === "dark";
+export function posterArtifact(theme = LIGHT) {
+  const dark = isDark(theme);
   const { cols, rows, cellPx } = POSTER;
   // The canvas carries sky above and below the window so the lift can pan;
   // building the scene the same way makes the poster the shipped framing.
@@ -106,9 +105,8 @@ export function posterArtifact(theme = "light") {
     time: 0,
     offset: 0,
     offsetY,
-    ramp: dark ? DARK_RAMP : RAMP,
+    dark,
     starLayer,
-    starfield: dark,
   });
 
   const rgb = Buffer.alloc(cols * rows * 3);
@@ -127,11 +125,11 @@ export function posterArtifact(theme = "light") {
   };
 }
 
-export function posterHash(theme = "light") {
+export function posterHash(theme = LIGHT) {
   return posterArtifact(theme).hash;
 }
 
-export function posterSvg(theme = "light") {
+export function posterSvg(theme = LIGHT) {
   const { cols, rows, cellPx, hash, png } = posterArtifact(theme);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${cols} ${rows}" width="${cols * cellPx}" height="${rows * cellPx}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -146,8 +144,8 @@ if (
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
   for (const [theme, file] of [
-    ["light", "sky-poster.svg"],
-    ["dark", "sky-poster-dark.svg"],
+    [LIGHT, "sky-poster.svg"],
+    [DARK, "sky-poster-dark.svg"],
   ]) {
     const svg = posterSvg(theme);
     writeFileSync(join(root, "assets", file), svg);

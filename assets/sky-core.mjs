@@ -268,22 +268,21 @@ export function createScene({ config = SKY_DEFAULTS, cols, rows, cellPx }) {
 }
 
 const STAR_PERIOD = 1 << 30;
+const TINT_WHITE = 1;
+const TINT_YELLOW = 2;
 
 function starHash(x, y, seed, offset) {
   return hash(x, y, (seed + offset) | 0, STAR_PERIOD);
 }
 
 function clamp01(value) {
-  return value < 0 ? 0 : value > 1 ? 1 : value;
+  if (value < 0) return 0;
+  if (value > 1) return 1;
+  return value;
 }
 
-function stamp(peak, tint, ref, cols, rows, x, y, value, color, star) {
-  if (x < 0 || y < 0 || x >= cols || y >= rows) return;
-  const index = y * cols + x;
-  if (value <= peak[index]) return;
-  peak[index] = value;
-  tint[index] = color;
-  ref[index] = star;
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, value));
 }
 
 /**
@@ -300,21 +299,31 @@ export function createStarLayer({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
   const seed = (config.seed ^ 0x9e3779b9) >>> 0;
   const peak = new Float32Array(cols * rows);
   const tint = new Uint8Array(cols * rows);
-  const ref = new Int32Array(cols * rows).fill(-1);
+  const owner = new Int32Array(cols * rows).fill(-1);
   const stars = [];
 
-  const density = clamp01(config.starDensity / 100) * 100;
-  const large = clamp01(config.starLarge / 100) * 100;
-  const medium = clamp01(config.starMedium / 100) * 100;
-  const yellow = clamp01(config.starYellow / 100) * 100;
-  const bright = clamp01(config.starBright / 100);
+  const densityPercent = clampPercent(config.starDensity);
+  const largePercent = clampPercent(config.starLarge);
+  const mediumPercent = clampPercent(config.starMedium);
+  const yellowPercent = clampPercent(config.starYellow);
+  const brightGain = clamp01(config.starBright / 100);
 
   const cellCols = Math.ceil(cols / cell);
   const cellRows = Math.ceil(rows / cell);
 
+  /** Paint one block when it is brighter than whatever already owns it. */
+  function paint(x, y, value, tintKey, starIndex) {
+    if (x < 0 || y < 0 || x >= cols || y >= rows) return;
+    const index = y * cols + x;
+    if (value <= peak[index]) return;
+    peak[index] = value;
+    tint[index] = tintKey;
+    owner[index] = starIndex;
+  }
+
   for (let cy = 0; cy < cellRows; cy += 1) {
     for (let cx = 0; cx < cellCols; cx += 1) {
-      if (starHash(cx, cy, seed, 0) * 100 >= density) continue;
+      if (starHash(cx, cy, seed, 0) * 100 >= densityPercent) continue;
 
       const bx = Math.min(
         cols - 1,
@@ -326,38 +335,32 @@ export function createStarLayer({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
       );
 
       const sizeRoll = starHash(cx, cy, seed, 3) * 100;
-      const size = sizeRoll < large ? 3 : sizeRoll < large + medium ? 2 : 1;
-      const color = starHash(cx, cy, seed, 4) * 100 < yellow ? 2 : 1;
+      let size = 1;
+      if (sizeRoll < largePercent) size = 3;
+      else if (sizeRoll < largePercent + mediumPercent) size = 2;
+      const tintKey =
+        starHash(cx, cy, seed, 4) * 100 < yellowPercent
+          ? TINT_YELLOW
+          : TINT_WHITE;
       const phase = starHash(cx, cy, seed, 5) * Math.PI * 2;
       const variance = 0.8 + 0.2 * starHash(cx, cy, seed, 6);
-      const index = stars.length;
-      stars.push({ phase, size, color, gain: 1 });
+      const starIndex = stars.length;
+      stars.push({ phase, size, gain: 1 });
 
-      const core = bright * variance;
+      const core = brightGain * variance;
       const edge = core * (0.5 + 0.1 * starHash(cx, cy, seed, 7));
-      stamp(peak, tint, ref, cols, rows, bx, by, core, color, index);
+      paint(bx, by, core, tintKey, starIndex);
 
       if (size === 2) {
         const direction = Math.floor(starHash(cx, cy, seed, 8) * 8);
         const dx = [1, -1, 0, 0, 1, 1, -1, -1][direction];
         const dy = [0, 0, 1, -1, 1, -1, 1, -1][direction];
-        stamp(
-          peak,
-          tint,
-          ref,
-          cols,
-          rows,
-          bx + dx,
-          by + dy,
-          edge,
-          color,
-          index,
-        );
+        paint(bx + dx, by + dy, edge, tintKey, starIndex);
       } else if (size === 3) {
-        stamp(peak, tint, ref, cols, rows, bx + 1, by, edge, color, index);
-        stamp(peak, tint, ref, cols, rows, bx - 1, by, edge, color, index);
-        stamp(peak, tint, ref, cols, rows, bx, by + 1, edge, color, index);
-        stamp(peak, tint, ref, cols, rows, bx, by - 1, edge, color, index);
+        paint(bx + 1, by, edge, tintKey, starIndex);
+        paint(bx - 1, by, edge, tintKey, starIndex);
+        paint(bx, by + 1, edge, tintKey, starIndex);
+        paint(bx, by - 1, edge, tintKey, starIndex);
         const corner = edge * 0.52;
         for (const [dx, dy] of [
           [1, 1],
@@ -365,24 +368,13 @@ export function createStarLayer({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
           [-1, 1],
           [-1, -1],
         ]) {
-          stamp(
-            peak,
-            tint,
-            ref,
-            cols,
-            rows,
-            bx + dx,
-            by + dy,
-            corner,
-            color,
-            index,
-          );
+          paint(bx + dx, by + dy, corner, tintKey, starIndex);
         }
       }
     }
   }
 
-  return { peak, tint, ref, stars };
+  return { peak, tint, owner, stars };
 }
 
 /**
@@ -595,14 +587,14 @@ export function renderFrame({
   time = 0,
   offset = 0,
   offsetY = 0,
-  ramp = RAMP,
+  dark = false,
   starLayer = null,
-  starfield = false,
 }) {
   const { data, evolve: flow, width, cols, rows, height, margin } = field;
   const pixels = out ?? new Uint8ClampedArray(cols * rows * 4);
 
-  const tones = Math.min(RAMP.length, Math.max(2, config.tones | 0));
+  const ramp = dark ? DARK_RAMP : RAMP;
+  const tones = Math.min(ramp.length, Math.max(2, config.tones | 0));
   const dither = config.dither / 100;
   const bandThresholds = thresholds(tones, config.stark);
 
@@ -618,7 +610,7 @@ export function renderFrame({
   const warpSpeed = (config.warpSpeed / 100) * 0.8;
   const drift = wrap(offset, width);
 
-  const stars = starfield && starLayer ? starLayer : null;
+  const stars = dark && starLayer ? starLayer : null;
   const starDither = stars ? config.starDither / 100 : 0;
   if (stars) updateStarGains(stars, config, time);
 
@@ -714,9 +706,10 @@ export function renderFrame({
       // band's own edge is already dithered, so stars dissolve into it.
       if (stars && band === 0) {
         const starIndex = y * cols + x;
-        const owner = stars.ref[starIndex];
-        if (owner >= 0) {
-          const value = stars.peak[starIndex] * stars.stars[owner].gain;
+        const starIndexOwner = stars.owner[starIndex];
+        if (starIndexOwner >= 0) {
+          const value =
+            stars.peak[starIndex] * stars.stars[starIndexOwner].gain;
           const level = toneIndex(
             value,
             STAR_THRESHOLDS,

@@ -7,15 +7,16 @@
  * file re-syncs the copied header's strips when nav.js asks it to.
  */
 
-const root = document.documentElement;
-const STORAGE_KEY = "theme";
+import { DARK, LIGHT, THEME_STORAGE_KEY, isDark } from "./theme-core.mjs";
 
-function isDark() {
-  return root.dataset.theme === "dark";
+const root = document.documentElement;
+
+function currentDark() {
+  return isDark(root.dataset.theme);
 }
 
 function sync() {
-  const dark = isDark();
+  const dark = currentDark();
   const label = dark ? "Switch to light theme" : "Switch to dark theme";
   for (const control of document.querySelectorAll(".swatches")) {
     control.setAttribute("aria-pressed", String(dark));
@@ -26,11 +27,11 @@ function sync() {
 
 /** @param {boolean} dark */
 function setTheme(dark) {
-  if (dark) root.dataset.theme = "dark";
+  if (dark) root.dataset.theme = DARK;
   else delete root.dataset.theme;
 
   try {
-    localStorage.setItem(STORAGE_KEY, dark ? "dark" : "light");
+    localStorage.setItem(THEME_STORAGE_KEY, dark ? DARK : LIGHT);
   } catch {
     // A blocked storage leaves the choice for this page only.
   }
@@ -44,7 +45,7 @@ document.addEventListener("click", (event) => {
   const control = event.target.closest(".swatches");
   if (!control) return;
   event.preventDefault();
-  setTheme(!isDark());
+  setTheme(!currentDark());
 });
 
 document.addEventListener("theme-sync", sync);

@@ -10,14 +10,13 @@
  * gradient, so a canvas block still reads as sky.
  */
 
+import { isDark } from "./theme-core.mjs";
 import {
-  DARK_RAMP,
-  RAMP,
   SKY_DEFAULTS,
   createScene,
   frameLayout,
   renderFrame,
-} from "/assets/sky-core.mjs";
+} from "./sky-core.mjs";
 
 // A visit gets its own sky. The seed is chosen once per page load, so the
 // field stays put across internal navigation and is only new on a real load.
@@ -50,7 +49,7 @@ if (sky && canvas) {
 
     let field = null;
     let starLayer = null;
-    let dark = document.documentElement.dataset.theme === "dark";
+    let dark = isDark(document.documentElement.dataset.theme);
     let image = null;
     let pixels = null;
     let cellPx = 4;
@@ -83,9 +82,8 @@ if (sky && canvas) {
         time: elapsed,
         offset,
         offsetY,
-        ramp: dark ? DARK_RAMP : RAMP,
+        dark,
         starLayer,
-        starfield: dark,
       });
       context.putImageData(image, 0, 0);
     }
@@ -179,7 +177,7 @@ if (sky && canvas) {
     // The palette strip flips the theme without touching the field or the
     // seed; the same clouds and stars simply paint from the other ramp.
     document.addEventListener("themechange", () => {
-      const next = document.documentElement.dataset.theme === "dark";
+      const next = isDark(document.documentElement.dataset.theme);
       if (next === dark) return;
       dark = next;
       if (field) draw();
