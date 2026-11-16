@@ -55,6 +55,20 @@ function focusMain() {
   sheet.focus({ preventScroll: true });
 }
 
+function rememberScroll() {
+  history.replaceState({ ...history.state, scrollY: window.scrollY }, "");
+}
+
+let scrollTimer = 0;
+window.addEventListener(
+  "scroll",
+  () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = window.setTimeout(rememberScroll, 100);
+  },
+  { passive: true },
+);
+
 async function navigate(url, { push = true, scrollY = 0 } = {}) {
   controller?.abort();
   const request = new AbortController();
@@ -112,6 +126,7 @@ document.addEventListener("click", (event) => {
   if (url.pathname === location.pathname && url.search === location.search)
     return;
 
+  rememberScroll();
   navigate(link.href);
 });
 
@@ -120,7 +135,7 @@ window.addEventListener("popstate", (event) => {
 });
 
 // Remember where the reader was so Back can return them there.
-history.replaceState({ scrollY: window.scrollY }, "");
+rememberScroll();
 
 // The career record folds its entries into <details>. Closed ones would print
 // as bare summaries, so open every record for the print dialog and put back
