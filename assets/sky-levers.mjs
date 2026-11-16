@@ -349,6 +349,19 @@ const STYLE = `
     border-top: 1px solid var(--levers-rule);
   }
   .sky-levers-note { color: var(--levers-muted); font-size: 10px; line-height: 1.3; padding-top: 6px; }
+  .sky-levers-handle-end {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sky-levers .sky-levers-collapse {
+    display: grid; place-items: center;
+    width: 18px; height: 18px; padding: 0;
+    font: inherit; line-height: 1; cursor: pointer;
+    border: 1px solid var(--levers-border); border-radius: 5px;
+    background: transparent; color: var(--levers-muted);
+  }
+  .sky-levers .sky-levers-collapse:hover {
+    color: var(--ink, #14140f); border-color: var(--levers-track);
+  }
   .sky-levers-toggle {
     font: inherit; padding: 6px 10px; border-radius: 8px; cursor: pointer;
     border: 1px solid var(--levers-border); color: var(--levers-muted);
@@ -381,6 +394,10 @@ if (controller) {
 
   const panel = document.createElement("div");
   panel.className = "sky-levers-panel";
+  panel.id = "sky-levers-panel";
+  panel.setAttribute("role", "group");
+  panel.setAttribute("aria-label", "Sky levers");
+  toggle.setAttribute("aria-controls", "sky-levers-panel");
 
   const rows = new Map();
 
@@ -410,7 +427,12 @@ if (controller) {
     <div class="sky-levers-handle" tabindex="0"
          title="drag to move · double-click to reset">
       <span>sky levers</span>
-      <span class="sky-levers-grip" aria-hidden="true"></span>
+      <span class="sky-levers-handle-end">
+        <span class="sky-levers-grip" aria-hidden="true"></span>
+        <button type="button" class="sky-levers-collapse"
+                aria-label="Collapse sky levers" aria-expanded="true"
+                aria-controls="sky-levers-panel">−</button>
+      </span>
     </div>
     <h4>sky</h4>
     <div class="sky-levers-row seg">
@@ -649,13 +671,25 @@ if (controller) {
     place(rect.left, rect.top);
   });
 
-  toggle.addEventListener("click", () => {
-    const open = panel.hidden;
+  const collapse = /** @type {HTMLButtonElement | null} */ (
+    panel.querySelector(".sky-levers-collapse")
+  );
+
+  /** @param {boolean} open @param {boolean} [focus] */
+  function setOpen(open, focus = false) {
     panel.hidden = !open;
     toggle.hidden = open;
     toggle.setAttribute("aria-expanded", String(open));
-  });
-  toggle.hidden = true;
+    collapse?.setAttribute("aria-expanded", String(open));
+    if (focus) {
+      if (open) collapse?.focus();
+      else toggle.focus();
+    }
+  }
+
+  toggle.addEventListener("click", () => setOpen(true, true));
+  collapse?.addEventListener("click", () => setOpen(false, true));
+  setOpen(true);
 
   setMode(config.mode);
 }
