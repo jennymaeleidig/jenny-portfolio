@@ -778,12 +778,7 @@ test("the twinkle freezes, filters by size, and holds three levels", () => {
     true,
   );
 
-  const config = {
-    ...starConfig,
-    starTwinkle: 70,
-    starTwinkleSpeed: 220,
-    starTwinkleSize: 1,
-  };
+  const config = { ...starConfig };
   const layer = createStarLayer(starLayout);
   const gains = new Set();
   for (let time = 0; time < 10; time += 0.37) {
@@ -797,6 +792,13 @@ test("the twinkle freezes, filters by size, and holds three levels", () => {
       `${gain} is not a held twinkle level`,
     );
     assert.ok(gain <= 1, "the twinkle never blooms");
+  }
+
+  for (const level of [1, 0.65, 0.37]) {
+    assert.ok(
+      [...gains].some((gain) => Math.abs(gain - level) < 1e-12),
+      `${level} is reached at the shipped twinkle values`,
+    );
   }
 
   updateStarGains(layer, config, 0);

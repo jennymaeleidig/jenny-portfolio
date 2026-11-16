@@ -653,7 +653,7 @@ main > :last-child > :last-child {
  * sits on the text line it belongs to, so it reads as part of that line.
  * Colours are assigned in token order, so the palette lives in one place.
  */
-.swatches {
+.palette-strip {
   /*
    * The squares inherit --swatch-size from the sheet, so the strip and the
    * paper's own inset stay one number. The strip never takes room from the
@@ -678,43 +678,43 @@ main > :last-child > :last-child {
   cursor: pointer;
 }
 
-.swatches > * {
+.palette-strip > * {
   display: block;
   flex: 0 0 var(--swatch-size);
   width: var(--swatch-size);
   height: var(--swatch-size);
 }
 
-.swatches > * + * {
+.palette-strip > * + * {
   margin-top: 0;
 }
 
-.swatches > :nth-child(1) {
+.palette-strip > :nth-child(1) {
   background: var(--paper);
 }
-.swatches > :nth-child(2) {
+.palette-strip > :nth-child(2) {
   background: var(--ink);
 }
-.swatches > :nth-child(3) {
+.palette-strip > :nth-child(3) {
   background: var(--accent);
 }
-.swatches > :nth-child(4) {
+.palette-strip > :nth-child(4) {
   background: var(--accent-bright);
 }
-.swatches > :nth-child(5) {
+.palette-strip > :nth-child(5) {
   background: var(--sky-1);
 }
-.swatches > :nth-child(6) {
+.palette-strip > :nth-child(6) {
   background: var(--sky-2);
 }
-.swatches > :nth-child(7) {
+.palette-strip > :nth-child(7) {
   background: var(--sky-3);
 }
-.swatches > :nth-child(8) {
+.palette-strip > :nth-child(8) {
   background: var(--sky-4);
 }
 
-.site-header .swatches {
+.site-header .palette-strip {
   top: var(--swatch-inset-y);
 }
 
@@ -722,7 +722,7 @@ main > :last-child > :last-child {
  * The footer strip runs the other way, deep blue to paper, and hangs off the
  * left edge so the palette closes the sheet the way the header opens it.
  */
-.site-footer .swatches {
+.site-footer .palette-strip {
   right: auto;
   bottom: var(--swatch-inset-y);
   left: var(--sheet-pad-x);
@@ -1085,6 +1085,7 @@ th {
 @media print {
   :root,
   :root[data-theme="dark"] {
+    color-scheme: light;
     --paper: #fff;
     --ink: #000;
     --accent: #b83d05;

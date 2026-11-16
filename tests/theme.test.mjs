@@ -62,7 +62,7 @@ test("the pages start light and leave the choice to the boot script", () => {
 });
 
 test("the strip syncs every control from the active theme", () => {
-  assert.match(theme, /document\.querySelectorAll\("\.swatches"\)/);
+  assert.match(theme, /document\.querySelectorAll\("\.palette-strip"\)/);
   assert.match(
     theme,
     /control\.setAttribute\("aria-pressed", String\(dark\)\)/,
@@ -73,7 +73,7 @@ test("the strip syncs every control from the active theme", () => {
 });
 
 test("clicking a strip stores the choice and repaints the theme", () => {
-  assert.match(theme, /event\.target\.closest\("\.swatches"\)/);
+  assert.match(theme, /event\.target\.closest\("\.palette-strip"\)/);
   assert.match(theme, /setTheme\(!currentDark\(\)\)/);
   assert.match(
     theme,

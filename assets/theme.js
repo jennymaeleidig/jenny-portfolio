@@ -18,7 +18,7 @@ function currentDark() {
 function sync() {
   const dark = currentDark();
   const label = dark ? "Switch to light theme" : "Switch to dark theme";
-  for (const control of document.querySelectorAll(".swatches")) {
+  for (const control of document.querySelectorAll(".palette-strip")) {
     control.setAttribute("aria-pressed", String(dark));
     control.setAttribute("aria-label", label);
     control.setAttribute("title", label);
@@ -42,7 +42,7 @@ function setTheme(dark) {
 
 document.addEventListener("click", (event) => {
   if (!(event.target instanceof Element)) return;
-  const control = event.target.closest(".swatches");
+  const control = event.target.closest(".palette-strip");
   if (!control) return;
   event.preventDefault();
   setTheme(!currentDark());

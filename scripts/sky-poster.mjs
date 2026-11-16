@@ -9,9 +9,8 @@
  * fraction of an equivalent vector poster.
  *
  * Each SVG records a hash of the raw frame. tests/assets.test.mjs recomputes
- * the light poster's hash from the core, so a changed seed or light palette
- * fails the suite instead of quietly shipping a stale fallback. The dark
- * poster has no matching assertion yet.
+ * both hashes from the core, so a changed seed or palette fails the suite
+ * instead of quietly shipping a stale fallback.
  *
  *   node scripts/sky-poster.mjs
  */

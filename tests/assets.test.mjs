@@ -232,6 +232,11 @@ test("the sheet insets its content from its own border", () => {
   const print = siteCss.slice(siteCss.indexOf("@media print"));
   assert.match(
     print,
+    /:root,\s*\n\s*:root\[data-theme="dark"\]\s*\{[^}]*color-scheme:\s*light/s,
+    "print tells the UA to use the light scheme",
+  );
+  assert.match(
+    print,
     /\.sheet\s*\{[^}]*padding:\s*0/s,
     "print drops the sheet padding",
   );
@@ -302,7 +307,7 @@ test("the catalogue and the header stay readable on a narrow viewport", () => {
 
 test("every page runs the palette strip in its header and its footer", () => {
   const strip =
-    /<button class="swatches" type="button" aria-pressed="false" aria-label="Switch to dark theme" title="Switch to dark theme">((?:<span><\/span>){8})<\/button>/;
+    /<button class="palette-strip" type="button" aria-pressed="false" aria-label="Switch to dark theme" title="Switch to dark theme">((?:<span><\/span>){8})<\/button>/;
 
   for (const file of htmlFiles) {
     const html = readFileSync(file, "utf8");
@@ -324,17 +329,17 @@ test("every page runs the palette strip in its header and its footer", () => {
 
   assert.match(
     siteCss,
-    /\.swatches\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*nowrap/s,
+    /\.palette-strip\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*nowrap/s,
     "the strip is one row that never wraps",
   );
   assert.match(
     siteCss,
-    /\.swatches\s*\{[^}]*position:\s*absolute[^}]*right:\s*var\(--sheet-pad-x\)/s,
+    /\.palette-strip\s*\{[^}]*position:\s*absolute[^}]*right:\s*var\(--sheet-pad-x\)/s,
     "the strip is set into the paper, inset the same as the header and footer",
   );
   assert.match(
     siteCss,
-    /\.swatches\s*\{[^}]*appearance:\s*none[^}]*cursor:\s*pointer/s,
+    /\.palette-strip\s*\{[^}]*appearance:\s*none[^}]*cursor:\s*pointer/s,
     "the strip is a button reset with a pointer",
   );
   assert.match(
@@ -344,22 +349,22 @@ test("every page runs the palette strip in its header and its footer", () => {
   );
   assert.match(
     siteCss,
-    /\.site-header \.swatches\s*\{\s*top:\s*var\(--swatch-inset-y\)/s,
+    /\.site-header \.palette-strip\s*\{\s*top:\s*var\(--swatch-inset-y\)/s,
     "the header strip sits on the header's text line",
   );
   assert.match(
     siteCss,
-    /\.site-footer \.swatches\s*\{[^}]*bottom:\s*var\(--swatch-inset-y\)/s,
+    /\.site-footer \.palette-strip\s*\{[^}]*bottom:\s*var\(--swatch-inset-y\)/s,
     "the footer strip sits on the footer's text line",
   );
   assert.match(
     siteCss,
-    /\.site-footer \.swatches\s*\{[^}]*left:\s*var\(--sheet-pad-x\)[^}]*flex-direction:\s*row-reverse/s,
+    /\.site-footer \.palette-strip\s*\{[^}]*left:\s*var\(--sheet-pad-x\)[^}]*flex-direction:\s*row-reverse/s,
     "the footer strip hangs off the left edge, deep blue first",
   );
   assert.match(
     siteCss,
-    /\.swatches > \*\s*\{[^}]*width:\s*var\(--swatch-size\)[^}]*height:\s*var\(--swatch-size\)/s,
+    /\.palette-strip > \*\s*\{[^}]*width:\s*var\(--swatch-size\)[^}]*height:\s*var\(--swatch-size\)/s,
     "every square is 1x1",
   );
   const sheetBlock = siteCss.match(/\.sheet\s*\{([^}]*)\}/s)?.[1] ?? "";
@@ -375,7 +380,7 @@ test("every page runs the palette strip in its header and its footer", () => {
   );
   assert.match(
     siteCss,
-    /\.swatches\s*\{[^}]*font-size:\s*var\(--sheet-font-size\)/s,
+    /\.palette-strip\s*\{[^}]*font-size:\s*var\(--sheet-font-size\)/s,
     "the strip measures its inset in the sheet's font, so its edge lands on the text's",
   );
   assert.match(
@@ -387,7 +392,7 @@ test("every page runs the palette strip in its header and its footer", () => {
     assert.match(
       siteCss,
       new RegExp(
-        `\\.swatches > :nth-child\\(${index + 1}\\)\\s*\\{\\s*background:\\s*var\\(--${name}\\)`,
+        `\\.palette-strip > :nth-child\\(${index + 1}\\)\\s*\\{\\s*background:\\s*var\\(--${name}\\)`,
       ),
       `square ${index + 1} is --${name}`,
     );

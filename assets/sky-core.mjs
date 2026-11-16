@@ -12,8 +12,8 @@
  *   3. tone bands are dithered, so boundaries dissolve instead of snapping;
  *   4. the cloud quantiser only ever emits indices into the canonical ramp.
  *
- * The optional star layer paints its own tints over the clear band; tests do
- * not cover it yet.
+ * The optional star layer paints its own tints over the clear band; its layout
+ * and twinkle are tested in tests/sky.test.mjs.
  *
  * The browser layer (assets/sky.js) is the only part that touches the DOM.
  *
@@ -370,7 +370,7 @@ export function createStarLayer({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
 
 /** How long a star holds one twinkle step, in scaled seconds. */
 const TWINKLE_HOLD = 0.25;
-const TWINKLE_DEADBAND = 0.03;
+const TWINKLE_DEADBAND = 0.005;
 
 /**
  * Pick the next twinkle step, with a deadband around each boundary so a star

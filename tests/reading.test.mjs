@@ -1,6 +1,7 @@
 // Reading the site: no JavaScript, no legacy routes, 404 and the sitemap
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { DARK, THEME_STORAGE_KEY } from "../assets/theme-core.mjs";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -73,12 +74,14 @@ test("every page carries its content without JavaScript", () => {
     );
     assert.match(
       inline[0][2],
-      /localStorage\.getItem\("theme"\) === "dark"/,
+      new RegExp(
+        `localStorage\\.getItem\\("${THEME_STORAGE_KEY}"\\) === "${DARK}"`,
+      ),
       `${relative(root, file)} boots from the stored theme`,
     );
     assert.match(
       inline[0][2],
-      /document\.documentElement\.dataset\.theme = "dark"/,
+      new RegExp(`document\\.documentElement\\.dataset\\.theme = "${DARK}"`),
       `${relative(root, file)} boots into the dark token`,
     );
     assert.ok(
