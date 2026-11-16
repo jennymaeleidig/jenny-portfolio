@@ -122,9 +122,9 @@ export const SKY_DEFAULTS = Object.freeze({
   starYellow: 37, // share of stars with the yellow core, %
   starBright: 90, // peak intensity, %
   starDither: 24, // ordered dither on the star bands, %
-  starTwinkle: 67, // how far a large star dims, %
-  starTwinkleSpeed: 170, // multiplier on the twinkle periods, %
-  starTwinkleSize: 3, // smallest star that twinkles, in blocks
+  starTwinkle: 70, // how far a large star dims, %
+  starTwinkleSpeed: 220, // multiplier on the twinkle periods, %
+  starTwinkleSize: 2, // smallest star that twinkles, in blocks
 });
 
 /**
