@@ -22,7 +22,7 @@ function syncHeader(nextDocument) {
   const currentHeader = document.querySelector(".site-header");
   const nextHeader = nextDocument.querySelector(".site-header");
   if (!currentHeader || !nextHeader) return;
-  currentHeader.innerHTML = nextHeader.innerHTML;
+  currentHeader.replaceChildren(...nextHeader.childNodes);
 }
 
 let controller = null;
@@ -88,7 +88,7 @@ async function navigate(url, { push = true, scrollY = 0 } = {}) {
 
     const swap = () => {
       document.title = nextDocument.title;
-      sheet.innerHTML = next.innerHTML;
+      sheet.replaceChildren(...next.childNodes);
       syncHeader(nextDocument);
       document.dispatchEvent(new Event("theme-sync"));
       focusMain();
@@ -104,7 +104,7 @@ async function navigate(url, { push = true, scrollY = 0 } = {}) {
 
     window.scrollTo(0, scrollY);
   } catch (error) {
-    if (error.name !== "AbortError") location.href = url;
+    if (error.name !== "AbortError") location.assign(url);
   } finally {
     if (controller === request) controller = null;
   }

@@ -60,15 +60,43 @@ test("every page carries its content without JavaScript", () => {
       `${relative(root, file)} must carry its content in markup`,
     );
 
-    for (const [tag] of html.matchAll(/<script\b[^>]*>/gi)) {
+    const scripts = [
+      ...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi),
+    ];
+    const inline = scripts.filter(
+      ([, attributes]) => !/\bsrc=/.test(attributes),
+    );
+    assert.equal(
+      inline.length,
+      1,
+      `${relative(root, file)} carries one inline boot script`,
+    );
+    assert.match(
+      inline[0][2],
+      /localStorage\.getItem\("theme"\) === "dark"/,
+      `${relative(root, file)} boots from the stored theme`,
+    );
+    assert.match(
+      inline[0][2],
+      /document\.documentElement\.dataset\.theme = "dark"/,
+      `${relative(root, file)} boots into the dark token`,
+    );
+    assert.ok(
+      html.indexOf(inline[0][0]) < html.indexOf('<link rel="stylesheet"'),
+      `${relative(root, file)} applies the theme before its stylesheet`,
+    );
+
+    for (const [, attributes] of scripts.filter(([, value]) =>
+      /\bsrc=/.test(value),
+    )) {
       assert.match(
-        tag,
+        attributes,
         /type="module"/,
         `${relative(root, file)} must not use a classic script`,
       );
       assert.match(
-        tag,
-        /src="\/assets\/(sky|sky-levers|nav)\.js"/,
+        attributes,
+        /src="\/assets\/(sky|sky-levers|theme|nav)\.js"/,
         `${relative(root, file)} may only load the site's own modules`,
       );
     }
@@ -83,8 +111,38 @@ test("client-side navigation is a progressive enhancement", () => {
     home,
     /<script type="module" src="\/assets\/nav\.js"><\/script>/,
   );
+  assert.match(
+    home,
+    /<script type="module" src="\/assets\/theme\.js"><\/script>/,
+  );
   assert.match(nav, /history\.pushState/);
-  assert.match(nav, /location\.href = url/);
+  assert.match(nav, /location\.assign\(url\)/);
+});
+
+test("navigation remembers the scroll position Back should restore", () => {
+  const nav = readFileSync(join(output, "assets", "nav.js"), "utf8");
+
+  assert.match(
+    nav,
+    /window\.addEventListener\(\s*"scroll",[\s\S]*?setTimeout\(rememberScroll, 100\)/,
+    "scrolling remembers the current entry",
+  );
+  assert.match(
+    nav,
+    /history\.replaceState\(\{ \.\.\.history\.state, scrollY: window\.scrollY \}, ""\)/,
+    "the remembered state keeps the entry's other fields",
+  );
+  assert.match(
+    nav,
+    /rememberScroll\(\);\s*navigate\(link\.href\);/,
+    "a click saves the page being left",
+  );
+  assert.match(
+    nav,
+    /event\.state\?\.scrollY \?\? 0/,
+    "popstate reads the target entry's offset",
+  );
+  assert.match(nav, /window\.scrollTo\(0, scrollY\)/);
 });
 
 test("the link to the page already on screen is a no-op, not a reload", () => {
