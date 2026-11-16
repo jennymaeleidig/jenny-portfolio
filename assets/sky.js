@@ -5,17 +5,19 @@
  * frame loop, and the three reasons to stop: the tab is hidden, the canvas is
  * out of view, or the reader asked for reduced motion.
  *
- * No content depends on this file. Without it the poster image still covers
- * the viewport. Without a 2D context the layer shows the poster over its CSS
- * gradient, so a canvas block still reads as sky.
+ * No content depends on this file. Without JavaScript the poster image covers
+ * the viewport; if this module fails to load, the CSS gradient remains. Without
+ * a 2D context the layer shows the poster over that gradient, so a canvas block
+ * still reads as sky.
  */
 
+import { isDark } from "./theme-core.mjs";
 import {
   SKY_DEFAULTS,
   createScene,
   frameLayout,
   renderFrame,
-} from "/assets/sky-core.mjs";
+} from "./sky-core.mjs";
 
 // A visit gets its own sky. The seed is chosen once per page load, so the
 // field stays put across internal navigation and is only new on a real load.
@@ -47,6 +49,8 @@ if (sky && canvas) {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     let field = null;
+    let starLayer = null;
+    let dark = isDark(document.documentElement.dataset.theme);
     let image = null;
     let pixels = null;
     let cellPx = 4;
@@ -79,6 +83,8 @@ if (sky && canvas) {
         time: elapsed,
         offset,
         offsetY,
+        dark,
+        starLayer,
       });
       context.putImageData(image, 0, 0);
     }
@@ -114,6 +120,7 @@ if (sky && canvas) {
         cellPx,
       });
       field = scene.field;
+      starLayer = scene.starLayer;
       offsetY = scene.offsetY;
       image = context.createImageData(layout.cols, layout.rows);
       pixels = image.data;
@@ -167,6 +174,16 @@ if (sky && canvas) {
     }
 
     reducedMotion.addEventListener("change", start);
+
+    // The palette strip flips the theme without touching the field or the
+    // seed; the clouds repaint from the other ramp, and stars appear only in
+    // dark.
+    document.addEventListener("themechange", () => {
+      const next = isDark(document.documentElement.dataset.theme);
+      if (next === dark) return;
+      dark = next;
+      if (field) draw();
+    });
 
     window.addEventListener("resize", () => {
       clearTimeout(resizeTimer);

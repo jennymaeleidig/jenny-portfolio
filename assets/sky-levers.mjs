@@ -2,9 +2,10 @@
  * Development levers for the sky. Emitted only by a SKY_LEVERS=1 build.
  *
  * The prototype's tuning panel, wired to the config the canvas already reads.
- * `scripts/post-build.sh` copies this file only when the flag is set, and
- * `layouts/shell.sh` only writes the tag and the body attribute when it is
- * set; a production tree has neither, so this module cannot be reached.
+ * `scripts/post-build.sh` copies the asset tree and deletes this file unless
+ * the flag is set, and `layouts/shell.sh` only writes the tag and body
+ * attribute when it is set; a production tree has neither, so this module
+ * cannot be reached.
  *
  * `assets/sky.js` publishes the live controller as `globalThis.skyLevers` when
  * it sees the attribute. Tuning belongs in `SKY_DEFAULTS` in
@@ -12,7 +13,7 @@
  * clipboard in that shape.
  */
 
-import { OFFSET_Y_LIMIT } from "/assets/sky-core.mjs";
+import { OFFSET_Y_LIMIT } from "./sky-core.mjs";
 
 const controller = globalThis.skyLevers;
 
@@ -155,10 +156,111 @@ const sliders = [
     life: true,
     hint: "how fast the wave travels",
   },
+  {
+    key: "starCell",
+    label: "star cell",
+    min: 12,
+    max: 80,
+    step: 1,
+    rebuild: true,
+    group: "stars",
+    hint: "jittered grid spacing, CSS px: fewer, larger gaps as it grows",
+  },
+  {
+    key: "starDensity",
+    label: "star density",
+    min: 0,
+    max: 100,
+    step: 1,
+    rebuild: true,
+    group: "stars",
+    hint: "share of grid cells that hold a star",
+  },
+  {
+    key: "starMedium",
+    label: "medium stars",
+    min: 0,
+    max: 50,
+    step: 1,
+    rebuild: true,
+    group: "stars",
+    hint: "share of stars that are two blocks across",
+  },
+  {
+    key: "starLarge",
+    label: "large stars",
+    min: 0,
+    max: 30,
+    step: 1,
+    rebuild: true,
+    group: "stars",
+    hint: "share of stars shaped as the full plus with dim corners",
+  },
+  {
+    key: "starYellow",
+    label: "yellow share",
+    min: 0,
+    max: 100,
+    step: 1,
+    rebuild: true,
+    group: "stars",
+    hint: "share of stars with the yellow core: 0 is all white",
+  },
+  {
+    key: "starBright",
+    label: "star bright",
+    min: 0,
+    max: 100,
+    step: 1,
+    rebuild: true,
+    group: "stars",
+    hint: "peak star intensity",
+  },
+  {
+    key: "starDither",
+    label: "star dither",
+    min: 0,
+    max: 100,
+    step: 1,
+    group: "stars",
+    hint: "ordered dither on the star bands: 0 is a hard edge",
+  },
+  {
+    key: "starTwinkle",
+    label: "twinkle",
+    min: 0,
+    max: 100,
+    step: 1,
+    group: "stars",
+    hint: "how deep the dim step goes: 0 stops the twinkle",
+  },
+  {
+    key: "starTwinkleSpeed",
+    label: "twinkle speed",
+    min: 0,
+    max: 300,
+    step: 5,
+    group: "stars",
+    hint: "multiplier on the twinkle speed",
+  },
+  {
+    key: "starTwinkleSize",
+    label: "twinkle from",
+    min: 1,
+    max: 3,
+    step: 1,
+    group: "stars",
+    hint: "smallest star tier that twinkles: 1 is one block, 3 is the plus",
+  },
 ];
 
 const STYLE = `
   .sky-levers {
+    --levers-muted: color-mix(in srgb, var(--ink, #14140f) 70%, var(--paper, #f4f4ed));
+    --levers-rule: color-mix(in srgb, var(--ink, #14140f) 16%, var(--paper, #f4f4ed));
+    --levers-border: color-mix(in srgb, var(--ink, #14140f) 24%, var(--paper, #f4f4ed));
+    --levers-track: color-mix(in srgb, var(--ink, #14140f) 38%, var(--paper, #f4f4ed));
+    --levers-surface: color-mix(in srgb, var(--paper, #f4f4ed) 96%, transparent);
     position: fixed; left: 16px; top: 16px; z-index: 10;
     margin: 0;
     font: 11px/1.25 var(--font-family, ui-monospace, monospace);
@@ -174,32 +276,32 @@ const STYLE = `
     max-height: calc(100dvh - 32px);
     overflow-y: auto; overscroll-behavior: contain;
     padding: 10px 12px;
-    background: rgba(251, 250, 248, .96);
+    background: var(--levers-surface);
     border: var(--border-thickness, 2px) solid var(--sky-2, #c5d5e5);
     border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(20, 20, 15, .12);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--ink, #14140f) 18%, transparent);
   }
   .sky-levers-panel[hidden] { display: none; }
   .sky-levers-handle {
     display: flex; align-items: center; justify-content: space-between;
     gap: 8px; padding-bottom: 6px; margin-bottom: 7px;
-    border-bottom: 1px solid #e6e5d9;
+    border-bottom: 1px solid var(--levers-rule);
     font-size: 10px; line-height: 1.2; letter-spacing: .04em;
-    text-transform: uppercase; color: #5c5b52;
+    text-transform: uppercase; color: var(--levers-muted);
     cursor: grab; touch-action: none; user-select: none;
   }
   .sky-levers.dragging .sky-levers-handle { cursor: grabbing; }
   .sky-levers-grip {
     width: 12px; height: 9px;
-    background: repeating-linear-gradient(180deg, #b9b8ad 0 1px, transparent 1px 4px);
+    background: repeating-linear-gradient(180deg, var(--levers-muted) 0 1px, transparent 1px 4px);
   }
   .sky-levers h4 {
     font-size: 10px; line-height: 1.2; letter-spacing: .04em;
-    text-transform: uppercase; color: #5c5b52;
+    text-transform: uppercase; color: var(--levers-muted);
     margin-bottom: 5px;
   }
   .sky-levers h4:not(:first-child) {
-    margin-top: 9px; padding-top: 7px; border-top: 1px solid #e6e5d9;
+    margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--levers-rule);
   }
   .sky-levers-row {
     display: grid; grid-template-columns: 96px 1fr 38px; gap: 8px;
@@ -209,19 +311,35 @@ const STYLE = `
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .sky-levers input[type=range] {
+    appearance: none;
     width: 100%; height: 14px; margin: 0; padding: 0;
-    accent-color: var(--accent, #b83d05);
+    background: transparent; cursor: pointer;
+  }
+  .sky-levers input[type=range]::-webkit-slider-runnable-track {
+    height: 6px; border-radius: 999px; background: var(--levers-track);
+  }
+  .sky-levers input[type=range]::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px; height: 14px; margin-top: -4px;
+    border: 0; border-radius: 50%; background: var(--accent, #b83d05);
+  }
+  .sky-levers input[type=range]::-moz-range-track {
+    height: 6px; border-radius: 999px; background: var(--levers-track);
+  }
+  .sky-levers input[type=range]::-moz-range-thumb {
+    width: 14px; height: 14px; border: 0; border-radius: 50%;
+    background: var(--accent, #b83d05);
   }
   .sky-levers output {
-    text-align: right; color: #5c5b52; font-variant-numeric: tabular-nums;
+    text-align: right; color: var(--levers-muted); font-variant-numeric: tabular-nums;
   }
   .sky-levers-row.seg { grid-template-columns: 96px 1fr; }
   .sky-levers-seg { display: flex; gap: 4px; }
   .sky-levers-seg > * { margin: 0; }
   .sky-levers button {
     font: inherit; line-height: 1.2; padding: 2px 8px; cursor: pointer;
-    border: 1px solid #dad9ce; border-radius: 5px;
-    background: transparent; color: #5c5b52;
+    border: 1px solid var(--levers-border); border-radius: 5px;
+    background: transparent; color: var(--levers-muted);
   }
   .sky-levers button[aria-pressed=true] {
     background: var(--ink, #14140f); color: var(--paper, #f4f4ed);
@@ -229,17 +347,33 @@ const STYLE = `
   }
   .sky-levers-actions {
     display: flex; gap: 4px; margin-top: 9px; padding-top: 7px;
-    border-top: 1px solid #e6e5d9;
+    border-top: 1px solid var(--levers-rule);
   }
-  .sky-levers-note { color: #5c5b52; font-size: 10px; line-height: 1.3; padding-top: 6px; }
-  .sky-levers-toggle {
+  .sky-levers-note { color: var(--levers-muted); font-size: 10px; line-height: 1.3; padding-top: 6px; }
+  .sky-levers-handle-end {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sky-levers .sky-levers-collapse {
+    display: grid; place-items: center;
+    width: 18px; height: 18px; padding: 0;
+    font: inherit; line-height: 1; cursor: pointer;
+    border: 1px solid var(--levers-border); border-radius: 5px;
+    background: transparent; color: var(--levers-muted);
+  }
+  .sky-levers .sky-levers-collapse:hover {
+    color: var(--ink, #14140f); border-color: var(--levers-track);
+  }
+  /* Collapsed, the panel is a floating control rather than a surface, so it
+     inverts the theme: ink fill, paper label, in both palettes. */
+  .sky-levers .sky-levers-toggle {
     font: inherit; padding: 6px 10px; border-radius: 8px; cursor: pointer;
-    border: 1px solid #dad9ce; color: #5c5b52;
-    background: rgba(251, 250, 248, .96);
+    border: 1px solid var(--ink, #14140f);
+    color: var(--paper, #f4f4ed);
+    background: var(--ink, #14140f);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--ink, #14140f) 30%, transparent);
   }
   @media print { .sky-levers { display: none; } }
 `;
-
 function nearestStep(slider, value) {
   const steps = Math.round((value - slider.min) / slider.step);
   return slider.min + steps * slider.step;
@@ -265,6 +399,10 @@ if (controller) {
 
   const panel = document.createElement("div");
   panel.className = "sky-levers-panel";
+  panel.id = "sky-levers-panel";
+  panel.setAttribute("role", "group");
+  panel.setAttribute("aria-label", "Sky levers");
+  toggle.setAttribute("aria-controls", "sky-levers-panel");
 
   const rows = new Map();
 
@@ -286,14 +424,20 @@ if (controller) {
       <output for="sky-levers-${slider.key}"></output>
     </div>`;
 
-  const sky = sliders.filter((slider) => !slider.life);
+  const sky = sliders.filter((slider) => !slider.life && !slider.group);
+  const stars = sliders.filter((slider) => slider.group === "stars");
   const life = sliders.filter((slider) => slider.life);
 
-  panel.innerHTML = `
+  const markup = `
     <div class="sky-levers-handle" tabindex="0"
          title="drag to move · double-click to reset">
       <span>sky levers</span>
-      <span class="sky-levers-grip" aria-hidden="true"></span>
+      <span class="sky-levers-handle-end">
+        <span class="sky-levers-grip" aria-hidden="true"></span>
+        <button type="button" class="sky-levers-collapse"
+                aria-label="Collapse sky levers" aria-expanded="true"
+                aria-controls="sky-levers-panel">−</button>
+      </span>
     </div>
     <h4>sky</h4>
     <div class="sky-levers-row seg">
@@ -321,12 +465,19 @@ if (controller) {
     </div>
     <h4>life</h4>
     ${life.map(sliderMarkup).join("")}
+    <h4>stars</h4>
+    ${stars.map(sliderMarkup).join("")}
     <div class="sky-levers-actions">
       <button type="button" data-action="copy">copy values</button>
       <button type="button" data-action="reset">reset</button>
     </div>
     <p class="sky-levers-note">development build · SKY_LEVERS=1</p>
   `;
+
+  const parsed = new DOMParser().parseFromString(markup, "text/html");
+  for (const node of [...parsed.body.childNodes]) {
+    panel.append(document.adoptNode(node));
+  }
 
   root.append(panel, toggle);
   document.head.append(style);
@@ -525,13 +676,25 @@ if (controller) {
     place(rect.left, rect.top);
   });
 
-  toggle.addEventListener("click", () => {
-    const open = panel.hidden;
+  const collapse = /** @type {HTMLButtonElement | null} */ (
+    panel.querySelector(".sky-levers-collapse")
+  );
+
+  /** @param {boolean} open @param {boolean} [focus] */
+  function setOpen(open, focus = false) {
     panel.hidden = !open;
     toggle.hidden = open;
     toggle.setAttribute("aria-expanded", String(open));
-  });
-  toggle.hidden = true;
+    collapse?.setAttribute("aria-expanded", String(open));
+    if (focus) {
+      if (open) collapse?.focus();
+      else toggle.focus();
+    }
+  }
+
+  toggle.addEventListener("click", () => setOpen(true, true));
+  collapse?.addEventListener("click", () => setOpen(false, true));
+  setOpen(true);
 
   setMode(config.mode);
 }

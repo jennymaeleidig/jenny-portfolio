@@ -45,6 +45,14 @@ npm run format        # rewrite the tree
 npm run format:check  # fail if anything is unformatted
 ```
 
+### Theme
+
+The palette strip in the header and footer switches between the light and dark
+palettes. The choice is stored in `localStorage` under `theme`; light is the
+default and the site does not follow `prefers-color-scheme`. The dark sky keeps
+the clouds and adds stars in the clear band. `assets/sky-poster-dark.svg` is
+the no-canvas fallback, while the share card stays the light poster.
+
 ### Build modes
 
 There are two ways to build, and the only difference is the sky's tuning

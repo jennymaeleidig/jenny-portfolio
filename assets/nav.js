@@ -7,8 +7,9 @@
  * links without a repaint. Every link is a real link: without this file, or
  * when a fetch fails, the browser navigates normally.
  *
- * The swap is intentionally narrow. Head, styles, header, footer and scripts
- * all stay put; only the page body, the title and the history entry change.
+ * The swap is intentionally narrow. Head, styles, footer and scripts stay put;
+ * the header and the page body are replaced, and the title and history entry
+ * change with them.
  */
 
 const sheet = document.querySelector("main");
@@ -21,7 +22,7 @@ function syncHeader(nextDocument) {
   const currentHeader = document.querySelector(".site-header");
   const nextHeader = nextDocument.querySelector(".site-header");
   if (!currentHeader || !nextHeader) return;
-  currentHeader.innerHTML = nextHeader.innerHTML;
+  currentHeader.replaceChildren(...nextHeader.childNodes);
 }
 
 let controller = null;
@@ -54,6 +55,20 @@ function focusMain() {
   sheet.focus({ preventScroll: true });
 }
 
+function rememberScroll() {
+  history.replaceState({ ...history.state, scrollY: window.scrollY }, "");
+}
+
+let scrollTimer = 0;
+window.addEventListener(
+  "scroll",
+  () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = window.setTimeout(rememberScroll, 100);
+  },
+  { passive: true },
+);
+
 async function navigate(url, { push = true, scrollY = 0 } = {}) {
   controller?.abort();
   const request = new AbortController();
@@ -73,8 +88,9 @@ async function navigate(url, { push = true, scrollY = 0 } = {}) {
 
     const swap = () => {
       document.title = nextDocument.title;
-      sheet.innerHTML = next.innerHTML;
+      sheet.replaceChildren(...next.childNodes);
       syncHeader(nextDocument);
+      document.dispatchEvent(new Event("theme-sync"));
       focusMain();
     };
 
@@ -88,7 +104,7 @@ async function navigate(url, { push = true, scrollY = 0 } = {}) {
 
     window.scrollTo(0, scrollY);
   } catch (error) {
-    if (error.name !== "AbortError") location.href = url;
+    if (error.name !== "AbortError") location.assign(url);
   } finally {
     if (controller === request) controller = null;
   }
@@ -110,6 +126,7 @@ document.addEventListener("click", (event) => {
   if (url.pathname === location.pathname && url.search === location.search)
     return;
 
+  rememberScroll();
   navigate(link.href);
 });
 
@@ -118,7 +135,7 @@ window.addEventListener("popstate", (event) => {
 });
 
 // Remember where the reader was so Back can return them there.
-history.replaceState({ scrollY: window.scrollY }, "");
+rememberScroll();
 
 // The career record folds its entries into <details>. Closed ones would print
 // as bare summaries, so open every record for the print dialog and put back

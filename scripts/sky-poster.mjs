@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 /**
- * Regenerate assets/sky-poster.svg from the sky core.
+ * Regenerate assets/sky-poster.svg and assets/sky-poster-dark.svg from the sky
+ * core.
  *
- * The poster is a static frame at the shipped cell size: the same field, seed,
- * palette, tuned values and lift as the canvas, rendered at time 0. It is embedded
- * as a PNG data URI so the committed file stays text and stays inside the
- * no-binaries rule, while costing a fraction of an equivalent vector poster.
+ * The posters are static frames at the shipped cell size: the field, palette,
+ * tuned values and lift from SKY_DEFAULTS, rendered at time 0. They are
+ * embedded as PNG data URIs so the committed files stay text, while costing a
+ * fraction of an equivalent vector poster.
  *
- * The SVG records a hash of the raw frame. tests/assets.test.mjs recomputes it
- * from the core, so a changed seed or palette fails the suite instead of
- * quietly shipping a stale fallback.
+ * Each SVG records a hash of the raw frame. tests/assets.test.mjs recomputes
+ * both hashes from the core, so a changed seed or palette fails the suite
+ * instead of quietly shipping a stale fallback.
  *
  *   node scripts/sky-poster.mjs
  */
@@ -20,6 +21,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 
+import { DARK, LIGHT, isDark } from "../assets/theme-core.mjs";
 import {
   SKY_DEFAULTS,
   createScene,
@@ -87,11 +89,12 @@ function encodePng(cols, rows, rgb) {
 }
 
 /** The poster's frame, hash and embedded PNG. Pure and deterministic. */
-export function posterArtifact() {
+export function posterArtifact(theme = LIGHT) {
+  const dark = isDark(theme);
   const { cols, rows, cellPx } = POSTER;
   // The canvas carries sky above and below the window so the lift can pan;
   // building the scene the same way makes the poster the shipped framing.
-  const { field, offsetY } = createScene({
+  const { field, starLayer, offsetY } = createScene({
     config: SKY_DEFAULTS,
     cols,
     rows,
@@ -103,6 +106,8 @@ export function posterArtifact() {
     time: 0,
     offset: 0,
     offsetY,
+    dark,
+    starLayer,
   });
 
   const rgb = Buffer.alloc(cols * rows * 3);
@@ -121,12 +126,12 @@ export function posterArtifact() {
   };
 }
 
-export function posterHash() {
-  return posterArtifact().hash;
+export function posterHash(theme = LIGHT) {
+  return posterArtifact(theme).hash;
 }
 
-export function posterSvg() {
-  const { cols, rows, cellPx, hash, png } = posterArtifact();
+export function posterSvg(theme = LIGHT) {
+  const { cols, rows, cellPx, hash, png } = posterArtifact(theme);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${cols} ${rows}" width="${cols * cellPx}" height="${rows * cellPx}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
   <metadata>sky-poster sha256:${hash} cell:${cellPx}</metadata>
@@ -139,7 +144,12 @@ if (
   process.argv[1] &&
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
-  const svg = posterSvg();
-  writeFileSync(join(root, "assets", "sky-poster.svg"), svg);
-  console.log(`assets/sky-poster.svg: ${svg.length} bytes`);
+  for (const [theme, file] of [
+    [LIGHT, "sky-poster.svg"],
+    [DARK, "sky-poster-dark.svg"],
+  ]) {
+    const svg = posterSvg(theme);
+    writeFileSync(join(root, "assets", file), svg);
+    console.log(`assets/${file}: ${svg.length} bytes`);
+  }
 }

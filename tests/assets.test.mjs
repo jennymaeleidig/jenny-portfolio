@@ -4,9 +4,9 @@ import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+import { DARK, LIGHT } from "../assets/theme-core.mjs";
 import {
   POSTER,
-  SKY_TOKENS,
   TOKENS,
   build,
   contrast,
@@ -47,10 +47,23 @@ test("the sky sits behind the sheet with its poster and gradient fallbacks", () 
   );
   assert.match(
     siteCss,
+    /:root\[data-theme="dark"\] \.sky--fallback\s*\{[^}]*url\("\/assets\/sky-poster-dark\.svg"\)/s,
+    "the dark fallback carries the dark poster",
+  );
+  assert.match(
+    siteCss,
     /\.sky--fallback\s+\.sky-canvas[^{]*\{[^}]*display:\s*none/s,
   );
 
-  for (const asset of ["sky.js", "sky-core.mjs", "sky-poster.svg", "nav.js"]) {
+  for (const asset of [
+    "sky.js",
+    "sky-core.mjs",
+    "sky-poster.svg",
+    "sky-poster-dark.svg",
+    "theme.js",
+    "theme-core.mjs",
+    "nav.js",
+  ]) {
     assert.equal(
       statSync(join(output, "assets", asset)).isFile(),
       true,
@@ -116,31 +129,52 @@ test("a SKY_LEVERS=1 build carries the levers on every page", () => {
     "evolveSpeed",
     "warp",
     "warpSpeed",
+    "starCell",
+    "starDensity",
+    "starMedium",
+    "starLarge",
+    "starYellow",
+    "starBright",
+    "starDither",
+    "starTwinkle",
+    "starTwinkleSpeed",
+    "starTwinkleSize",
   ]) {
     assert.match(levers, new RegExp(`key: "${key}"`), `${key} has a lever`);
   }
 });
 
-test("the committed poster is a static frame of the current sky", () => {
-  const svg = readFileSync(join(root, "assets", "sky-poster.svg"), "utf8");
+test("the committed posters are static frames of the current sky", () => {
+  assert.notEqual(posterHash(LIGHT), posterHash(DARK));
 
-  assert.match(svg, new RegExp(`sha256:${posterHash()} cell:${POSTER.cellPx}`));
+  for (const [theme, file] of [
+    [LIGHT, "sky-poster.svg"],
+    [DARK, "sky-poster-dark.svg"],
+  ]) {
+    const svg = readFileSync(join(root, "assets", file), "utf8");
 
-  const [, base64] = svg.match(/base64,([A-Za-z0-9+/=]+)/) ?? [];
-  assert.ok(base64, "the poster embeds its PNG frame");
+    assert.match(
+      svg,
+      new RegExp(`sha256:${posterHash(theme)} cell:${POSTER.cellPx}`),
+      `${file} matches the ${theme} frame`,
+    );
 
-  const png = Buffer.from(base64, "base64");
-  assert.equal(png.subarray(1, 4).toString("ascii"), "PNG");
-  assert.equal(
-    png.readUInt32BE(16),
-    POSTER.cols,
-    "the poster is the shipped width",
-  );
-  assert.equal(
-    png.readUInt32BE(20),
-    POSTER.rows,
-    "the poster is the shipped height",
-  );
+    const [, base64] = svg.match(/base64,([A-Za-z0-9+/=]+)/) ?? [];
+    assert.ok(base64, `${file} embeds its PNG frame`);
+
+    const png = Buffer.from(base64, "base64");
+    assert.equal(png.subarray(1, 4).toString("ascii"), "PNG");
+    assert.equal(
+      png.readUInt32BE(16),
+      POSTER.cols,
+      `${file} is the shipped width`,
+    );
+    assert.equal(
+      png.readUInt32BE(20),
+      POSTER.rows,
+      `${file} is the shipped height`,
+    );
+  }
 });
 
 test("the share card is the poster, unwrapped for a link preview", () => {
@@ -170,10 +204,14 @@ test("the share card is the poster, unwrapped for a link preview", () => {
   );
 });
 
-test("the stylesheet is a light-only fork with the grid and its fallbacks", () => {
+test("the stylesheet is a fork with the grid and both palettes", () => {
   assert.match(siteCss, /--line-height:\s*1\.5rem/);
   assert.match(siteCss, /--column:\s*80ch/);
-  assert.match(siteCss, /color-scheme:\s*light/);
+  assert.match(siteCss, /:root\s*\{[^}]*color-scheme:\s*light/s);
+  assert.match(
+    siteCss,
+    /:root\[data-theme="dark"\]\s*\{[^}]*color-scheme:\s*dark/s,
+  );
   assert.match(siteCss, /@supports \(width: calc\(round\(down/);
   assert.match(siteCss, /\.grid/);
   assert.match(siteCss, /:focus-visible\s*\{[^}]*outline:/);
@@ -192,6 +230,11 @@ test("the sheet insets its content from its own border", () => {
   );
   assert.match(siteCss, /\.sheet\s*\{[^}]*--sheet-pad-x:\s*3ch/s);
   const print = siteCss.slice(siteCss.indexOf("@media print"));
+  assert.match(
+    print,
+    /:root,\s*\n\s*:root\[data-theme="dark"\]\s*\{[^}]*color-scheme:\s*light/s,
+    "print tells the UA to use the light scheme",
+  );
   assert.match(
     print,
     /\.sheet\s*\{[^}]*padding:\s*0/s,
@@ -264,7 +307,7 @@ test("the catalogue and the header stay readable on a narrow viewport", () => {
 
 test("every page runs the palette strip in its header and its footer", () => {
   const strip =
-    /<div class="swatches" aria-hidden="true">((?:<span><\/span>){8})<\/div>/;
+    /<button class="palette-strip" type="button" aria-pressed="false" aria-label="Switch to dark theme" title="Switch to dark theme">((?:<span><\/span>){8})<\/button>/;
 
   for (const file of htmlFiles) {
     const html = readFileSync(file, "utf8");
@@ -286,13 +329,18 @@ test("every page runs the palette strip in its header and its footer", () => {
 
   assert.match(
     siteCss,
-    /\.swatches\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*nowrap/s,
+    /\.palette-strip\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*nowrap/s,
     "the strip is one row that never wraps",
   );
   assert.match(
     siteCss,
-    /\.swatches\s*\{[^}]*position:\s*absolute[^}]*right:\s*var\(--sheet-pad-x\)/s,
+    /\.palette-strip\s*\{[^}]*position:\s*absolute[^}]*right:\s*var\(--sheet-pad-x\)/s,
     "the strip is set into the paper, inset the same as the header and footer",
+  );
+  assert.match(
+    siteCss,
+    /\.palette-strip\s*\{[^}]*appearance:\s*none[^}]*cursor:\s*pointer/s,
+    "the strip is a button reset with a pointer",
   );
   assert.match(
     siteCss,
@@ -301,22 +349,22 @@ test("every page runs the palette strip in its header and its footer", () => {
   );
   assert.match(
     siteCss,
-    /\.site-header \.swatches\s*\{\s*top:\s*var\(--swatch-inset-y\)/s,
+    /\.site-header \.palette-strip\s*\{\s*top:\s*var\(--swatch-inset-y\)/s,
     "the header strip sits on the header's text line",
   );
   assert.match(
     siteCss,
-    /\.site-footer \.swatches\s*\{[^}]*bottom:\s*var\(--swatch-inset-y\)/s,
+    /\.site-footer \.palette-strip\s*\{[^}]*bottom:\s*var\(--swatch-inset-y\)/s,
     "the footer strip sits on the footer's text line",
   );
   assert.match(
     siteCss,
-    /\.site-footer \.swatches\s*\{[^}]*left:\s*var\(--sheet-pad-x\)[^}]*flex-direction:\s*row-reverse/s,
+    /\.site-footer \.palette-strip\s*\{[^}]*left:\s*var\(--sheet-pad-x\)[^}]*flex-direction:\s*row-reverse/s,
     "the footer strip hangs off the left edge, deep blue first",
   );
   assert.match(
     siteCss,
-    /\.swatches > \*\s*\{[^}]*width:\s*var\(--swatch-size\)[^}]*height:\s*var\(--swatch-size\)/s,
+    /\.palette-strip > \*\s*\{[^}]*width:\s*var\(--swatch-size\)[^}]*height:\s*var\(--swatch-size\)/s,
     "every square is 1x1",
   );
   const sheetBlock = siteCss.match(/\.sheet\s*\{([^}]*)\}/s)?.[1] ?? "";
@@ -332,7 +380,7 @@ test("every page runs the palette strip in its header and its footer", () => {
   );
   assert.match(
     siteCss,
-    /\.swatches\s*\{[^}]*font-size:\s*var\(--sheet-font-size\)/s,
+    /\.palette-strip\s*\{[^}]*font-size:\s*var\(--sheet-font-size\)/s,
     "the strip measures its inset in the sheet's font, so its edge lands on the text's",
   );
   assert.match(
@@ -344,31 +392,64 @@ test("every page runs the palette strip in its header and its footer", () => {
     assert.match(
       siteCss,
       new RegExp(
-        `\\.swatches > :nth-child\\(${index + 1}\\)\\s*\\{\\s*background:\\s*var\\(--${name}\\)`,
+        `\\.palette-strip > :nth-child\\(${index + 1}\\)\\s*\\{\\s*background:\\s*var\\(--${name}\\)`,
       ),
       `square ${index + 1} is --${name}`,
     );
   }
 });
 
-test("the palette is installed and body text and links clear 4.5:1 on the paper", () => {
-  const token = (name) => {
-    const match = siteCss.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
+test("both palettes are installed and body text and links clear 4.5:1", () => {
+  const block = (selector) => {
+    const start = siteCss.indexOf(selector);
+    assert.ok(start >= 0, `missing ${selector}`);
+    const open = siteCss.indexOf("{", start);
+    const close = siteCss.indexOf("}", open);
+    return siteCss.slice(open + 1, close);
+  };
+  const token = (source, name) => {
+    const match = source.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
     assert.ok(match, `missing --${name}`);
     return match[1];
   };
 
-  const paper = token("paper");
-  assert.equal(paper.toLowerCase(), "#f4f4ed");
-  assert.equal(token("ink").toLowerCase(), "#14140f");
-  assert.equal(token("accent").toLowerCase(), "#b83d05");
-  assert.equal(token("accent-bright").toLowerCase(), "#ff9767");
-  for (const sky of SKY_TOKENS) {
-    assert.ok(token(sky));
-  }
+  const themes = [
+    {
+      selector: ":root {",
+      paper: "#f4f4ed",
+      ink: "#14140f",
+      accent: "#b83d05",
+      "accent-bright": "#ff9767",
+      "sky-1": "#dfe5e7",
+      "sky-2": "#c5d5e5",
+      "sky-3": "#9ec8e4",
+      "sky-4": "#2157cc",
+    },
+    {
+      selector: ':root[data-theme="dark"] {',
+      paper: "#4a484b",
+      ink: "#ddd0c5",
+      accent: "#ffab77",
+      "accent-bright": "#f8cd70",
+      "sky-1": "#c0bbac",
+      "sky-2": "#777578",
+      "sky-3": "#414042",
+      "sky-4": "#1b1a16",
+    },
+  ];
 
-  assert.ok(contrast(token("ink"), paper) >= 4.5);
-  assert.ok(contrast(token("accent"), paper) >= 4.5);
+  for (const theme of themes) {
+    const source = block(theme.selector);
+    for (const name of TOKENS) {
+      assert.equal(
+        token(source, name).toLowerCase(),
+        theme[name],
+        `${theme.selector} --${name}`,
+      );
+    }
+    assert.ok(contrast(token(source, "ink"), token(source, "paper")) >= 4.5);
+    assert.ok(contrast(token(source, "accent"), token(source, "paper")) >= 4.5);
+  }
 
   for (const name of TOKENS) {
     const uses = siteCss.match(new RegExp(`var\\(--${name}\\)`, "g")) ?? [];

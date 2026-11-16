@@ -3,6 +3,9 @@
 
 asset_base=${ASSET_BASE:-/assets}
 stylesheet=${STYLESHEET:-$asset_base/site.css}
+# The boot script and assets/theme-core.mjs carry the same two values.
+theme_storage_key=theme
+theme_dark=dark
 # The shell escapes and composes with the shared helpers, so it reads them
 # itself rather than relying on every caller to source lib.sh first.
 # shellcheck source=/dev/null
@@ -60,8 +63,8 @@ shell_head() {
   title=$(html_escape "$title")
   local share_title
   share_title=$(html_escape "$raw_title")
-  # A page's description is one line of prose — the tagline, an opening
-  # paragraph, a project's blurb — handed over raw and escaped once here.
+  # A page's description is one line of prose: the tagline, an opening
+  # paragraph, or a project's blurb, handed over raw and escaped once here.
   local description
   description=$(html_escape "$raw_description")
   local site_name_html
@@ -87,6 +90,13 @@ shell_head() {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+      try {
+        if (localStorage.getItem("$theme_storage_key") === "$theme_dark") {
+          document.documentElement.dataset.theme = "$theme_dark";
+        }
+      } catch {}
+    </script>
     <meta name="color-scheme" content="light">
     <title>$title</title>
     <meta name="description" content="$description">
@@ -173,14 +183,15 @@ EOF
 
 # The palette strip: eight empty squares. site.css paints them in token
 # order, so the colours stay in one place and the markup carries none. The
-# strip is decoration, so it is hidden from assistive technology.
+# strip is the theme control: clicking it swaps the palette, and its pressed
+# state follows the theme boot script's choice.
 swatch_strip() {
-  local i
-  printf '<div class="swatches" aria-hidden="true">'
-  for i in 1 2 3 4 5 6 7 8; do
+  local _
+  printf '<button class="palette-strip" type="button" aria-pressed="false" aria-label="Switch to dark theme" title="Switch to dark theme">'
+  for _ in 1 2 3 4 5 6 7 8; do
     printf '<span></span>'
   done
-  printf '</div>'
+  printf '</button>'
 }
 
 page_open() {
@@ -188,7 +199,7 @@ page_open() {
   shell_head "$title" "$description" "$route" "$indexable"
   cat <<EOF
     <div class="sky" aria-hidden="true">
-      <noscript><img class="sky-poster" src="$asset_base/sky-poster.svg" alt="" width="1600" height="1000"></noscript>
+      <noscript><img class="sky-poster" src="$asset_base/sky-poster.svg" alt="" width="1440" height="900"></noscript>
       <canvas class="sky-canvas"></canvas>
     </div>
 EOF
@@ -199,6 +210,7 @@ page_close() {
   shell_main_close
   cat <<EOF
     <script type="module" src="/assets/sky.js"></script>
+    <script type="module" src="/assets/theme.js"></script>
 EOF
   if [[ ${SKY_LEVERS:-} == 1 ]]; then
     printf '    <script type="module" src="/assets/sky-levers.mjs"></script>\n'

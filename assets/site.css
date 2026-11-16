@@ -2,8 +2,9 @@
  * Grid forked from The Monospace Web
  * By Oskar Wickström
  *
- * Forked for jenny-portfolio: light-only tokens, self-hosted Commit Mono,
- * the grid with its round(down) fallbacks, and no debug or image-padding code.
+ * Forked for jenny-portfolio: light and dark token pairs, self-hosted Commit
+ * Mono, the grid with its round(down) fallbacks, and no debug or image-padding
+ * code.
  * Forked 2026-11-08 from https://github.com/owickstrom/the-monospace-web/
  *
  * The upstream MIT notice is reproduced here in full, because the licence
@@ -74,6 +75,18 @@
   font-size: 16px;
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #4a484b;
+  --ink: #ddd0c5;
+  --accent: #ffab77;
+  --accent-bright: #f8cd70;
+  --sky-1: #c0bbac;
+  --sky-2: #777578;
+  --sky-3: #414042;
+  --sky-4: #1b1a16;
+}
+
 *,
 *::before,
 *::after {
@@ -132,10 +145,9 @@ body {
 }
 
 /*
- * The sky: a poster image and a canvas, both fixed behind the sheet at
- * z-index -1. The gradient underneath is the fallback when there is no 2D
- * context; without JavaScript the poster covers it, and the canvas covers the
- * poster once it has painted.
+ * The sky layer sits behind the sheet at z-index -1. Its gradient is the
+ * fallback when there is no 2D context; without JavaScript the poster image
+ * covers it, and with JavaScript the canvas paints over the gradient.
  */
 .sky {
   position: fixed;
@@ -144,6 +156,10 @@ body {
   overflow: hidden;
   pointer-events: none;
   background: linear-gradient(180deg, var(--sky-1) 0%, var(--paper) 55%);
+}
+
+:root[data-theme="dark"] .sky {
+  background: linear-gradient(180deg, var(--sky-4) 0%, var(--paper) 55%);
 }
 
 .sky-poster,
@@ -174,6 +190,12 @@ body {
     url("/assets/sky-poster.svg") center / cover no-repeat,
     linear-gradient(180deg, var(--sky-1) 0%, var(--paper) 55%);
   image-rendering: pixelated;
+}
+
+:root[data-theme="dark"] .sky--fallback {
+  background:
+    url("/assets/sky-poster-dark.svg") center / cover no-repeat,
+    linear-gradient(180deg, var(--sky-4) 0%, var(--paper) 55%);
 }
 
 .sky--fallback .sky-canvas {
@@ -287,6 +309,10 @@ a:hover {
 ::selection {
   background: var(--accent-bright);
   color: var(--ink);
+}
+
+:root[data-theme="dark"] ::selection {
+  color: var(--sky-4);
 }
 
 h1,
@@ -627,7 +653,7 @@ main > :last-child > :last-child {
  * sits on the text line it belongs to, so it reads as part of that line.
  * Colours are assigned in token order, so the palette lives in one place.
  */
-.swatches {
+.palette-strip {
   /*
    * The squares inherit --swatch-size from the sheet, so the strip and the
    * paper's own inset stay one number. The strip never takes room from the
@@ -642,46 +668,53 @@ main > :last-child > :last-child {
   display: flex;
   flex-wrap: nowrap;
   justify-content: flex-end;
-  pointer-events: none;
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
 }
 
-.swatches > * {
+.palette-strip > * {
   display: block;
   flex: 0 0 var(--swatch-size);
   width: var(--swatch-size);
   height: var(--swatch-size);
 }
 
-.swatches > * + * {
+.palette-strip > * + * {
   margin-top: 0;
 }
 
-.swatches > :nth-child(1) {
+.palette-strip > :nth-child(1) {
   background: var(--paper);
 }
-.swatches > :nth-child(2) {
+.palette-strip > :nth-child(2) {
   background: var(--ink);
 }
-.swatches > :nth-child(3) {
+.palette-strip > :nth-child(3) {
   background: var(--accent);
 }
-.swatches > :nth-child(4) {
+.palette-strip > :nth-child(4) {
   background: var(--accent-bright);
 }
-.swatches > :nth-child(5) {
+.palette-strip > :nth-child(5) {
   background: var(--sky-1);
 }
-.swatches > :nth-child(6) {
+.palette-strip > :nth-child(6) {
   background: var(--sky-2);
 }
-.swatches > :nth-child(7) {
+.palette-strip > :nth-child(7) {
   background: var(--sky-3);
 }
-.swatches > :nth-child(8) {
+.palette-strip > :nth-child(8) {
   background: var(--sky-4);
 }
 
-.site-header .swatches {
+.site-header .palette-strip {
   top: var(--swatch-inset-y);
 }
 
@@ -689,7 +722,7 @@ main > :last-child > :last-child {
  * The footer strip runs the other way, deep blue to paper, and hangs off the
  * left edge so the palette closes the sheet the way the header opens it.
  */
-.site-footer .swatches {
+.site-footer .palette-strip {
   right: auto;
   bottom: var(--swatch-inset-y);
   left: var(--sheet-pad-x);
@@ -1050,6 +1083,19 @@ th {
 }
 
 @media print {
+  :root,
+  :root[data-theme="dark"] {
+    color-scheme: light;
+    --paper: #fff;
+    --ink: #000;
+    --accent: #b83d05;
+    --accent-bright: #ff9767;
+    --sky-1: #dfe5e7;
+    --sky-2: #c5d5e5;
+    --sky-3: #9ec8e4;
+    --sky-4: #2157cc;
+  }
+
   :root {
     --line-height: 1rem;
     --border-thickness: 1px;

@@ -3,11 +3,15 @@ import assert from "node:assert/strict";
 
 import {
   BAYER4,
+  DARK_RAMP,
   OFFSET_Y_LIMIT,
   RAMP,
   SKY_DEFAULTS,
+  STAR_DIM,
+  STAR_TINTS,
   createField,
   createScene,
+  createStarLayer,
   frameLayout,
   fbm,
   hash,
@@ -17,6 +21,7 @@ import {
   sampleField,
   thresholds,
   toneIndex,
+  updateStarGains,
 } from "../assets/sky-core.mjs";
 
 function rawToneIndex(value, bandThresholds, dither, bayer) {
@@ -58,6 +63,16 @@ test("the sky ships at the values that were tuned", () => {
     stark: 77,
     seed: 12,
     maxFps: 60,
+    starCell: 67,
+    starDensity: 67,
+    starMedium: 27,
+    starLarge: 12,
+    starYellow: 37,
+    starBright: 90,
+    starDither: 24,
+    starTwinkle: 70,
+    starTwinkleSpeed: 220,
+    starTwinkleSize: 2,
   });
 
   assert.deepEqual(RAMP, [
@@ -66,6 +81,17 @@ test("the sky ships at the values that were tuned", () => {
     [158, 200, 228],
     [33, 87, 204],
   ]);
+  assert.deepEqual(DARK_RAMP, [
+    [192, 187, 172],
+    [119, 117, 120],
+    [65, 64, 66],
+    [27, 26, 22],
+  ]);
+  assert.deepEqual(STAR_TINTS, {
+    1: [221, 208, 197],
+    2: [248, 205, 112],
+  });
+  assert.deepEqual(STAR_DIM, [192, 187, 172]);
 });
 
 test("the field is deterministic for a seed", () => {
@@ -567,4 +593,220 @@ test("createScene lifts by the config and carries the pannable margin", () => {
   assert.equal(field.scale, config.scale);
   assert.equal(field.seed, config.seed);
   assert.equal(field.evolveScale, config.evolveScale);
+});
+
+const starConfig = {
+  ...SKY_DEFAULTS,
+  starCell: 10,
+  starDensity: 100,
+};
+
+const starLayout = {
+  cols: 80,
+  rows: 40,
+  cellPx: 2,
+  config: starConfig,
+};
+
+function paintedTints(layer) {
+  return new Set(
+    [...layer.owner]
+      .map((owner, index) => (owner >= 0 ? layer.tint[index] : null))
+      .filter((value) => value !== null),
+  );
+}
+
+test("the star layer is deterministic for a seed", () => {
+  const first = createStarLayer(starLayout);
+  const second = createStarLayer(starLayout);
+
+  assert.deepEqual([...first.peak], [...second.peak]);
+  assert.deepEqual([...first.tint], [...second.tint]);
+  assert.deepEqual([...first.owner], [...second.owner]);
+  assert.deepEqual(first.stars, second.stars);
+});
+
+test("a different seed gives a different star layer", () => {
+  const first = createStarLayer(starLayout);
+  const second = createStarLayer({
+    ...starLayout,
+    config: { ...starConfig, seed: 13 },
+  });
+
+  assert.notDeepEqual([...first.peak], [...second.peak]);
+});
+
+test("star density turns the layer off and fills every cell", () => {
+  const empty = createStarLayer({
+    ...starLayout,
+    config: { ...starConfig, starDensity: 0 },
+  });
+  assert.equal(empty.stars.length, 0);
+  assert.equal(
+    empty.owner.every((owner) => owner === -1),
+    true,
+  );
+
+  const full = createStarLayer(starLayout);
+  const cell = Math.round(starConfig.starCell / starLayout.cellPx);
+  const cells =
+    Math.ceil(starLayout.cols / cell) * Math.ceil(starLayout.rows / cell);
+
+  assert.equal(full.stars.length, cells);
+});
+
+test("star size and tint follow their shares", () => {
+  for (const { name, config, expected } of [
+    {
+      name: "small",
+      config: { ...starConfig, starLarge: 0, starMedium: 0 },
+      expected: 1,
+    },
+    {
+      name: "medium",
+      config: { ...starConfig, starLarge: 0, starMedium: 100 },
+      expected: 2,
+    },
+    {
+      name: "large",
+      config: { ...starConfig, starLarge: 100, starMedium: 0 },
+      expected: 3,
+    },
+  ]) {
+    const layer = createStarLayer({
+      ...starLayout,
+      config,
+    });
+    assert.ok(layer.stars.length > 0, `${name} stars exist`);
+    assert.deepEqual(
+      new Set(layer.stars.map((star) => star.size)),
+      new Set([expected]),
+      `${name} stars keep one size`,
+    );
+  }
+
+  const white = createStarLayer({
+    ...starLayout,
+    config: { ...starConfig, starYellow: 0 },
+  });
+  assert.deepEqual(paintedTints(white), new Set([1]));
+
+  const yellow = createStarLayer({
+    ...starLayout,
+    config: { ...starConfig, starYellow: 100 },
+  });
+  assert.deepEqual(paintedTints(yellow), new Set([2]));
+});
+
+test("a taller viewport keeps the stars already on screen", () => {
+  const short = createStarLayer(starLayout);
+  const tall = createStarLayer({ ...starLayout, rows: 80 });
+
+  for (let i = 0; i < short.peak.length; i += 1) {
+    assert.equal(short.peak[i], tall.peak[i], `peak ${i} stays put`);
+    assert.equal(short.tint[i], tall.tint[i], `tint ${i} stays put`);
+    assert.equal(short.owner[i], tall.owner[i], `owner ${i} stays put`);
+  }
+});
+
+test("stars paint only in the dark clear band", () => {
+  const field = createField({
+    cols: starLayout.cols,
+    rows: starLayout.rows,
+    cellPx: starLayout.cellPx,
+    scale: 150,
+    seed: 12,
+  });
+  const layer = createStarLayer(starLayout);
+
+  const light = renderFrame({ field });
+  const lightWithStars = renderFrame({ field, starLayer: layer, dark: false });
+  assert.deepEqual([...lightWithStars], [...light]);
+
+  const config = { ...starConfig, starBright: 100, starDither: 0 };
+  const bands = new Uint8Array(field.cols * field.rows);
+  const pixels = renderFrame({
+    field,
+    bands,
+    config,
+    dark: true,
+    starLayer: layer,
+  });
+  const allowed = new Set(
+    [...DARK_RAMP, STAR_DIM, ...Object.values(STAR_TINTS)].map(
+      ([r, g, b]) => `${r},${g},${b}`,
+    ),
+  );
+  const core = new Set(
+    Object.values(STAR_TINTS).map(([r, g, b]) => `${r},${g},${b}`),
+  );
+
+  let cores = 0;
+  for (let i = 0; i < bands.length; i += 1) {
+    const colour = `${pixels[i * 4]},${pixels[i * 4 + 1]},${pixels[i * 4 + 2]}`;
+    assert.ok(
+      allowed.has(colour),
+      `pixel ${i} is ${colour}, not in the palette`,
+    );
+    if (core.has(colour)) cores += 1;
+    if (layer.owner[i] >= 0 && bands[i] !== 0) {
+      assert.ok(!core.has(colour), `pixel ${i} is a star behind a cloud`);
+    }
+  }
+
+  assert.ok(cores > 0, "at least one star core paints in the clear band");
+});
+
+test("the twinkle freezes, filters by size, and holds three levels", () => {
+  const frozen = createStarLayer(starLayout);
+  updateStarGains(frozen, { ...starConfig, starTwinkle: 0 }, 5);
+  assert.equal(
+    frozen.stars.every((star) => star.gain === 1),
+    true,
+  );
+
+  const largeOnly = createStarLayer(starLayout);
+  updateStarGains(
+    largeOnly,
+    { ...starConfig, starTwinkleSize: 3, starTwinkle: 70 },
+    5,
+  );
+  assert.equal(
+    largeOnly.stars
+      .filter((star) => star.size < 3)
+      .every((star) => star.gain === 1),
+    true,
+  );
+
+  const config = { ...starConfig };
+  const layer = createStarLayer(starLayout);
+  const gains = new Set();
+  for (let time = 0; time < 10; time += 0.37) {
+    updateStarGains(layer, config, time);
+    for (const star of layer.stars) gains.add(star.gain);
+  }
+
+  for (const gain of gains) {
+    assert.ok(
+      [1, 0.65, 0.37].some((level) => Math.abs(gain - level) < 1e-12),
+      `${gain} is not a held twinkle level`,
+    );
+    assert.ok(gain <= 1, "the twinkle never blooms");
+  }
+
+  for (const level of [1, 0.65, 0.37]) {
+    assert.ok(
+      [...gains].some((gain) => Math.abs(gain - level) < 1e-12),
+      `${level} is reached at the shipped twinkle values`,
+    );
+  }
+
+  updateStarGains(layer, config, 0);
+  const held = layer.stars.map((star) => star.level);
+  updateStarGains(layer, config, 0.05);
+  assert.deepEqual(
+    layer.stars.map((star) => star.level),
+    held,
+    "a step is held until its next change",
+  );
 });
