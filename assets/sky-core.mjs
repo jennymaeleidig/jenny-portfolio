@@ -345,7 +345,7 @@ export function createStarLayer({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
       const phase = starHash(cx, cy, seed, 5) * Math.PI * 2;
       const variance = 0.8 + 0.2 * starHash(cx, cy, seed, 6);
       const starIndex = stars.length;
-      stars.push({ phase, size, gain: 1 });
+      stars.push({ phase, size, gain: 1, level: 0, nextChange: 0 });
 
       const core = brightGain * variance;
       const edge = core * (0.5 + 0.1 * starHash(cx, cy, seed, 7));
@@ -377,10 +377,32 @@ export function createStarLayer({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
   return { peak, tint, owner, stars };
 }
 
+/** How long a star holds one twinkle step, in scaled seconds. */
+const TWINKLE_HOLD = 0.25;
+const TWINKLE_DEADBAND = 0.03;
+
+/**
+ * Pick the next twinkle step, with a deadband around each boundary so a star
+ * sitting near one cannot chatter between levels.
+ */
+function twinkleLevel(gain, mid, dim, current) {
+  if (current === 0) return gain < mid - TWINKLE_DEADBAND ? 1 : 0;
+  if (current === 1) {
+    if (gain > mid + TWINKLE_DEADBAND) return 0;
+    if (gain < dim - TWINKLE_DEADBAND) return 2;
+    return 1;
+  }
+  return gain > dim + TWINKLE_DEADBAND ? 1 : 2;
+}
+
 /**
  * The twinkle: three incommensurate sines per star, so no loop is visible, and
  * only stars at or above `starTwinkleSize` move. The gain never exceeds one, so
  * a star dims from its resting brightness rather than blooming.
+ *
+ * The wave is quantised to three held steps. A continuous gain re-quantised
+ * per block every frame makes a large star lose and regain its arms a block at
+ * a time; stepping the whole star and holding the step keeps its shape.
  */
 export function updateStarGains(starLayer, config = SKY_DEFAULTS, time = 0) {
   const amount = clamp01(config.starTwinkle / 100);
@@ -388,11 +410,16 @@ export function updateStarGains(starLayer, config = SKY_DEFAULTS, time = 0) {
   const minimum = config.starTwinkleSize;
   const t = time * speed;
   const TAU = Math.PI * 2;
+  const mid = 1 - amount * 0.5;
+  const dim = 1 - amount * 0.9;
+  const levels = [1, mid, dim];
 
   for (let i = 0; i < starLayer.stars.length; i += 1) {
     const star = starLayer.stars[i];
     if (amount === 0 || star.size < minimum) {
       star.gain = 1;
+      star.level = 0;
+      star.nextChange = 0;
       continue;
     }
     const phase = star.phase;
@@ -401,7 +428,17 @@ export function updateStarGains(starLayer, config = SKY_DEFAULTS, time = 0) {
       0.22 * Math.sin((t * TAU) / 7.3 + phase) +
       0.14 * Math.sin((t * TAU) / 3.1 + phase * 1.7) +
       0.08 * Math.sin((t * TAU) / 11.7 + phase * 2.3);
-    star.gain = 1 - amount * (1 - clamp01(wave));
+    const target = twinkleLevel(
+      1 - amount * (1 - clamp01(wave)),
+      mid,
+      dim,
+      star.level,
+    );
+    if (target !== star.level && t >= star.nextChange) {
+      star.level = target;
+      star.nextChange = t + TWINKLE_HOLD;
+    }
+    star.gain = levels[star.level];
   }
 
   return starLayer;
