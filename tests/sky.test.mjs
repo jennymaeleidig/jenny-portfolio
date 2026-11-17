@@ -932,7 +932,7 @@ test("stars fade in with the ramp and land on the shipped tints", () => {
   let blended = 0;
   for (let i = 0; i < field.cols * field.rows; i += 1) {
     const colour = [mid[i * 4], mid[i * 4 + 1], mid[i * 4 + 2]];
-    const tint = [STAR_TINTS[1], STAR_TINTS[2], STAR_DIM].find((candidate) =>
+    const tint = [...Object.values(STAR_TINTS), STAR_DIM].find((candidate) =>
       colour.every(
         (value, channel) =>
           Math.abs(

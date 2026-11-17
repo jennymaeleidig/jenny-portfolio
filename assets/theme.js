@@ -83,32 +83,13 @@ function setTheme(dark) {
 }
 
 /**
- * The seven static squares' computed colours, in token order. Reading the
- * spans keeps the stylesheet the one source of token names and values.
- *
- * A theme switch starts the token fade before the wheel is built, so this is
- * only a fallback: during the fade a computed colour is part-way between the
- * two palettes. Use `paletteColors` for the wheel.
- *
- * @param {Element} control
- */
-function notchColors(control) {
-  return [...control.querySelectorAll(":scope > span")]
-    .slice(0, NOTCH_COUNT)
-    .map((span) => getComputedStyle(span).backgroundColor);
-}
-
-/**
- * The seven swatch colours the stylesheet declares for a theme, in strip
- * order. Read from the rules, not from a live element: a switch starts the
- * token fade at once, so a computed colour read after it begins is a blend of
- * the two palettes, and the wheel would land on that blend instead of the
- * incoming palette.
+ * The palette strip's seven colours as the stylesheet declares them for a
+ * theme, in strip order.
  *
  * @param {boolean} dark
- * @returns {string[] | null}
+ * @returns {string[] | null} null when a sheet's rules cannot be read
  */
-function paletteColors(dark) {
+function declaredPalette(dark) {
   const selector = dark ? `:root[data-theme="${DARK}"]` : ":root";
   /** @type {CSSRule[]} */
   const rules = [];
@@ -117,14 +98,24 @@ function paletteColors(dark) {
     try {
       rules.push(...sheet.cssRules);
     } catch {
-      // A cross-origin sheet cannot be read; the caller falls back.
-      continue;
+      return null;
     }
   }
 
-  const declared = declaredTokens(rules, selector, NOTCH_TOKENS);
+  const declared = declaredTokens(rules, selector, NOTCH_TOKENS, mediaApplies);
   const colours = NOTCH_TOKENS.map((token) => declared.get(token));
   return colours.every(Boolean) ? colours : null;
+}
+
+/**
+ * A conditional block answers only when its media query currently matches, so
+ * the print palette never answers a screen read.
+ *
+ * @param {import("./theme-core.mjs").TokenRule} rule
+ */
+function mediaApplies(rule) {
+  const media = rule.media;
+  return !media || window.matchMedia(media.mediaText).matches;
 }
 
 /**
@@ -275,26 +266,27 @@ function swap() {
     return;
   }
 
+  const outgoing = declaredPalette(outgoingTheme === DARK);
+  const incoming = declaredPalette(toDark);
+  if (!outgoing || !incoming) {
+    // A sheet whose rules cannot be read would give the wheel the fading
+    // page's colours instead of the palettes, so switch without it.
+    setTheme(toDark);
+    return;
+  }
+
   // Resolve the strips per turn: client-side navigation replaces the header.
-  // Both palettes come from the stylesheet's declared values, so the wheel
-  // lands on the incoming palette rather than on a part-faded blend of the
-  // two.
   const targets = strips().map((control) => ({
     control,
     role: roleOf(control),
-    outgoing: paletteColors(outgoingTheme === DARK) ?? notchColors(control),
+    outgoing,
   }));
 
   animating = true;
   setTheme(toDark);
 
   const wheels = targets.map((target) =>
-    makeWheel(
-      target,
-      outgoingTheme,
-      target.outgoing,
-      paletteColors(toDark) ?? notchColors(target.control),
-    ),
+    makeWheel(target, outgoingTheme, target.outgoing, incoming),
   );
 
   setBusy(true);

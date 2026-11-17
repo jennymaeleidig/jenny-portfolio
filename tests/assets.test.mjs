@@ -624,3 +624,41 @@ test("the sky starts its crossing on the wheel's clock", () => {
     "the flight starts where the frame callback found the mix",
   );
 });
+
+test("each registered token starts at the colour its theme declares", () => {
+  // The initial value is the third copy of the light palette: it is what a
+  // browser uses before (or without) the :root declarations, so a palette edit
+  // that misses it would show a stale colour.
+  const lightBlock = siteCss.slice(
+    siteCss.indexOf(":root {") + 1,
+    siteCss.indexOf("}", siteCss.indexOf(":root {")),
+  );
+
+  for (const token of [
+    "paper",
+    "ink",
+    "accent",
+    "accent-bright",
+    "sky-1",
+    "sky-2",
+    "sky-3",
+    "sky-4",
+  ]) {
+    const declared = lightBlock.match(
+      new RegExp(`--${token}:\\s*(#[0-9a-fA-F]{6})`),
+    )?.[1];
+    const initial = siteCss.match(
+      new RegExp(
+        `@property --${token} \\{[^}]*initial-value:\\s*(#[0-9a-fA-F]{6})`,
+        "s",
+      ),
+    )?.[1];
+
+    assert.ok(declared, `--${token} is declared on :root`);
+    assert.equal(
+      initial?.toLowerCase(),
+      declared.toLowerCase(),
+      `--${token}'s registered initial value matches the light palette`,
+    );
+  }
+});

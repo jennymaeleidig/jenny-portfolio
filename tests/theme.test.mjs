@@ -89,11 +89,11 @@ test("the theme changes first and the wheel paints the receipt", () => {
     theme.indexOf("function swap()"),
     theme.indexOf('document.addEventListener("click"'),
   );
-  const turn = swap.slice(swap.indexOf("const targets = strips()"));
+  const turn = swap.slice(swap.indexOf("const outgoing = declaredPalette"));
   const order = [
-    "outgoing: paletteColors(outgoingTheme === DARK)",
+    "const outgoing = declaredPalette(outgoingTheme === DARK)",
+    "const incoming = declaredPalette(toDark)",
     "setTheme(toDark)",
-    "paletteColors(toDark)",
     "paintWheels(wheels, frameAt(0))",
     "requestAnimationFrame(",
   ].map((step) => turn.indexOf(step));
@@ -109,7 +109,7 @@ test("the theme changes first and the wheel paints the receipt", () => {
   }
   assert.match(
     turn,
-    /makeWheel\(\s*target,\s*outgoingTheme,\s*target\.outgoing,\s*paletteColors\(toDark\) \?\? notchColors\(target\.control\),\s*\)/,
+    /makeWheel\(target, outgoingTheme, target\.outgoing, incoming\)/,
     "the built wheel takes both declared palettes",
   );
   assert.match(
@@ -221,13 +221,23 @@ test("the wheel reads declared palettes, not the fading page", () => {
   // on the incoming palette, which only the stylesheet's declarations hold.
   assert.match(
     theme,
-    /declaredTokens\(rules, selector, NOTCH_TOKENS\)/,
+    /declaredTokens\(rules, selector, NOTCH_TOKENS, mediaApplies\)/,
     "the values come from the stylesheet's declared tokens",
+  );
+  assert.doesNotMatch(
+    theme,
+    /getComputedStyle/,
+    "no palette is read from a fading element",
   );
   assert.match(
     theme,
-    /function paletteColors\(dark\) \{/,
+    /function declaredPalette\(dark\) \{/,
     "a declared palette resolves per theme",
+  );
+  assert.match(
+    theme,
+    /if \(!outgoing \|\| !incoming\) \{[\s\S]*setTheme\(toDark\);\s*return;/,
+    "an unreadable sheet switches without the wheel",
   );
   assert.match(
     theme,
@@ -303,5 +313,55 @@ test("a plain rule still yields its tokens, empty cssRules and all", () => {
     ],
     [["--ink", "#14140f"]],
     "a missing token is simply absent, which the caller reads as a fallback",
+  );
+});
+
+test("a grouped selector and an inactive block are read correctly", () => {
+  const style = (map) => ({ getPropertyValue: (name) => map[name] ?? "" });
+  const plain = (selectorText, map) => ({ selectorText, style: style(map) });
+  const group = (children, mediaText) => ({
+    media: { mediaText },
+    cssRules: { length: children.length, ...children },
+  });
+
+  const rules = [
+    plain(":root", { "--ink": "#14140f" }),
+    group(
+      [
+        // The print palette: a grouped selector, and never in force on screen.
+        plain(':root, :root[data-theme="dark"]', { "--ink": "#000000" }),
+      ],
+      "print",
+    ),
+    group(
+      [
+        // A narrow viewport may legitimately override a token.
+        plain(":root", { "--ink": "#222222" }),
+      ],
+      "(min-width: 40em)",
+    ),
+  ];
+
+  assert.deepEqual(
+    [...declaredTokens(rules, ":root", ["--ink"], () => false)],
+    [["--ink", "#14140f"]],
+    "an inactive block contributes nothing",
+  );
+  assert.deepEqual(
+    [...declaredTokens(rules, ":root", ["--ink"], () => true)],
+    [["--ink", "#222222"]],
+    "an active block contributes, and the last declaration wins",
+  );
+  assert.deepEqual(
+    [
+      ...declaredTokens(
+        rules,
+        ':root[data-theme="dark"]',
+        ["--ink"],
+        () => false,
+      ),
+    ],
+    [],
+    "the dark selector is not in the screen rule list",
   );
 });

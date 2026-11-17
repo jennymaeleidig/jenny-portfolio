@@ -84,9 +84,9 @@ if (sky && canvas) {
     /** The mix at `now`, ending a finished flight on the way. */
     function mixNow(now) {
       if (!flight) return mix;
-      const elapsed = now - flight.start;
-      mix = transitionMix(flight.from, flight.to, elapsed);
-      if (elapsed >= TRANSITION_MS) flight = null;
+      const flown = now - flight.start;
+      mix = transitionMix(flight.from, flight.to, flown);
+      if (flown >= TRANSITION_MS) flight = null;
       return mix;
     }
 
