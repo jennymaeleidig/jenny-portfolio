@@ -6,7 +6,7 @@ DIST ?= dist
 # shorthand; production and CI run plain `make build`, which leaves it out.
 export SKY_LEVERS
 
-.PHONY: build dev test clean
+.PHONY: build dev test lint\:provenance clean
 
 build:
 	./scripts/build.sh $(DIST)
@@ -16,6 +16,11 @@ dev:
 
 test:
 	node --test tests/*.test.mjs
+
+# The backslash keeps make from reading the colon in the target's name as
+# the rule separator, so `make lint:provenance` resolves to this rule.
+lint\:provenance:
+	node scripts/cite-lint.mjs .
 
 clean:
 	rm -rf $(DIST)
