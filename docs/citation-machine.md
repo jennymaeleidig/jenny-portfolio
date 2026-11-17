@@ -98,7 +98,8 @@ content rules are probabilistic and see only a window of the write. The
 machine extends REUSE's SPDX snippet blocks with repo-convention source keys
 and validates them with a purpose-built linter, `cite-lint`: a small Node
 script, one Makefile target, deterministic and structure-only. It checks block
-pairing, required fields, identifier well-formedness, license resolution
+pairing, required fields, license-expression well-formedness, license
+resolution
 against `LICENSES/`, and that `CITATION.cff` and `REUSE.toml` parse. It does no
 network access and no upstream diffing — truth is the judgment layer's job.
 
@@ -153,12 +154,15 @@ The linter's findings, by code:
   snippet-nested-begin       a second begin inside an open block
   snippet-missing-field      a required field is absent
   snippet-empty-field        a required field has no value
-  license-malformed         a license identifier is not a single
-                            well-formed token (letters, digits, and
-                            . - + only), or a LicenseRef-* name
-  license-unresolved         a snippet block's license has no matching
-                            file under LICENSES/ — only checked when
-                            that directory exists
+  license-malformed         a license expression does not parse by the
+                            offline SPDX grammar: identifier tokens
+                            (letters, digits, and . - +), LicenseRef-*
+                            references, and parenthesized groups joined
+                            by AND, OR, and WITH — no license-list
+                            membership check
+  license-unresolved         an identifier in a well-formed expression
+                            has no matching file under LICENSES/ — only
+                            checked when that directory exists
   citation-unparsable        CITATION.cff is not parsable YAML mapping
   reuse-unparsable           REUSE.toml is not parsable TOML
 ```

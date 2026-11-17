@@ -48,12 +48,15 @@ Checks
   snippet-nested-begin       a second begin inside an open block
   snippet-missing-field      a required field is absent
   snippet-empty-field        a required field has no value
-  license-malformed         a license identifier is not a single
-                            well-formed token (letters, digits, and
-                            . - + only), or a LicenseRef-* name
-  license-unresolved         a snippet block's license has no matching
-                            file under LICENSES/ — only checked when
-                            that directory exists
+  license-malformed         a license expression does not parse by the
+                            offline SPDX grammar: identifier tokens
+                            (letters, digits, and . - +), LicenseRef-*
+                            references, and parenthesized groups joined
+                            by AND, OR, and WITH — no license-list
+                            membership check
+  license-unresolved         an identifier in a well-formed expression
+                            has no matching file under LICENSES/ — only
+                            checked when that directory exists
   citation-unparsable        CITATION.cff is not parsable YAML mapping
   reuse-unparsable           REUSE.toml is not parsable TOML
 
@@ -85,7 +88,107 @@ const SOURCE_KEYS = ["Source", "SourceVersion", "SourceURL"];
 
 // A single well-formed identifier token: SPDX ids and LicenseRef-*
 // names alike. Anything with spaces or exotic punctuation fails.
-const LICENSE_ID = /^[A-Za-z0-9][A-Za-z0-9.\-+]*$/;
+const IDENT_TOKEN = /^[A-Za-z0-9][A-Za-z0-9.\-+]*$/;
+
+// The operators of the SPDX expression grammar, uppercase only.
+const OPERATORS = new Set(["AND", "OR", "WITH"]);
+
+// Split a license expression into paren, operator, and word tokens on
+// whitespace and the two parenthesis characters, wherever they sit.
+function tokenizeExpression(value) {
+  const tokens = [];
+  let word = "";
+  const endWord = () => {
+    if (word !== "") {
+      tokens.push(word);
+      word = "";
+    }
+  };
+  for (const character of value) {
+    if (character === "(" || character === ")") {
+      endWord();
+      tokens.push(character);
+    } else if (/\s/.test(character)) {
+      endWord();
+    } else {
+      word += character;
+    }
+  }
+  endWord();
+  return tokens;
+}
+
+// A usable atom: an identifier-shaped word that is not an operator. A
+// bare "LicenseRef-" prefix with nothing after it is not a reference.
+function isIdentifier(token) {
+  if (OPERATORS.has(token)) return false;
+  if (token.startsWith("LicenseRef-") && token.length === "LicenseRef-".length)
+    return false;
+  return IDENT_TOKEN.test(token);
+}
+
+// Parse one license expression by the offline SPDX grammar: identifier
+// tokens and LicenseRef-* references, joined by AND, OR, and WITH, with
+// parenthesized groups. WITH binds tightest, then AND, then OR, and
+// every operator needs a right-hand side. Membership in the SPDX
+// license list is never checked — resolution against LICENSES/ is
+// license-unresolved's job. Returns the expression's identifiers —
+// licenses, LicenseRef-* names, and the exception after WITH alike — or
+// null when the expression does not parse.
+function parseLicenseExpression(value) {
+  const tokens = tokenizeExpression(value);
+  const identifiers = [];
+  let position = 0;
+  const peek = () => tokens[position];
+
+  function parsePrimary() {
+    const token = peek();
+    if (token === undefined) return false;
+    if (token === "(") {
+      position += 1;
+      if (!parseOr() || peek() !== ")") return false;
+      position += 1;
+      return true;
+    }
+    if (!isIdentifier(token)) return false;
+    identifiers.push(token);
+    position += 1;
+    return true;
+  }
+
+  function parseWith() {
+    if (!parsePrimary()) return false;
+    if (peek() === "WITH") {
+      position += 1;
+      const exception = peek();
+      if (exception === undefined || !isIdentifier(exception)) return false;
+      identifiers.push(exception);
+      position += 1;
+    }
+    return true;
+  }
+
+  function parseAnd() {
+    if (!parseWith()) return false;
+    while (peek() === "AND") {
+      position += 1;
+      if (!parseWith()) return false;
+    }
+    return true;
+  }
+
+  function parseOr() {
+    if (!parseAnd()) return false;
+    while (peek() === "OR") {
+      position += 1;
+      if (!parseAnd()) return false;
+    }
+    return true;
+  }
+
+  if (!parseOr()) return null;
+  return position === tokens.length ? identifiers : null;
+}
 
 const FIELD_LINE =
   /^SPDX-(SnippetCopyrightText|License-Identifier|SnippetFileComment):\s?(.*)$/;
@@ -180,13 +283,15 @@ function checkBlockFields(fields, findings, path, startLine) {
   }
 
   const license = fields["License-Identifier"];
-  if (license && license.value !== "" && !LICENSE_ID.test(license.value)) {
-    findings.push({
-      code: "license-malformed",
-      path,
-      line: license.line,
-      message: `"${license.value}" is not a well-formed SPDX identifier or LicenseRef-* name`,
-    });
+  if (license && license.value !== "") {
+    if (parseLicenseExpression(license.value) === null) {
+      findings.push({
+        code: "license-malformed",
+        path,
+        line: license.line,
+        message: `"${license.value}" is not a well-formed SPDX license expression`,
+      });
+    }
   }
 }
 
@@ -294,13 +399,17 @@ function checkLicenseResolution(tree, files, findings) {
       .map((name) => name.slice(0, name.lastIndexOf("."))),
   );
   for (const { id, path, line } of collectSnippetLicenses(tree, files)) {
-    if (id && LICENSE_ID.test(id) && !available.has(id)) {
-      findings.push({
-        code: "license-unresolved",
-        path,
-        line,
-        message: `no file under LICENSES/ matches the identifier "${id}"`,
-      });
+    const identifiers = parseLicenseExpression(id);
+    if (identifiers === null) continue;
+    for (const identifier of identifiers) {
+      if (!available.has(identifier)) {
+        findings.push({
+          code: "license-unresolved",
+          path,
+          line,
+          message: `no file under LICENSES/ matches the identifier "${identifier}"`,
+        });
+      }
     }
   }
 }

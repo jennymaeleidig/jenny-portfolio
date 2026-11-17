@@ -117,6 +117,49 @@ test("a malformed license identifier fails", () => {
   assert.equal(finding.path, "src/borrowed.js");
 });
 
+test("compound SPDX license expressions pass when every identifier resolves", () => {
+  const { status, report } = lintFixture("valid-expressions");
+  assert.equal(status, 0);
+  assert.equal(report.ok, true);
+  assert.deepEqual(report.findings, []);
+});
+
+test("license expressions that do not parse fail as malformed, naming each value", () => {
+  const { status, report } = lintFixture("malformed-expression");
+  assert.equal(status, 1);
+  assert.deepEqual(findingCodes(report), [
+    "license-malformed",
+    "license-malformed",
+    "license-malformed",
+    "license-malformed",
+    "license-malformed",
+  ]);
+  const messages = report.findings.map((finding) => finding.message);
+  for (const value of [
+    "MIT License",
+    "MIT AND",
+    "(MIT OR Apache-2.0",
+    "LicenseRef-",
+    "MIT and Apache-2.0",
+  ]) {
+    assert.ok(
+      messages.some((message) => message.includes(`"${value}"`)),
+      `a finding must name "${value}"`,
+    );
+  }
+});
+
+test("unknown identifiers are unresolved, not malformed", () => {
+  const { status, report } = lintFixture("unresolved-identifier");
+  assert.equal(status, 1);
+  assert.deepEqual(findingCodes(report), [
+    "license-unresolved",
+    "license-unresolved",
+  ]);
+  assert.match(report.findings[0].message, /Foo-Bar/);
+  assert.match(report.findings[1].message, /LicenseRefVendored/);
+});
+
 test("a license with no matching file under LICENSES fails, naming the identifier", () => {
   const { status, report } = lintFixture("unresolved-license");
   assert.equal(status, 1);
