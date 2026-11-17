@@ -6,6 +6,7 @@ build/
 
 # Harness and browser scratch
 .pi/*
+!.pi/mcp.json
 !.pi/pi-warden.json
 .playwright-mcp/
 .pi-warden/
