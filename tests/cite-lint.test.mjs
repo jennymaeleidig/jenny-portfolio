@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const citeLint = join(root, "scripts", "cite-lint.mjs");
 const fixtures = join(root, "tests", "fixtures", "provenance");
 
@@ -45,6 +45,12 @@ test("a tree without citation metadata passes", () => {
 
 test("snippet blocks pass when no LICENSES directory exists", () => {
   const { status, report } = lintFixture("no-licenses");
+  assert.equal(status, 0);
+  assert.deepEqual(report.findings, []);
+});
+
+test("the tree's tests/fixtures subtree is never scanned", () => {
+  const { status, report } = lintFixture("skipped-fixtures");
   assert.equal(status, 0);
   assert.deepEqual(report.findings, []);
 });
