@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 Jenny Leidig
+# SPDX-License-Identifier: CC0-1.0
+cff-version: 1.2.0
+message: >-
+  If you use this portfolio, please cite it using the metadata in this
+  file.
+title: "Jenny Leidig's portfolio, built from shell and content files."
+authors:
+  - family-names: Leidig
+    given-names: Jenny
+repository-code: "https://github.com/jennymaeleidig/jenny-portfolio"
+license: CC0-1.0
