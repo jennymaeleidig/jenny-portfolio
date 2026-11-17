@@ -1,3 +1,4 @@
+// @ts-nocheck
 // cite-lint, run as a subprocess against synthetic trees: what is
 // asserted is the exit code and the findings it reports, never its
 // internals. The trees live in the fixtures area and carry invented

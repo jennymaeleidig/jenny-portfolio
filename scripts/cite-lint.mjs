@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-nocheck
 // cite-lint: a deterministic, structure-only linter for provenance
 // metadata. It checks shape — never truthfulness, never the network,
 // never an upstream tree — and exits non-zero with structured findings
