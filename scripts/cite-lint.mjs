@@ -245,58 +245,54 @@ function isTextFile(path) {
   return !readFileSync(path).subarray(0, 8192).includes(0);
 }
 
-function checkBlockFields(fields, findings, path, startLine) {
-  for (const field of REQUIRED_FIELDS) {
-    if (!(field in fields)) {
-      findings.push({
-        code: "snippet-missing-field",
-        path,
-        line: startLine,
-        message: `snippet block at line ${startLine} is missing SPDX-${field}`,
-      });
-    } else if (fields[field].value === "") {
-      findings.push({
-        code: "snippet-empty-field",
-        path,
-        line: fields[field].line,
-        message: `SPDX-${field} is empty in the snippet block at line ${startLine}`,
-      });
-    }
+// One required-field shape, shared by the direct SPDX fields and the
+// Source keys read off SnippetFileComment lines: the field must be
+// present and carry a value.
+function requireField(store, key, label, report, path, startLine) {
+  if (!(key in store)) {
+    report(
+      "snippet-missing-field",
+      path,
+      startLine,
+      `snippet block at line ${startLine} is missing ${label}`,
+    );
+  } else if (store[key].value === "") {
+    report(
+      "snippet-empty-field",
+      path,
+      store[key].line,
+      `${label} is empty in the snippet block at line ${startLine}`,
+    );
   }
+}
 
+// Check one closed snippet block, reporting findings and collecting
+// its license reference for the later resolution pass.
+function checkBlockFields(fields, report, path, startLine, licenses) {
+  for (const field of REQUIRED_FIELDS) {
+    requireField(fields, field, `SPDX-${field}`, report, path, startLine);
+  }
   for (const key of SOURCE_KEYS) {
-    if (!(key in fields.sources)) {
-      findings.push({
-        code: "snippet-missing-field",
-        path,
-        line: startLine,
-        message: `snippet block at line ${startLine} is missing ${key}`,
-      });
-    } else if (fields.sources[key].value === "") {
-      findings.push({
-        code: "snippet-empty-field",
-        path,
-        line: fields.sources[key].line,
-        message: `${key} is empty in the snippet block at line ${startLine}`,
-      });
-    }
+    requireField(fields.sources, key, key, report, path, startLine);
   }
 
   const license = fields["License-Identifier"];
   if (license && license.value !== "") {
+    licenses.push({ value: license.value, path, line: license.line });
     if (parseLicenseExpression(license.value) === null) {
-      findings.push({
-        code: "license-malformed",
+      report(
+        "license-malformed",
         path,
-        line: license.line,
-        message: `"${license.value}" is not a well-formed SPDX license expression`,
-      });
+        license.line,
+        `"${license.value}" is not a well-formed SPDX license expression`,
+      );
     }
   }
 }
 
-// Scan one file for snippet blocks, appending findings.
-function checkSnippetFile(tree, path, findings) {
+// Scan one file for snippet blocks, reporting findings and collecting
+// every license reference the blocks carry.
+function checkSnippetFile(tree, path, report, licenses) {
   const rel = relPath(tree, path);
   const lines = readFileSync(path, "utf8").split("\n");
   let open = false;
@@ -309,12 +305,12 @@ function checkSnippetFile(tree, path, findings) {
 
     if (/^SPDX-SnippetBegin\b/.test(line)) {
       if (open) {
-        findings.push({
-          code: "snippet-nested-begin",
-          path: rel,
-          line: number,
-          message: "SPDX-SnippetBegin inside an already-open snippet block",
-        });
+        report(
+          "snippet-nested-begin",
+          rel,
+          number,
+          "SPDX-SnippetBegin inside an already-open snippet block",
+        );
       } else {
         open = true;
         startLine = number;
@@ -325,17 +321,17 @@ function checkSnippetFile(tree, path, findings) {
 
     if (/^SPDX-SnippetEnd\b/.test(line)) {
       if (open) {
-        checkBlockFields(fields, findings, rel, startLine);
+        checkBlockFields(fields, report, rel, startLine, licenses);
         open = false;
         fields = null;
         startLine = null;
       } else {
-        findings.push({
-          code: "snippet-end-without-begin",
-          path: rel,
-          line: number,
-          message: "SPDX-SnippetEnd with no open snippet block",
-        });
+        report(
+          "snippet-end-without-begin",
+          rel,
+          number,
+          "SPDX-SnippetEnd with no open snippet block",
+        );
       }
       continue;
     }
@@ -355,42 +351,17 @@ function checkSnippetFile(tree, path, findings) {
   }
 
   if (open) {
-    findings.push({
-      code: "snippet-begin-without-end",
-      path: rel,
-      line: startLine,
-      message: "snippet block opened here is never closed",
-    });
-    checkBlockFields(fields, findings, rel, startLine);
+    report(
+      "snippet-begin-without-end",
+      rel,
+      startLine,
+      "snippet block opened here is never closed",
+    );
+    checkBlockFields(fields, report, rel, startLine, licenses);
   }
 }
 
-// Collect every license identifier the tree's snippet blocks carry.
-function collectSnippetLicenses(tree, files) {
-  const licenses = [];
-  for (const file of files) {
-    const lines = readFileSync(file, "utf8").split("\n");
-    let open = false;
-    for (let index = 0; index < lines.length; index += 1) {
-      const line = stripComment(lines[index]);
-      if (/^SPDX-SnippetBegin\b/.test(line)) open = true;
-      else if (/^SPDX-SnippetEnd\b/.test(line)) open = false;
-      else if (open) {
-        const match = FIELD_LINE.exec(line);
-        if (match && match[1] === "License-Identifier") {
-          licenses.push({
-            id: match[2].trim(),
-            path: relPath(tree, file),
-            line: index + 1,
-          });
-        }
-      }
-    }
-  }
-  return licenses;
-}
-
-function checkLicenseResolution(tree, files, findings) {
+function checkLicenseResolution(tree, licenses, report) {
   const licensesDir = join(tree, "LICENSES");
   if (!existsSync(licensesDir)) return;
   const available = new Set(
@@ -398,70 +369,65 @@ function checkLicenseResolution(tree, files, findings) {
       .filter((name) => name.includes("."))
       .map((name) => name.slice(0, name.lastIndexOf("."))),
   );
-  for (const { id, path, line } of collectSnippetLicenses(tree, files)) {
-    const identifiers = parseLicenseExpression(id);
-    if (identifiers === null) continue;
-    for (const identifier of identifiers) {
+  for (const { value, path, line } of licenses) {
+    for (const identifier of parseLicenseExpression(value) ?? []) {
       if (!available.has(identifier)) {
-        findings.push({
-          code: "license-unresolved",
+        report(
+          "license-unresolved",
           path,
           line,
-          message: `no file under LICENSES/ matches the identifier "${identifier}"`,
-        });
+          `no file under LICENSES/ matches the identifier "${identifier}"`,
+        );
       }
     }
   }
 }
 
-function checkCitationFile(tree, findings) {
-  const path = join(tree, "CITATION.cff");
+// Parse one config file, or report it unparsable — the shape the
+// citation-file and REUSE-config checks share. An absent file is not a
+// finding.
+function checkParsedConfig(tree, name, parser, format, shape, code, report) {
+  const path = join(tree, name);
   if (!existsSync(path)) return;
   let parsed;
   try {
-    parsed = parseYaml(readFileSync(path, "utf8"));
+    parsed = parser(readFileSync(path, "utf8"));
   } catch (error) {
-    findings.push({
-      code: "citation-unparsable",
-      path: "CITATION.cff",
-      line: 1,
-      message: `CITATION.cff is not parsable YAML: ${error.message.split("\n")[0]}`,
-    });
+    report(
+      code,
+      name,
+      1,
+      `${name} is not parsable ${format}: ${error.message.split("\n")[0]}`,
+    );
     return;
   }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    findings.push({
-      code: "citation-unparsable",
-      path: "CITATION.cff",
-      line: 1,
-      message: "CITATION.cff must parse to a mapping",
-    });
+    report(code, name, 1, `${name} must parse to a ${shape}`);
   }
 }
 
-function checkReuseConfig(tree, findings) {
-  const path = join(tree, "REUSE.toml");
-  if (!existsSync(path)) return;
-  let parsed;
-  try {
-    parsed = parseToml(readFileSync(path, "utf8"));
-  } catch (error) {
-    findings.push({
-      code: "reuse-unparsable",
-      path: "REUSE.toml",
-      line: 1,
-      message: `REUSE.toml is not parsable TOML: ${error.message.split("\n")[0]}`,
-    });
-    return;
-  }
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    findings.push({
-      code: "reuse-unparsable",
-      path: "REUSE.toml",
-      line: 1,
-      message: "REUSE.toml must parse to a table",
-    });
-  }
+function checkCitationFile(tree, report) {
+  checkParsedConfig(
+    tree,
+    "CITATION.cff",
+    parseYaml,
+    "YAML",
+    "mapping",
+    "citation-unparsable",
+    report,
+  );
+}
+
+function checkReuseConfig(tree, report) {
+  checkParsedConfig(
+    tree,
+    "REUSE.toml",
+    parseToml,
+    "TOML",
+    "table",
+    "reuse-unparsable",
+    report,
+  );
 }
 
 function main(argv) {
@@ -475,19 +441,24 @@ function main(argv) {
   if (!existsSync(tree)) usageError(`no such tree: ${tree}`);
 
   const findings = [];
+  // Every finding enters the report through this one shape.
+  const report = (code, path, line, message) => {
+    findings.push({ code, path, line, message });
+  };
+  const licenses = [];
   const textFiles = walkFiles(tree).filter(isTextFile);
-  for (const path of textFiles) checkSnippetFile(tree, path, findings);
-  checkLicenseResolution(tree, textFiles, findings);
-  checkCitationFile(tree, findings);
-  checkReuseConfig(tree, findings);
+  for (const path of textFiles) checkSnippetFile(tree, path, report, licenses);
+  checkLicenseResolution(tree, licenses, report);
+  checkCitationFile(tree, report);
+  checkReuseConfig(tree, report);
 
   findings.sort((a, b) => {
     if (a.path !== b.path) return a.path < b.path ? -1 : 1;
     return a.line - b.line;
   });
 
-  const report = { ok: findings.length === 0, findings };
-  process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+  const output = { ok: findings.length === 0, findings };
+  process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
   return findings.length === 0 ? 0 : 1;
 }
 
