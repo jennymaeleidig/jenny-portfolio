@@ -36,6 +36,9 @@ jobs:
           /tmp/reuse-venv/bin/pip install "reuse[charset-normalizer]"
           /tmp/reuse-venv/bin/reuse lint
 
+      - name: Lint provenance
+        run: make lint:provenance
+
       - name: Install the markdown parser
         run: |
           sudo apt-get update
