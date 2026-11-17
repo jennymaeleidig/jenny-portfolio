@@ -14,7 +14,13 @@
  * wheel-core.mjs.
  */
 
-import { DARK, LIGHT, THEME_STORAGE_KEY, isDark } from "./theme-core.mjs";
+import {
+  DARK,
+  LIGHT,
+  THEME_STORAGE_KEY,
+  declaredTokens,
+  isDark,
+} from "./theme-core.mjs";
 import {
   ANGLE_PER_NOTCH,
   NOTCH_COUNT,
@@ -93,40 +99,6 @@ function notchColors(control) {
 }
 
 /**
- * A stylesheet rule, narrowed to the parts a token read needs.
- *
- * @typedef {{
- *   cssRules?: TokenRuleList,
- *   selectorText?: string,
- *   style?: CSSStyleDeclaration,
- * }} TokenRule
- */
-
-/** @typedef {{ length: number, [index: number]: TokenRule }} TokenRuleList */
-
-/**
- * Collect a selector's declared token values from a rule and its children.
- *
- * @param {TokenRule} rule
- * @param {string} selector
- * @param {Map<string, string>} declared
- */
-function collectTokens(rule, selector, declared) {
-  const nested = /** @type {TokenRuleList | undefined} */ (rule.cssRules);
-  if (nested) {
-    for (let index = 0; index < nested.length; index += 1) {
-      collectTokens(nested[index], selector, declared);
-    }
-    return;
-  }
-  if (rule.selectorText !== selector || !rule.style) return;
-  for (const token of NOTCH_TOKENS) {
-    const value = rule.style.getPropertyValue(token).trim();
-    if (value) declared.set(token, value);
-  }
-}
-
-/**
  * The seven swatch colours the stylesheet declares for a theme, in strip
  * order. Read from the rules, not from a live element: a switch starts the
  * token fade at once, so a computed colour read after it begins is a blend of
@@ -138,22 +110,19 @@ function collectTokens(rule, selector, declared) {
  */
 function paletteColors(dark) {
   const selector = dark ? `:root[data-theme="${DARK}"]` : ":root";
-  const declared = new Map();
+  /** @type {CSSRule[]} */
+  const rules = [];
 
   for (const sheet of document.styleSheets) {
-    /** @type {TokenRuleList | undefined} */
-    let rules;
     try {
-      rules = /** @type {TokenRuleList} */ (sheet.cssRules);
+      rules.push(...sheet.cssRules);
     } catch {
       // A cross-origin sheet cannot be read; the caller falls back.
       continue;
     }
-    for (let index = 0; index < rules.length; index += 1) {
-      collectTokens(rules[index], selector, declared);
-    }
   }
 
+  const declared = declaredTokens(rules, selector, NOTCH_TOKENS);
   const colours = NOTCH_TOKENS.map((token) => declared.get(token));
   return colours.every(Boolean) ? colours : null;
 }

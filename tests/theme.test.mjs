@@ -8,6 +8,7 @@ import {
   DARK,
   LIGHT,
   THEME_STORAGE_KEY,
+  declaredTokens,
   isDark,
 } from "../assets/theme-core.mjs";
 import { root, sharedSite } from "./support/site.mjs";
@@ -220,7 +221,7 @@ test("the wheel reads declared palettes, not the fading page", () => {
   // on the incoming palette, which only the stylesheet's declarations hold.
   assert.match(
     theme,
-    /function collectTokens\(rule, selector, declared\) \{[\s\S]*getPropertyValue\(token\)/,
+    /declaredTokens\(rules, selector, NOTCH_TOKENS\)/,
     "the values come from the stylesheet's declared tokens",
   );
   assert.match(
@@ -248,4 +249,59 @@ test("the wheel reads declared palettes, not the fading page", () => {
       `${token} is one of the strip's colours`,
     );
   }
+});
+
+test("a plain rule still yields its tokens, empty cssRules and all", () => {
+  // Chrome gives every style rule a `cssRules` list of its own, empty unless
+  // the rule nests. Walking only the rules that have one skipped every plain
+  // rule, which silently left the wheel with the fading page's colours.
+  const decls = (map) => ({
+    getPropertyValue: (name) => map[name] ?? "",
+  });
+  const plain = (selector, map) => ({
+    selectorText: selector,
+    style: decls(map),
+    cssRules: { length: 0 },
+  });
+  const nested = (children) => ({
+    cssRules: { length: children.length, ...children },
+  });
+
+  const rules = [
+    plain(":root", { "--ink": "#14140f", "--sky-1": "#dfe5e7" }),
+    plain(':root[data-theme="dark"]', {
+      "--ink": "#ddd0c5",
+      "--sky-1": "#c0bbac",
+    }),
+    nested([plain(":root", { "--ink": "#000000" })]),
+  ];
+  const tokens = ["--ink", "--sky-1"];
+
+  assert.deepEqual(
+    [...declaredTokens(rules, ":root", tokens)],
+    [
+      ["--ink", "#000000"],
+      ["--sky-1", "#dfe5e7"],
+    ],
+    "the last declaration wins, whether plain or nested",
+  );
+  assert.deepEqual(
+    [...declaredTokens(rules, ':root[data-theme="dark"]', tokens)],
+    [
+      ["--ink", "#ddd0c5"],
+      ["--sky-1", "#c0bbac"],
+    ],
+  );
+
+  assert.deepEqual(
+    [
+      ...declaredTokens(
+        [plain(":root", { "--ink": "#14140f" })],
+        ":root",
+        tokens,
+      ),
+    ],
+    [["--ink", "#14140f"]],
+    "a missing token is simply absent, which the caller reads as a fallback",
+  );
 });
