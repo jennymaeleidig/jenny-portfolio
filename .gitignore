@@ -5,7 +5,8 @@ build/
 .bloglock
 
 # Harness and browser scratch
-.pi/
+.pi/*
+!.pi/pi-warden.json
 .playwright-mcp/
 .pi-warden/
 

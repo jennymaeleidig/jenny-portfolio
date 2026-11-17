@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "exclude": [
+      "assets/reset.css",
+      "assets/sky-poster.svg",
+      "package-lock.json"
+    ],
+    "skip": [
+      "docs/adr/**",
+      "docs/agents/**",
+      "tests/fixtures/**"
+    ]
+  }
+}

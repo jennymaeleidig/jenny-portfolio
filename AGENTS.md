@@ -11,3 +11,7 @@ Default five-role vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `
 ### Domain docs
 
 Single-context: `GLOSSARY.md` at the repo root plus `docs/adr/`. See `docs/agents/domain.md`.
+
+### Warden scope
+
+Which files pi-warden audits, the per-developer user-config step, and the verification commands. See `docs/agents/warden.md`.
