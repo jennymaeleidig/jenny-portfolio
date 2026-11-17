@@ -48,6 +48,62 @@
   font-display: block;
 }
 
+/*
+ * The theme colours are registered as <color> so the browser can interpolate
+ * them. Theme switching then transitions the tokens themselves, and every
+ * var() consumer follows, including color-mix(). Browsers without @property
+ * fall back to today's instant swap. The duration and easing match the sky's
+ * crossing (TRANSITION_MS and smoothstep in sky-core.mjs) and the palette
+ * strip's wheel turn, so the whole page switches as one gesture.
+ */
+@property --paper {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #f4f4ed;
+}
+
+@property --ink {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #14140f;
+}
+
+@property --accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #b83d05;
+}
+
+@property --accent-bright {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ff9767;
+}
+
+@property --sky-1 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #dfe5e7;
+}
+
+@property --sky-2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #c5d5e5;
+}
+
+@property --sky-3 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #9ec8e4;
+}
+
+@property --sky-4 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #2157cc;
+}
+
 :root {
   color-scheme: light;
   --paper: #f4f4ed;
@@ -73,6 +129,20 @@
   font-style: normal;
   font-variant-numeric: tabular-nums lining-nums;
   font-size: 16px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root.theme-fades {
+    transition:
+      --paper 640ms cubic-bezier(0.33333, 0, 0.66667, 1),
+      --ink 640ms cubic-bezier(0.33333, 0, 0.66667, 1),
+      --accent 640ms cubic-bezier(0.33333, 0, 0.66667, 1),
+      --accent-bright 640ms cubic-bezier(0.33333, 0, 0.66667, 1),
+      --sky-1 640ms cubic-bezier(0.33333, 0, 0.66667, 1),
+      --sky-2 640ms cubic-bezier(0.33333, 0, 0.66667, 1),
+      --sky-3 640ms cubic-bezier(0.33333, 0, 0.66667, 1),
+      --sky-4 640ms cubic-bezier(0.33333, 0, 0.66667, 1);
+  }
 }
 
 :root[data-theme="dark"] {
@@ -148,6 +218,11 @@ body {
  * The sky layer sits behind the sheet at z-index -1. Its gradient is the
  * fallback when there is no 2D context; without JavaScript the poster image
  * covers it, and with JavaScript the canvas paints over the gradient.
+ *
+ * The dark half is an overlay rather than a second background, because a
+ * background image cannot interpolate: opacity can. It sits at z-index -2, so
+ * it is above the light gradient and below the canvas, and the fallback poster
+ * replaces its gradient when the canvas cannot run.
  */
 .sky {
   position: fixed;
@@ -158,8 +233,24 @@ body {
   background: linear-gradient(180deg, var(--sky-1) 0%, var(--paper) 55%);
 }
 
-:root[data-theme="dark"] .sky {
+.sky::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
   background: linear-gradient(180deg, var(--sky-4) 0%, var(--paper) 55%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+:root[data-theme="dark"] .sky::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sky::after {
+    transition: opacity 640ms cubic-bezier(0.33333, 0, 0.66667, 1);
+  }
 }
 
 .sky-poster,
@@ -192,7 +283,7 @@ body {
   image-rendering: pixelated;
 }
 
-:root[data-theme="dark"] .sky--fallback {
+:root[data-theme="dark"] .sky--fallback::after {
   background:
     url("/assets/sky-poster-dark.svg") center / cover no-repeat,
     linear-gradient(180deg, var(--sky-4) 0%, var(--paper) 55%);

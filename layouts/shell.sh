@@ -96,6 +96,12 @@ shell_head() {
           document.documentElement.dataset.theme = "$theme_dark";
         }
       } catch {}
+      // Only a browser that can register a custom property interpolates the
+      // theme tokens; without it, transitioning one would cut the page over at
+      // the halfway mark instead of fading it.
+      if (typeof CSS !== "undefined" && CSS.registerProperty) {
+        document.documentElement.classList.add("theme-fades");
+      }
     </script>
     <meta name="color-scheme" content="light">
     <title>$title</title>

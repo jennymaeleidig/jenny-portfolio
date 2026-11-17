@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { DARK, LIGHT } from "../assets/theme-core.mjs";
 import { PERSPECTIVE } from "../assets/wheel-core.mjs";
+import { TRANSITION_MS } from "../assets/sky-core.mjs";
 import {
   POSTER,
   SWATCH_TOKENS,
@@ -49,8 +50,8 @@ test("the sky sits behind the sheet with its poster and gradient fallbacks", () 
   );
   assert.match(
     siteCss,
-    /:root\[data-theme="dark"\] \.sky--fallback\s*\{[^}]*url\("\/assets\/sky-poster-dark\.svg"\)/s,
-    "the dark fallback carries the dark poster",
+    /:root\[data-theme="dark"\] \.sky--fallback::after\s*\{[^}]*url\("\/assets\/sky-poster-dark\.svg"\)/s,
+    "the dark fallback crossfades to the dark poster",
   );
   assert.match(
     siteCss,
@@ -549,4 +550,61 @@ test("the self-hosted font is emitted", () => {
   const font = join(output, "assets", "fonts", "CommitMonoV143-VF.woff2");
 
   assert.equal(statSync(font).isFile(), true);
+});
+
+test("the page palette crosses in step with the sky", () => {
+  // The tokens are registered so they can be interpolated at all.
+  for (const token of [
+    "paper",
+    "ink",
+    "accent",
+    "accent-bright",
+    "sky-1",
+    "sky-2",
+    "sky-3",
+    "sky-4",
+  ]) {
+    assert.match(
+      siteCss,
+      new RegExp(`@property --${token} \\{[^}]*syntax: "<color>"`, "s"),
+      `--${token} is a registered colour`,
+    );
+  }
+
+  // Same duration as the sky, and the cubic bezier that is exactly
+  // smoothstep: P1 = (1/3, 0), P2 = (2/3, 1).
+  const crossing = `cubic-bezier\\(0\\.33333, 0, 0\\.66667, 1\\)`;
+  assert.match(
+    siteCss,
+    new RegExp(
+      `:root\\.theme-fades \\{[^}]*--paper ${TRANSITION_MS}ms ${crossing}`,
+      "s",
+    ),
+    "the tokens use the sky's time and easing",
+  );
+  assert.match(
+    siteCss,
+    new RegExp(
+      `\\.sky::after \\{[^}]*transition: opacity ${TRANSITION_MS}ms ${crossing}`,
+      "s",
+    ),
+    "the fallback crossfade uses the same time and easing",
+  );
+
+  // Without @property an unregistered token would cut over half-way through,
+  // so the token transition is opt-in from the boot script.
+  const boot = siteCss.slice(0, siteCss.indexOf(":root {"));
+  assert.doesNotMatch(boot, /transition:/);
+  assert.match(
+    readFileSync(join(root, "layouts", "shell.sh"), "utf8"),
+    /CSS\.registerProperty[^}]*theme-fades/s,
+    "the boot script only fades where a custom property can be interpolated",
+  );
+
+  // The fade obeys the reader's motion preference.
+  assert.match(
+    siteCss,
+    /@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*:root\.theme-fades/,
+    "the token fade is gated behind the motion preference",
+  );
 });

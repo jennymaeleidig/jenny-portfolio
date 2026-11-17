@@ -35,6 +35,25 @@ The share card is one image for every visitor. A crawler cannot read
 `localStorage` or choose a palette, so a theme-specific card would not make
 previews theme-aware. The light poster is the stable card.
 
+## The crossing
+
+Switching themes fades rather than cuts. The sky lerps its colour ramp from
+the light stops to the dark stops and re-quantises the bands each frame, so
+every frame mid-crossing is still valid banded, dithered pixel art. The page
+tokens are registered `<color>` custom properties and transition over the same
+time. The clear band darkens and the stars fade in with it.
+
+The crossing takes one wheel turn (`TURN_MS`, 640ms, preceded by smoothstep),
+because the strip is already turning on the click. Two motions of different
+lengths would read as two events.
+
+A crossing re-targets rather than restarts: a second click takes the current
+mix as its origin, so interrupting never pops. Reduced motion, a hidden tab or
+a sky out of view resolve the crossing in one frame instead of animating it.
+Browsers that cannot register a custom property keep the instant swap, and the
+boot script adds the `theme-fades` class only where registering works — an
+unregistered property would cut the page over half-way through the fade.
+
 ## Consequences
 
 - `assets/theme-core.mjs` owns the storage key and the dark token. The boot
@@ -49,6 +68,10 @@ previews theme-aware. The light poster is the stable card.
 - If `localStorage` is blocked, the choice still applies for the page and the
   next page falls back to light.
 - Printing resets the light palette and hides the sky.
+- `assets/sky-core.mjs` owns the crossing's duration (`TRANSITION_MS`, from
+  `TURN_MS`), its easing (`smoothstep`) and the ramp lerp. The stylesheet
+  repeats the duration and the equivalent cubic bezier; a test fails if they
+  drift.
 
 ## Rejected alternatives
 
@@ -64,3 +87,6 @@ previews theme-aware. The light poster is the stable card.
   switch, so the card cannot know which theme to use.
 - **Store the theme in a cookie.** It would be sent to the server on every
   request, and the static site has no use for it.
+- **Crossfade two finished skies.** Mixing two dithered images blurs the bands
+  and puts colours from neither palette on screen. Lerping the ramp keeps the
+  dither and the banding intact.

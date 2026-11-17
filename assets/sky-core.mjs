@@ -38,6 +38,8 @@
  * only if shader code is ever copied in.
  */
 
+import { TURN_MS } from "./wheel-core.mjs";
+
 /** The canonical sky ramp, lightest first. Matches the --sky-* tokens. */
 export const RAMP = Object.freeze([
   Object.freeze([223, 229, 231]), // #DFE5E7
@@ -53,6 +55,58 @@ export const DARK_RAMP = Object.freeze([
   Object.freeze([65, 64, 66]), // #414042
   Object.freeze([27, 26, 22]), // #1B1A16
 ]);
+
+/**
+ * How long the sky takes to cross from the light ramp to the dark one, in
+ * milliseconds. It is the palette strip's wheel turn, so the sky and the strip
+ * finish as one gesture. The stylesheet carries the same time; a test pins it.
+ */
+export const TRANSITION_MS = TURN_MS;
+
+/** Smoothstep over [0, 1], clamped outside it. Zero slope at both ends, so a
+ * crossing settles rather than starting and stopping hard. */
+export function smoothstep(value) {
+  const t = clamp01(value);
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * The eased mix between two crossings, `elapsed` milliseconds in. At or past
+ * `duration` the mix is exactly `to`, so a caller can end a flight by checking
+ * the elapsed time. Passing the current mix as `from` makes an interrupted
+ * crossing continue from where it was instead of restarting.
+ */
+export function transitionMix(from, to, elapsed, duration = TRANSITION_MS) {
+  if (elapsed >= duration) return to;
+  if (elapsed <= 0) return from;
+  return from + (to - from) * smoothstep(elapsed / duration);
+}
+
+/** Lerp two colours channel by channel, rounded to whole 8-bit values. */
+export function lerpColour(from, to, mix) {
+  const t = clamp01(mix);
+  return [
+    Math.round(from[0] + (to[0] - from[0]) * t),
+    Math.round(from[1] + (to[1] - from[1]) * t),
+    Math.round(from[2] + (to[2] - from[2]) * t),
+  ];
+}
+
+/** Lerp two ramps stop by stop, in RGB. Returns a fresh ramp. */
+export function lerpRamp(from, to, mix) {
+  return from.map((colour, index) => lerpColour(colour, to[index], mix));
+}
+
+/**
+ * The ramp at a mix: the light ramp at 0, the dark ramp at 1, interpolated
+ * between. The endpoints return the shipped constants, so a settled sky is
+ * always painted from exactly the tokens it declares.
+ */
+export function rampAt(mix) {
+  if (mix <= 0) return RAMP;
+  if (mix >= 1) return DARK_RAMP;
+  return lerpRamp(RAMP, DARK_RAMP, mix);
+}
 
 /**
  * A star's two paints: its core, chosen per star, and the same dim edge for
@@ -624,6 +678,12 @@ export function rampIndex(band, tones) {
  * interpolated into the field, never rounded. `offsetY` pans the whole sky up
  * (+) or down (-), also in cells, within the margin the field was built with;
  * it stops at the edge rather than repeating.
+ *
+ * `mix` crosses the sky between the light ramp (0) and the dark ramp (1). The
+ * ramp is interpolated first and the bands are quantised after, so every frame
+ * mid-crossing is still valid banded, dithered pixel art. The star layer fades
+ * in with the same mix, blended over the clear band's own colour. `dark` is
+ * the two-state shorthand for `mix`: `dark: true` is `mix: 1`.
  */
 export function renderFrame({
   field,
@@ -633,13 +693,15 @@ export function renderFrame({
   time = 0,
   offset = 0,
   offsetY = 0,
+  mix = undefined,
   dark = false,
   starLayer = null,
 }) {
   const { data, evolve: flow, width, cols, rows, height, margin } = field;
   const pixels = out ?? new Uint8ClampedArray(cols * rows * 4);
 
-  const ramp = dark ? DARK_RAMP : RAMP;
+  const blend = mix === undefined ? Number(dark) : clamp01(mix);
+  const ramp = rampAt(blend);
   const tones = Math.min(ramp.length, Math.max(2, config.tones | 0));
   const dither = config.dither / 100;
   const bandThresholds = thresholds(tones, config.stark);
@@ -656,9 +718,10 @@ export function renderFrame({
   const warpSpeed = (config.warpSpeed / 100) * 0.8;
   const drift = wrap(offset, width);
 
-  const stars = dark && starLayer ? starLayer : null;
+  const stars = blend > 0 && starLayer ? starLayer : null;
   const starDither = stars ? config.starDither / 100 : 0;
   if (stars) updateStarGains(stars, config, time);
+  const clearColour = ramp[rampIndex(0, tones)];
 
   // The evolution field keeps its own clock, and drifts on both axes so the
   // pattern passes rather than pulses. Sampling it per cell is what makes the
@@ -762,8 +825,14 @@ export function renderFrame({
             starDither,
             BAYER4[ditherRow + (x & 3)],
           );
-          if (level === 2) colour = STAR_TINTS[stars.tint[starIndex]];
-          else if (level === 1) colour = STAR_DIM;
+          let starColour = null;
+          if (level === 2) starColour = STAR_TINTS[stars.tint[starIndex]];
+          else if (level === 1) starColour = STAR_DIM;
+          if (starColour !== null) {
+            // A star fades in over the clear band, so at a partial mix it is a
+            // blend of its own tint and the band it sits on.
+            colour = lerpColour(clearColour, starColour, blend);
+          }
         }
       }
 

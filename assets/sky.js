@@ -14,9 +14,11 @@
 import { isDark } from "./theme-core.mjs";
 import {
   SKY_DEFAULTS,
+  TRANSITION_MS,
   createScene,
   frameLayout,
   renderFrame,
+  transitionMix,
 } from "./sky-core.mjs";
 
 // A visit gets its own sky. The seed is chosen once per page load, so the
@@ -51,6 +53,11 @@ if (sky && canvas) {
     let field = null;
     let starLayer = null;
     let dark = isDark(document.documentElement.dataset.theme);
+    // The mix the sky has reached, and the crossing in flight, if any. A
+    // crossing is interrupted by taking the current mix as its new origin, so
+    // toggling mid-dusk continues from where the sky is.
+    let mix = dark ? 1 : 0;
+    let flight = null;
     let image = null;
     let pixels = null;
     let cellPx = 4;
@@ -74,7 +81,23 @@ if (sky && canvas) {
       );
     }
 
-    function draw() {
+    /** The mix at `now`, ending a finished flight on the way. */
+    function mixNow(now) {
+      if (!flight) return mix;
+      const elapsed = now - flight.start;
+      mix = transitionMix(flight.from, flight.to, elapsed);
+      if (elapsed >= TRANSITION_MS) flight = null;
+      return mix;
+    }
+
+    /** Finish a crossing where it was heading, without waiting for the clock. */
+    function settle(now, target) {
+      mix = target;
+      flight = null;
+      draw(now);
+    }
+
+    function draw(now = performance.now()) {
       if (!field) return;
       renderFrame({
         field,
@@ -83,7 +106,7 @@ if (sky && canvas) {
         time: elapsed,
         offset,
         offsetY,
-        dark,
+        mix: mixNow(now),
         starLayer,
       });
       context.putImageData(image, 0, 0);
@@ -143,7 +166,7 @@ if (sky && canvas) {
       lastTime = now;
       elapsed += delta / 1000;
       offset += (config.speed * delta) / 1000 / cellPx;
-      draw();
+      draw(now);
     }
 
     function start() {
@@ -173,16 +196,32 @@ if (sky && canvas) {
       ).observe(canvas);
     }
 
-    reducedMotion.addEventListener("change", start);
+    // Turning reduced motion on mid-flight finishes the crossing at once, so
+    // the sky never freezes half-way to night.
+    reducedMotion.addEventListener("change", () => {
+      if (reducedMotion.matches && flight) settle(performance.now(), flight.to);
+      start();
+    });
 
     // The palette strip flips the theme without touching the field or the
-    // seed; the clouds repaint from the other ramp, and stars appear only in
-    // dark.
+    // seed; the clouds cross from one ramp to the other, and stars fade in
+    // with the darkening clear band. The crossing takes the wheel's own turn
+    // time, so the sky and the strip finish as one gesture. Reduced motion, a
+    // hidden tab or a sky out of view all resolve the crossing in one frame.
     document.addEventListener("themechange", () => {
       const next = isDark(document.documentElement.dataset.theme);
       if (next === dark) return;
       dark = next;
-      if (field) draw();
+
+      const target = dark ? 1 : 0;
+      const now = performance.now();
+      if (reducedMotion.matches || document.hidden || !inView) {
+        settle(now, target);
+        return;
+      }
+
+      flight = { from: mixNow(now), to: target, start: now };
+      start();
     });
 
     window.addEventListener("resize", () => {

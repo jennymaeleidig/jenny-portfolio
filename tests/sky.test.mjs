@@ -9,20 +9,26 @@ import {
   SKY_DEFAULTS,
   STAR_DIM,
   STAR_TINTS,
+  TRANSITION_MS,
   createField,
   createScene,
   createStarLayer,
   frameLayout,
   fbm,
   hash,
+  lerpRamp,
+  rampAt,
   rampIndex,
   renderFrame,
   sampleEvolve,
   sampleField,
+  smoothstep,
   thresholds,
   toneIndex,
+  transitionMix,
   updateStarGains,
 } from "../assets/sky-core.mjs";
+import { TURN_MS } from "../assets/wheel-core.mjs";
 
 function rawToneIndex(value, bandThresholds, dither, bayer) {
   let q = 0;
@@ -809,4 +815,201 @@ test("the twinkle freezes, filters by size, and holds three levels", () => {
     held,
     "a step is held until its next change",
   );
+});
+
+test("the crossing takes the wheel's turn time and eases both ends", () => {
+  // The palette strip turns as a wheel; the sky crosses in step with it, so
+  // the two can never drift apart.
+  assert.equal(TRANSITION_MS, TURN_MS);
+  assert.equal(TRANSITION_MS, 640);
+
+  assert.equal(smoothstep(0), 0);
+  assert.equal(smoothstep(1), 1);
+  assert.equal(smoothstep(0.5), 0.5);
+  for (let i = 1; i <= 100; i += 1) {
+    assert.ok(smoothstep(i / 100) >= smoothstep((i - 1) / 100));
+  }
+  assert.equal(smoothstep(-1), 0, "a mix below zero clamps");
+  assert.equal(smoothstep(2), 1, "a mix above one clamps");
+});
+
+test("a crossing finishes exactly at its duration", () => {
+  assert.equal(transitionMix(0, 1, 0), 0);
+  assert.equal(transitionMix(0, 1, TRANSITION_MS), 1);
+  assert.equal(transitionMix(1, 0, TRANSITION_MS), 0);
+  assert.ok(transitionMix(0, 1, TRANSITION_MS - 1) < 1);
+});
+
+test("an interrupted crossing continues from where it was", () => {
+  const half = transitionMix(0, 1, TRANSITION_MS / 2);
+  assert.equal(half, 0.5, "the halfway mix is smoothstep's midpoint");
+
+  assert.equal(transitionMix(half, 0, 0), half, "no jump at the interrupt");
+  assert.equal(transitionMix(half, 0, TRANSITION_MS), 0);
+  for (let i = 1; i <= 100; i += 1) {
+    assert.ok(
+      transitionMix(half, 0, i * 6) <= transitionMix(half, 0, (i - 1) * 6),
+    );
+  }
+});
+
+test("the ramp crosses monotonically from one shipped ramp to the other", () => {
+  assert.deepEqual(rampAt(0.3), lerpRamp(RAMP, DARK_RAMP, 0.3));
+  for (let stop = 0; stop < RAMP.length; stop += 1) {
+    for (let channel = 0; channel < 3; channel += 1) {
+      let previous = RAMP[stop][channel];
+      for (let step = 1; step <= 20; step += 1) {
+        const value = rampAt(step / 20)[stop][channel];
+        assert.ok(value <= previous, `stop ${stop} channel ${channel} rises`);
+        assert.ok(value >= DARK_RAMP[stop][channel]);
+        previous = value;
+      }
+      assert.equal(previous, DARK_RAMP[stop][channel]);
+    }
+  }
+});
+
+test("a mix of nothing and everything reproduces the two shipped skies", () => {
+  const field = createField({
+    cols: starLayout.cols,
+    rows: starLayout.rows,
+    cellPx: starLayout.cellPx,
+    scale: 150,
+    seed: 12,
+  });
+  const layer = createStarLayer(starLayout);
+
+  assert.deepEqual(
+    [...renderFrame({ field, mix: 0, starLayer: layer })],
+    [...renderFrame({ field })],
+    "a day-mix is the shipped day",
+  );
+  assert.deepEqual(
+    [...renderFrame({ field, mix: 1, starLayer: layer })],
+    [...renderFrame({ field, dark: true, starLayer: layer })],
+    "a night-mix is the shipped night",
+  );
+});
+
+test("every block between the ramps comes from the interpolated ramp", () => {
+  const field = createField(fieldOptions);
+  const mix = 0.5;
+  const pixels = renderFrame({ field, mix });
+  const allowed = new Set(rampAt(mix).map(([r, g, b]) => `${r},${g},${b}`));
+
+  for (let i = 0; i < pixels.length; i += 4) {
+    const colour = `${pixels[i]},${pixels[i + 1]},${pixels[i + 2]}`;
+    assert.ok(allowed.has(colour), `pixel ${i / 4} is ${colour}`);
+  }
+});
+
+test("stars fade in with the ramp and land on the shipped tints", () => {
+  const field = createField({
+    cols: starLayout.cols,
+    rows: starLayout.rows,
+    cellPx: starLayout.cellPx,
+    scale: 150,
+    seed: 12,
+  });
+  const config = { ...starConfig, starBright: 100, starDither: 0 };
+  const layer = () => createStarLayer(starLayout);
+  const day = renderFrame({ field, config, starLayer: layer() });
+  assert.deepEqual(
+    [...renderFrame({ field, config, starLayer: layer(), mix: 0 })],
+    [...day],
+    "stars are invisible by day",
+  );
+
+  const half = 0.5;
+  const mid = renderFrame({
+    field,
+    config,
+    mix: half,
+    starLayer: layer(),
+  });
+  const clear = rampAt(half)[rampAt(half).length - 1];
+
+  let blended = 0;
+  for (let i = 0; i < field.cols * field.rows; i += 1) {
+    const colour = [mid[i * 4], mid[i * 4 + 1], mid[i * 4 + 2]];
+    const tint = [STAR_TINTS[1], STAR_TINTS[2], STAR_DIM].find((candidate) =>
+      colour.every(
+        (value, channel) =>
+          Math.abs(
+            value -
+              clear[channel] -
+              (candidate[channel] - clear[channel]) * half,
+          ) <= 1,
+      ),
+    );
+    if (tint) blended += 1;
+  }
+  assert.ok(blended > 0, "a star is a half-way blend of the clear band");
+
+  const night = renderFrame({
+    field,
+    config,
+    mix: 1,
+    starLayer: layer(),
+  });
+  const shipped = new Set(
+    [...Object.values(STAR_TINTS), STAR_DIM].map(
+      ([r, g, b]) => `${r},${g},${b}`,
+    ),
+  );
+  assert.ok(
+    [...shipped].some((tint) => {
+      const [r, g, b] = tint.split(",").map(Number);
+      return night.some(
+        (_, i) =>
+          i % 4 === 0 &&
+          night[i] === r &&
+          night[i + 1] === g &&
+          night[i + 2] === b,
+      );
+    }),
+    "a night-mix paints the shipped tints",
+  );
+});
+
+test("an interrupted crossing has no seam at the interrupt", () => {
+  // A fall to night, interrupted half-way and reversed. The interrupt must not
+  // introduce a step bigger than the crossing's own steps: the ramp continues
+  // from where it was rather than jumping.
+  const falling = [];
+  for (let elapsed = 0; elapsed <= TRANSITION_MS / 2; elapsed += 16) {
+    falling.push(transitionMix(0, 1, elapsed));
+  }
+  const held = falling[falling.length - 1];
+
+  const rising = [];
+  for (let elapsed = 0; elapsed <= TRANSITION_MS; elapsed += 16) {
+    rising.push(transitionMix(held, 0, elapsed));
+  }
+
+  assert.equal(rising[0], held, "the reversed crossing opens where it left");
+  assert.equal(rising[rising.length - 1], 0, "it lands on day");
+
+  const ramps = [...falling, ...rising].map(rampAt);
+  const step = (from, to) => {
+    let largest = 0;
+    for (let stop = 0; stop < RAMP.length; stop += 1) {
+      for (let channel = 0; channel < 3; channel += 1) {
+        largest = Math.max(
+          largest,
+          Math.abs(to[stop][channel] - from[stop][channel]),
+        );
+      }
+    }
+    return largest;
+  };
+
+  const steps = ramps.slice(1).map((ramp, i) => step(ramps[i], ramp));
+  const seam = steps[falling.length - 1];
+
+  assert.ok(
+    steps.some((value) => value > 0),
+    "the test samples a crossing in flight",
+  );
+  assert.equal(seam, 0, "the interrupt adds no step of its own");
 });
