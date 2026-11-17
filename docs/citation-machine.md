@@ -287,6 +287,14 @@ What the machine deliberately leaves out: no DOI, Zenodo, or archival
 registration — persistence is assigned to the archive by the citation
 principles, and the pilot stays lean. No rendering or consumption of snippet
 blocks exists today; the schema is repo convention until a consumer appears.
+No `codemeta.json` — it would duplicate `CITATION.cff` except for
+dependencies, which map to its `softwareRequirements` property; no consumer
+in the pilot's set reads it (GitHub's citation widget ignores it, Software
+Heritage indexes only older versions, Zenodo has no official consumption),
+and current-version validation tooling is thin. Revisit only when a rollout
+repo targets a consumer that reads codemeta — then the file sits at the
+repo root under the REUSE globs and cite-lint gains one unparsable-config
+finding for it.
 
 ## Rolling the machine into the next repo
 
