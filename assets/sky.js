@@ -220,8 +220,18 @@ if (sky && canvas) {
         return;
       }
 
-      flight = { from: mixNow(now), to: target, start: now };
-      start();
+      // The palette strip stamps its wheel's clock in a frame callback, not in
+      // the click handler, and the token fade likewise begins at the next
+      // style change. One frame of wait puts the three on the same clock.
+      requestAnimationFrame(() => {
+        const startedAt = performance.now();
+        if (reducedMotion.matches || document.hidden || !inView) {
+          settle(startedAt, target);
+          return;
+        }
+        flight = { from: mixNow(startedAt), to: target, start: startedAt };
+        start();
+      });
     });
 
     window.addEventListener("resize", () => {

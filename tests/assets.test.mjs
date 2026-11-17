@@ -608,3 +608,19 @@ test("the page palette crosses in step with the sky", () => {
     "the token fade is gated behind the motion preference",
   );
 });
+
+test("the sky starts its crossing on the wheel's clock", () => {
+  const sky = readFileSync(join(root, "assets", "sky.js"), "utf8");
+  const handler = sky.slice(sky.indexOf('addEventListener("themechange"'));
+
+  assert.match(
+    handler,
+    /requestAnimationFrame\(\(\) => \{\s*const startedAt = performance\.now\(\)/,
+    "the flight is stamped in a frame callback, not in the click handler",
+  );
+  assert.match(
+    handler,
+    /flight = \{ from: mixNow\(startedAt\), to: target, start: startedAt \}/,
+    "the flight starts where the frame callback found the mix",
+  );
+});

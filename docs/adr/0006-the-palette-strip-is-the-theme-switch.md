@@ -45,7 +45,10 @@ time. The clear band darkens and the stars fade in with it.
 
 The crossing takes one wheel turn (`TURN_MS`, 640ms, preceded by smoothstep),
 because the strip is already turning on the click. Two motions of different
-lengths would read as two events.
+lengths would read as two events. The sky holds for one frame before it starts:
+the strip stamps its wheel's clock in a frame callback rather than in the click
+handler, and the token fade begins at the next style change, so the frame of
+wait is what puts all three on the same clock.
 
 A crossing re-targets rather than restarts: a second click takes the current
 mix as its origin, so interrupting never pops. Reduced motion, a hidden tab or
