@@ -53,18 +53,18 @@ The audit selected 87 files with these settings.
 
 ## All tracked files
 
-The tracked set when this scope was set was 162 files. This document adds one more, under the skipped `docs/agents/`, so the judged count stays 87.
+The tracked set is 164 files. This document and `.pi/pi-warden.json` added two of them — one skipped under `docs/agents/`, one named only for its dot-path — so the judged count stays 87.
 
 | Outcome                                                             |   Files |
 | ------------------------------------------------------------------- | ------: |
 | Judged by the walk                                                  |      87 |
 | Excluded by `rules.exclude`                                         |       3 |
-| Skipped by config or the built-in `vendor/` skip                    |      32 |
-| Named only: dot-paths and extensionless names                       |      13 |
+| Skipped by config or the built-in `vendor/` skip                    |      33 |
+| Named only: dot-paths and extensionless names                       |      14 |
 | Not source: images, font, config JSON, `assets/sky-poster-dark.svg` |      27 |
-| **Total**                                                           | **162** |
+| **Total**                                                           | **164** |
 
-The 13 named-only entries are `Makefile`, `assets/fonts/LICENSE-FONT`, the three `vocabulary/` files, the four config dotfiles (`.prettierrc.json`, `.prettierignore`, `.pi-lens.json`, `.gitignore`), the generated `.pi-warden/rules-audit.md`, and the three workflow/hook files listed below.
+The 14 named-only entries are `Makefile`, `assets/fonts/LICENSE-FONT`, the three `vocabulary/` files, the five config dotfiles (`.prettierrc.json`, `.prettierignore`, `.pi-lens.json`, `.gitignore`, `.pi/pi-warden.json`), the generated `.pi-warden/rules-audit.md`, and the three workflow/hook files listed below.
 
 ## Named only
 

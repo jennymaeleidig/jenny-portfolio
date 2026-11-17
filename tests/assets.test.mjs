@@ -626,9 +626,9 @@ test("the sky starts its crossing on the wheel's clock", () => {
 });
 
 test("each registered token starts at the colour its theme declares", () => {
-  // The initial value is the third copy of the light palette: it is what a
-  // browser uses before (or without) the :root declarations, so a palette edit
-  // that misses it would show a stale colour.
+  // The initial value is one of three copies of the light palette: it is what
+  // a browser uses before (or without) the :root declarations, so a palette
+  // edit that misses it would show a stale colour.
   const lightBlock = siteCss.slice(
     siteCss.indexOf(":root {") + 1,
     siteCss.indexOf("}", siteCss.indexOf(":root {")),

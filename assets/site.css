@@ -597,7 +597,8 @@ i {
 /*
  * Now is the same table as the catalogue, two columns wide: what the reader
  * is doing on the left, the blurb on the right. The first column carries the
- * short section names, so it gets the fixed width the year column has.
+ * short section names, so it gets a fixed 14ch of its own, where the year
+ * column takes 6ch.
  */
 .now-table th:first-child,
 .now-table td:first-child {
@@ -825,7 +826,7 @@ main > :last-child > :last-child {
  * stage is a zero-size centre point that preserves the 3D context. Nothing
  * here clips, masks, filters or shades: the 105 degree arc stays inside the
  * strip's reserved seven-square box. Each notch's colour is set inline from
- * the static spans' computed backgrounds, so the tokens stay in this file.
+ * the palette this file declares, so the tokens stay here.
  */
 .palette-strip.is-wheeling > span:not(.wheel-viewport) {
   visibility: hidden;
@@ -1315,10 +1316,11 @@ th {
 }
 
 /*
- * Narrow viewports. The site is one column above this, so the featured grid
- * and the catalogue keep their reading order and stop sitting side by side.
- * The header and filters move to their own lines rather than leaving a
- * single word orphaned on a second row.
+ * Narrow viewports. At and below this width the featured grid becomes one
+ * column, so its cards keep their reading order instead of sitting side by
+ * side; the catalogue turns into blocks at 640px. The header and filters move
+ * to their own lines rather than leaving a single word orphaned on a second
+ * row.
  */
 @media screen and (max-width: 760px) {
   .grid > * {

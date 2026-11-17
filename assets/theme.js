@@ -8,7 +8,8 @@
  * nav.js asks it to.
  *
  * A click applies the theme first, so the page never waits for the wheel.
- * Unless motion is reduced, a generated fourteen-notch wheel then turns one
+ * Unless motion is reduced, or the stylesheet's palettes cannot be read, a
+ * generated fourteen-notch wheel then turns one
  * 105 degree step in the strip's place, starting on the outgoing palette and
  * settling on the incoming one. The geometry and timeline live in
  * wheel-core.mjs.
@@ -87,7 +88,8 @@ function setTheme(dark) {
  * theme, in strip order.
  *
  * @param {boolean} dark
- * @returns {string[] | null} null when a sheet's rules cannot be read
+ * @returns {string[] | null} null when a sheet's rules cannot be read, or when
+ * the rules in force declare fewer than the seven tokens
  */
 function declaredPalette(dark) {
   const selector = dark ? `:root[data-theme="${DARK}"]` : ":root";

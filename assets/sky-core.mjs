@@ -507,6 +507,8 @@ const EVOLVE = Object.freeze({
   driftX: 42, // cells/s at evolveSpeed = 100
 });
 
+const GUTTER = 16;
+
 /**
  * Build one period of the field.
  *
@@ -528,8 +530,6 @@ const EVOLVE = Object.freeze({
  * plane, masses swell in one place while they thin in another; because it
  * drifts continuously, no fixed spot breathes in and out.
  */
-const GUTTER = 16;
-
 export function createField({
   cols,
   rows,

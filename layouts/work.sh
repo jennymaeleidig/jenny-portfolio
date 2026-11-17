@@ -25,7 +25,7 @@ if [[ -n $category ]]; then
 else
   # The route is /work/, but the tab the reader is on is Projects.
   heading="Projects"
-  description="The catalogue: every project, newest first, with its blurb, category and year."
+  description="The catalogue: every project, pinned first, then newest, with its blurb, category and year."
 fi
 
 rows=$(
