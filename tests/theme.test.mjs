@@ -68,8 +68,11 @@ test("the strip syncs every control from the active theme", () => {
     theme,
     /control\.setAttribute\("aria-pressed", String\(dark\)\)/,
   );
-  assert.match(theme, /control\.setAttribute\("aria-label", label\)/);
-  assert.match(theme, /control\.setAttribute\("title", label\)/);
+  assert.doesNotMatch(
+    theme,
+    /setAttribute\("(aria-label|title)", label\)/,
+    "the name stays fixed; the pressed state carries the choice",
+  );
   assert.match(theme, /document\.addEventListener\("theme-sync"/);
 });
 

@@ -9,7 +9,7 @@ import { PERSPECTIVE } from "../assets/wheel-core.mjs";
 import { TRANSITION_MS } from "../assets/sky-core.mjs";
 import {
   POSTER,
-  SWATCH_TOKENS,
+  NOTCH_TOKENS,
   TOKENS,
   build,
   contrast,
@@ -311,7 +311,7 @@ test("the catalogue and the header stay readable on a narrow viewport", () => {
 
 test("every page runs the palette strip in its header and its footer", () => {
   const strip =
-    /<button class="palette-strip" type="button" aria-pressed="false" aria-label="Switch to dark theme" title="Switch to dark theme">((?:<span><\/span>){7})<\/button>/;
+    /<button class="palette-strip" type="button" aria-pressed="false" aria-label="Dark theme" title="Dark theme">((?:<span><\/span>){7})<\/button>/;
 
   for (const file of htmlFiles) {
     const html = readFileSync(file, "utf8");
@@ -353,12 +353,12 @@ test("every page runs the palette strip in its header and its footer", () => {
   );
   assert.match(
     siteCss,
-    /\.site-header \.palette-strip\s*\{\s*top:\s*var\(--swatch-inset-y\)/s,
+    /\.site-header \.palette-strip\s*\{\s*top:\s*var\(--notch-inset-y\)/s,
     "the header strip sits on the header's text line",
   );
   assert.match(
     siteCss,
-    /\.site-footer \.palette-strip\s*\{[^}]*bottom:\s*var\(--swatch-inset-y\)/s,
+    /\.site-footer \.palette-strip\s*\{[^}]*bottom:\s*var\(--notch-inset-y\)/s,
     "the footer strip sits on the footer's text line",
   );
   assert.match(
@@ -368,7 +368,7 @@ test("every page runs the palette strip in its header and its footer", () => {
   );
   assert.match(
     siteCss,
-    /\.palette-strip > \*:not\(\.wheel-viewport\)\s*\{[^}]*width:\s*var\(--swatch-size\)[^}]*height:\s*var\(--swatch-size\)/s,
+    /\.palette-strip > \*:not\(\.wheel-viewport\)\s*\{[^}]*width:\s*var\(--notch-size\)[^}]*height:\s*var\(--notch-size\)/s,
     "every static square is 1x1 and the wheel viewport is excluded",
   );
   const sheetBlock = siteCss.match(/\.sheet\s*\{([^}]*)\}/s)?.[1] ?? "";
@@ -392,7 +392,7 @@ test("every page runs the palette strip in its header and its footer", () => {
     /\.site-header nav a,\s*\n\.site-footer a\s*\{[^}]*background-color:\s*var\(--paper\)/s,
     "type over the strip carries its own paper backing, so it stays legible",
   );
-  for (const [index, name] of SWATCH_TOKENS.entries()) {
+  for (const [index, name] of NOTCH_TOKENS.entries()) {
     assert.match(
       siteCss,
       new RegExp(
@@ -471,7 +471,7 @@ test("the strip's turn stays inside its reserved box and stays flat", () => {
 
   assert.match(
     siteCss,
-    /@media screen and \(max-width: 560px\)\s*\{[\s\S]*?--swatch-size:\s*1rem/s,
+    /@media screen and \(max-width: 560px\)\s*\{[\s\S]*?--notch-size:\s*1rem/s,
     "the mobile strip keeps its 16 px square",
   );
   assert.equal(

@@ -205,7 +205,7 @@ body {
    */
   --sheet-font-size: 1rem;
   --sheet-pad-x: 3ch;
-  --swatch-size: 1.25rem;
+  --notch-size: 1.25rem;
   --sheet-pad-y: var(--line-height);
   position: relative;
   width: 100%;
@@ -750,12 +750,12 @@ main > :last-child > :last-child {
  */
 .palette-strip {
   /*
-   * The squares inherit --swatch-size from the sheet, so the strip and the
+   * The squares inherit --notch-size from the sheet, so the strip and the
    * paper's own inset stay one number. The strip never takes room from the
    * flow: the header and the footer lay out as if it were not there.
    */
-  --swatch-inset-y: calc(
-    var(--sheet-pad-y) + (var(--line-height) - var(--swatch-size)) / 2
+  --notch-inset-y: calc(
+    var(--sheet-pad-y) + (var(--line-height) - var(--notch-size)) / 2
   );
   font-size: var(--sheet-font-size);
   position: absolute;
@@ -775,9 +775,9 @@ main > :last-child > :last-child {
 
 .palette-strip > *:not(.wheel-viewport) {
   display: block;
-  flex: 0 0 var(--swatch-size);
-  width: var(--swatch-size);
-  height: var(--swatch-size);
+  flex: 0 0 var(--notch-size);
+  width: var(--notch-size);
+  height: var(--notch-size);
 }
 
 .palette-strip > * + * {
@@ -807,7 +807,7 @@ main > :last-child > :last-child {
 }
 
 .site-header .palette-strip {
-  top: var(--swatch-inset-y);
+  top: var(--notch-inset-y);
 }
 
 /*
@@ -816,7 +816,7 @@ main > :last-child > :last-child {
  */
 .site-footer .palette-strip {
   right: auto;
-  bottom: var(--swatch-inset-y);
+  bottom: var(--notch-inset-y);
   left: var(--sheet-pad-x);
   flex-direction: row-reverse;
 }
@@ -1342,7 +1342,7 @@ th {
   .sheet {
     --sheet-pad-x: 2ch;
     --sheet-pad-y: calc(var(--line-height) / 2);
-    --swatch-size: 1rem;
+    --notch-size: 1rem;
   }
 
   .site-header {

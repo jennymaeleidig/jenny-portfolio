@@ -60,11 +60,10 @@ function strips() {
 
 function sync() {
   const dark = currentDark();
-  const label = dark ? "Switch to light theme" : "Switch to dark theme";
   for (const control of strips()) {
+    // The name is the thing the button controls, so it never changes; a label
+    // naming the next action would contradict the pressed state.
     control.setAttribute("aria-pressed", String(dark));
-    control.setAttribute("aria-label", label);
-    control.setAttribute("title", label);
   }
 }
 

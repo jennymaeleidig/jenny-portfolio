@@ -166,7 +166,7 @@ shell_sheet_open() {
           <a href="$about_href"$(current_page_attr "$section" about)>About</a>
           <a href="$now_href"$(current_page_attr "$section" now)>Now</a>
         </nav>
-        $(swatch_strip)
+        $(palette_strip)
       </header>
       <main>
 EOF
@@ -182,7 +182,7 @@ shell_main_close() {
   printf '      </main>\n'
   # The footer pairs the email with the location, which stays plain text.
   cat <<EOF
-      <footer class="site-footer"><a href="mailto:$(html_escape "$email")">$(html_escape "$email")</a>${location_html}$(swatch_strip)</footer>
+      <footer class="site-footer"><a href="mailto:$(html_escape "$email")">$(html_escape "$email")</a>${location_html}$(palette_strip)</footer>
     </div>
 EOF
 }
@@ -191,9 +191,9 @@ EOF
 # order, so the colours stay in one place and the markup carries none. The
 # strip is the theme control: clicking it swaps the palette, and its pressed
 # state follows the theme boot script's choice.
-swatch_strip() {
+palette_strip() {
   local _
-  printf '<button class="palette-strip" type="button" aria-pressed="false" aria-label="Switch to dark theme" title="Switch to dark theme">'
+  printf '<button class="palette-strip" type="button" aria-pressed="false" aria-label="Dark theme" title="Dark theme">'
   for _ in 1 2 3 4 5 6 7; do
     printf '<span></span>'
   done
