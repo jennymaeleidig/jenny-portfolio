@@ -10,3 +10,14 @@ authors:
     given-names: Jenny
 repository-code: "https://github.com/jennymaeleidig/jenny-portfolio"
 license: CC0-1.0
+references:
+  - type: software
+    title: "jenny: a bash-based static blog generator"
+    authors:
+      - family-names: Ambrosio
+        given-names: Conrado Patricio
+    version: 1.2.5
+    commit: 624251884886dc22b50b2f909c5cd2f957425a86
+    repository-code: "https://github.com/hmngwy/jenny"
+    license: MIT
+    year: 2021

@@ -52,6 +52,15 @@ Pin it to `cff-version: 1.2.0`. The newest released schema is 1.2.0
 (`ruby-cff`) bundles exactly the 1.2.0 schema, so only 1.2.0 should be expected
 to render.
 
+A vendored or otherwise built-on dependency belongs here as a `references`
+entry — the spec's own description is "works that your software or dataset
+builds on". The `type` enum includes `software`, and a reference carries
+`version`, `commit`, `repository-code`, and `license`, so a pinned, sourced
+dependency fits without leaving the standard. GitHub's cite box ignores
+`references`, rendering top-level fields only; the entry is for the consumers
+that read the whole file. Keep one entry per dependency, mirroring the pin
+and notice already recorded at the REUSE and prose layers.
+
 `cffconvert --validate` checks file shape only, rigidly and deterministically
 (JSON Schema draft-07, `additionalProperties: false`). It does not cross-check
 contents against the repository — that `license` matches `LICENSE`, that DOIs
@@ -287,14 +296,15 @@ What the machine deliberately leaves out: no DOI, Zenodo, or archival
 registration — persistence is assigned to the archive by the citation
 principles, and the pilot stays lean. No rendering or consumption of snippet
 blocks exists today; the schema is repo convention until a consumer appears.
-No `codemeta.json` — it would duplicate `CITATION.cff` except for
-dependencies, which map to its `softwareRequirements` property; no consumer
-in the pilot's set reads it (GitHub's citation widget ignores it, Software
-Heritage indexes only older versions, Zenodo has no official consumption),
-and current-version validation tooling is thin. Revisit only when a rollout
-repo targets a consumer that reads codemeta — then the file sits at the
-repo root under the REUSE globs and cite-lint gains one unparsable-config
-finding for it.
+No `codemeta.json` — its one unique claim, machine-readable dependencies,
+now also lives in `CITATION.cff`'s `references` entries (the CodeMeta
+crosswalk itself maps CFF `references` onto its dependency property); no
+consumer in the pilot's set reads it (GitHub's citation widget ignores it,
+Software Heritage indexes only older versions, Zenodo has no official
+consumption), and current-version validation tooling is thin. Revisit only
+when a rollout repo targets a consumer that reads codemeta directly — then
+the file sits at the repo root under the REUSE globs and cite-lint gains one
+unparsable-config finding for it.
 
 ## Rolling the machine into the next repo
 
@@ -317,9 +327,11 @@ begins.
    its own traveling notices staying in place.
 4. **Get `reuse lint` green.** `pip install "reuse[charset-normalizer]"` in a
    venv; the tool reports every uncovered file.
-5. **Write `CITATION.cff`.** Pinned to `cff-version: 1.2.0`, minimal fields,
-   itself covered by `# SPDX-FileCopyrightText` and `# SPDX-License-Identifier`
-   comment lines.
+5. **Write `CITATION.cff`.** Pinned to `cff-version: 1.2.0`, minimal fields
+   at the top level, plus one `references` entry per vendored or built-on
+   dependency (`type: software` with `version`, `commit`, `repository-code`,
+   `license`), itself covered by `# SPDX-FileCopyrightText` and
+   `# SPDX-License-Identifier` comment lines.
 6. **Build cite-lint schema-first.** Decide the required snippet fields, then
    fixture trees per failure mode — a valid shape, unpaired and nested
    markers, missing and empty fields, malformed and unresolved licenses,
