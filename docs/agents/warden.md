@@ -18,17 +18,17 @@ Without this, the audit still judges the built-in shell and JavaScript files but
 
 ## Judged
 
-Built-in extensions: `sh`, `mjs`, `js`. Added extensions: `md`, `css`. The active rules are the user's `global.md` and this repository's `warden-local-rules.md`; the local rule is scoped to `tests/**`, so it never reads fixtures or content.
+Built-in extensions: `sh`, `mjs`, `js`. Added extensions: `md`, `css`. The active rules are the user's `global.md` and this repository's `warden-local-rules.md`, which carries two local rules: one scoped to `tests/**`, so it never reads fixtures or content, and one scoped to `assets/**`, `layouts/**`, `scripts/**`, and `content/**` — the paths where first-party code and site plumbing land.
 
 | Bucket                               | Count | Reached by     |
 | ------------------------------------ | ----: | -------------- |
-| Markdown outside the skipped paths   |    43 | `md`           |
+| Markdown outside the skipped paths   |    44 | `md`           |
 | Shell outside `vendor/` and fixtures |    22 | built-in `sh`  |
-| `.mjs`                               |    18 | built-in `mjs` |
+| `.mjs`                               |    20 | built-in `mjs` |
 | `.js`                                |     3 | built-in `js`  |
 | `assets/site.css`                    |     1 | `css`          |
 
-The audit selected 87 files with these settings.
+The audit selected 90 files with these settings.
 
 ## Excluded
 
@@ -53,18 +53,18 @@ The audit selected 87 files with these settings.
 
 ## All tracked files
 
-The tracked set is 164 files. This document and `.pi/pi-warden.json` added two of them — one skipped under `docs/agents/`, one named only for its dot-path — so the judged count stays 87.
+The tracked set is 194 files. The provenance work added the citation records, the `LICENSES/` texts, the cite-lint script, and its fixture trees — one more judged Markdown page, two more judged `.mjs` files, nineteen more skipped fixtures, nine more not-source records — so the judged count rises to 90.
 
 | Outcome                                                             |   Files |
 | ------------------------------------------------------------------- | ------: |
-| Judged by the walk                                                  |      87 |
+| Judged by the walk                                                  |      90 |
 | Excluded by `rules.exclude`                                         |       3 |
-| Skipped by config or the built-in `vendor/` skip                    |      33 |
-| Named only: dot-paths and extensionless names                       |      14 |
-| Not source: images, font, config JSON, `assets/sky-poster-dark.svg` |      27 |
-| **Total**                                                           | **164** |
+| Skipped by config or the built-in `vendor/` skip                    |      52 |
+| Named only: dot-paths and extensionless names                       |      13 |
+| Not source: images, font, config JSON, `assets/sky-poster-dark.svg` |      36 |
+| **Total**                                                           | **194** |
 
-The 14 named-only entries are `Makefile`, `assets/fonts/LICENSE-FONT`, the three `vocabulary/` files, the five config dotfiles (`.prettierrc.json`, `.prettierignore`, `.pi-lens.json`, `.gitignore`, `.pi/pi-warden.json`), the generated `.pi-warden/rules-audit.md`, and the three workflow/hook files listed below.
+The 13 named-only entries are `Makefile`, `assets/fonts/LICENSE-FONT`, the three `vocabulary/` files, the five config dotfiles (`.prettierrc.json`, `.prettierignore`, `.pi-lens.json`, `.gitignore`, `.pi/pi-warden.json`), and the three workflow/hook files listed below.
 
 ## Named only
 
@@ -76,7 +76,7 @@ The walk never sees dot-paths or extensionless names. These stay judgeable by na
   .husky/pre-commit .husky/pre-push .github/workflows/deploy.yml
 ```
 
-`assets/fonts/LICENSE-FONT` is licence text; `.prettierrc.json`, `.prettierignore`, `.pi-lens.json`, and `.gitignore` are config; `.pi-warden/rules-audit.md` is the generated audit report.
+`assets/fonts/LICENSE-FONT` is licence text; `.prettierrc.json`, `.prettierignore`, `.pi-lens.json`, and `.gitignore` are config. The generated `.pi-warden/rules-audit.md` is untracked, so it never enters the counts.
 
 ## Verification
 
@@ -86,4 +86,4 @@ The walk never sees dot-paths or extensionless names. These stay judgeable by na
 /warden rules audit . --max 200
 ```
 
-The audit dialog should name 87 files. A higher count means `md` or `css` is missing from the user file or an exclusion did not load; a lower count means a source extension or skip pattern is wrong. The project config is read only when Pi trusts this project.
+The audit dialog should name 90 files. A higher count means `md` or `css` is missing from the user file or an exclusion did not load; a lower count means a source extension or skip pattern is wrong. The project config is read only when Pi trusts this project.
