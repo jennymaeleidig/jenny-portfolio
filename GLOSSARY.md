@@ -87,7 +87,8 @@ _Avoid_: colour scheme, mode, skin
 
 **Palette strip**:
 The seven 1x1 token squares in the header and footer. Both strips are the
-theme switch, and a click turns them as a wheel onto the other palette.
+theme switch. A click switches the palette, turning the strip as a wheel unless
+motion is reduced.
 _Avoid_: swatches
 
 **Wheel**:

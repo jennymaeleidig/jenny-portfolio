@@ -7,10 +7,11 @@
  * file finishes an in-flight turn and re-syncs the copied header's strips when
  * nav.js asks it to.
  *
- * A click applies the theme first and then paints a receipt: the seven static
- * squares pinch into a short 3D drum, turn one 105 degree step, and settle onto
- * the incoming row. The wheel keeps the outgoing colours while it turns. The
- * geometry and timeline live in wheel-core.mjs.
+ * A click applies the theme first, so the page never waits for the wheel.
+ * Unless motion is reduced, a generated fourteen-notch wheel then turns one
+ * 105 degree step in the strip's place, starting on the outgoing palette and
+ * settling on the incoming one. The geometry and timeline live in
+ * wheel-core.mjs.
  */
 
 import { DARK, LIGHT, THEME_STORAGE_KEY, isDark } from "./theme-core.mjs";

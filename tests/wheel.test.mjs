@@ -22,7 +22,7 @@ const close = (actual, expected, message) =>
     `${message}: expected ${expected}, got ${actual}`,
   );
 
-test("the wheel turns one seven-notch step of 15 degrees", () => {
+test("the wheel turns one seven-notch step of 105 degrees", () => {
   assert.equal(NOTCH_COUNT, 7);
   assert.equal(ANGLE_PER_NOTCH, 15);
   assert.equal(NOTCH_COUNT * ANGLE_PER_NOTCH, 105);
@@ -90,7 +90,7 @@ test("the outgoing group fades only once the rotation is underway", () => {
   assert.ok(frameAt(late).outgoingOpacity > 0);
 });
 
-test("the end of the rotation hands over to the incoming row", () => {
+test("the rotation ends on the incoming row", () => {
   const frame = frameAt(PINCH_MS + ROTATE_MS);
 
   assert.equal(frame.pinch, 1);

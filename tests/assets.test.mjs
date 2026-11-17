@@ -403,7 +403,7 @@ test("every page runs the palette strip in its header and its footer", () => {
   assert.doesNotMatch(
     siteCss,
     /\\.palette-strip > :nth-child\\(\\d+\\)\\s*\\{\\s*background:\\s*var\\(--paper\\)/,
-    "paper is the sheet, not a swatch",
+    "paper is the sheet, not a strip square",
   );
 });
 

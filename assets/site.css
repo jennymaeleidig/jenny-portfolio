@@ -645,12 +645,13 @@ main > :last-child > :last-child {
 }
 
 /*
- * The palette strip: the seven tokens as 1x1 squares, butted edge to edge with
- * no gap, in one row that never wraps and never shrinks. It is taken out of
- * flow and set into the paper, so it is furniture printed on the sheet rather
- * than content: the header and the footer wrap and measure as though it were
- * not there, and anything that needs the space draws over it. Vertically it
- * sits on the text line it belongs to, so it reads as part of that line.
+ * The palette strip: seven of the palette's eight tokens as 1x1 squares,
+ * butted edge to edge with no gap, in one row that never wraps and never
+ * shrinks. It is taken out of flow and set into the paper, so it is furniture
+ * printed on the sheet rather than content: the header and the footer wrap and
+ * measure as though it were not there, and anything that needs the space draws
+ * over it. Vertically it sits on the text line it belongs to, so it reads as
+ * part of that line.
  * Colours are assigned in token order, so the palette lives in one place.
  * During a turn the static squares are hidden and the generated wheel paints
  * in their place; the wheel viewport is excluded from the square rule below.
