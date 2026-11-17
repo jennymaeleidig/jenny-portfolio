@@ -1,4 +1,1 @@
-version = 1
-
-[[annotations
-path = "src/*"
+REUSE.toml.malformed
