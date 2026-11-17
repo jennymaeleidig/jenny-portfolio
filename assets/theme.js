@@ -28,6 +28,17 @@ const root = document.documentElement;
 const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 const HALF_NOTCHES = (NOTCH_COUNT - 1) / 2;
 
+/** The strip's colours, in its CSS order. The stylesheet declares the values. */
+const NOTCH_TOKENS = [
+  "--ink",
+  "--accent",
+  "--accent-bright",
+  "--sky-1",
+  "--sky-2",
+  "--sky-3",
+  "--sky-4",
+];
+
 let animating = false;
 /** @type {(() => void) | null} */
 let endTurn = null;
@@ -69,12 +80,82 @@ function setTheme(dark) {
  * The seven static squares' computed colours, in token order. Reading the
  * spans keeps the stylesheet the one source of token names and values.
  *
+ * A theme switch starts the token fade before the wheel is built, so this is
+ * only a fallback: during the fade a computed colour is part-way between the
+ * two palettes. Use `paletteColors` for the wheel.
+ *
  * @param {Element} control
  */
 function notchColors(control) {
   return [...control.querySelectorAll(":scope > span")]
     .slice(0, NOTCH_COUNT)
     .map((span) => getComputedStyle(span).backgroundColor);
+}
+
+/**
+ * A stylesheet rule, narrowed to the parts a token read needs.
+ *
+ * @typedef {{
+ *   cssRules?: TokenRuleList,
+ *   selectorText?: string,
+ *   style?: CSSStyleDeclaration,
+ * }} TokenRule
+ */
+
+/** @typedef {{ length: number, [index: number]: TokenRule }} TokenRuleList */
+
+/**
+ * Collect a selector's declared token values from a rule and its children.
+ *
+ * @param {TokenRule} rule
+ * @param {string} selector
+ * @param {Map<string, string>} declared
+ */
+function collectTokens(rule, selector, declared) {
+  const nested = /** @type {TokenRuleList | undefined} */ (rule.cssRules);
+  if (nested) {
+    for (let index = 0; index < nested.length; index += 1) {
+      collectTokens(nested[index], selector, declared);
+    }
+    return;
+  }
+  if (rule.selectorText !== selector || !rule.style) return;
+  for (const token of NOTCH_TOKENS) {
+    const value = rule.style.getPropertyValue(token).trim();
+    if (value) declared.set(token, value);
+  }
+}
+
+/**
+ * The seven swatch colours the stylesheet declares for a theme, in strip
+ * order. Read from the rules, not from a live element: a switch starts the
+ * token fade at once, so a computed colour read after it begins is a blend of
+ * the two palettes, and the wheel would land on that blend instead of the
+ * incoming palette.
+ *
+ * @param {boolean} dark
+ * @returns {string[] | null}
+ */
+function paletteColors(dark) {
+  const selector = dark ? `:root[data-theme="${DARK}"]` : ":root";
+  const declared = new Map();
+
+  for (const sheet of document.styleSheets) {
+    /** @type {TokenRuleList | undefined} */
+    let rules;
+    try {
+      rules = /** @type {TokenRuleList} */ (sheet.cssRules);
+    } catch {
+      // A cross-origin sheet cannot be read; the caller falls back.
+      continue;
+    }
+    for (let index = 0; index < rules.length; index += 1) {
+      collectTokens(rules[index], selector, declared);
+    }
+  }
+
+  const colours = NOTCH_TOKENS.map((token) => declared.get(token));
+  return colours.every(Boolean) ? colours : null;
 }
 
 /**
@@ -226,10 +307,13 @@ function swap() {
   }
 
   // Resolve the strips per turn: client-side navigation replaces the header.
+  // Both palettes come from the stylesheet's declared values, so the wheel
+  // lands on the incoming palette rather than on a part-faded blend of the
+  // two.
   const targets = strips().map((control) => ({
     control,
     role: roleOf(control),
-    outgoing: notchColors(control),
+    outgoing: paletteColors(outgoingTheme === DARK) ?? notchColors(control),
   }));
 
   animating = true;
@@ -240,7 +324,7 @@ function swap() {
       target,
       outgoingTheme,
       target.outgoing,
-      notchColors(target.control),
+      paletteColors(toDark) ?? notchColors(target.control),
     ),
   );
 

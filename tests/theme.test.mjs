@@ -90,9 +90,9 @@ test("the theme changes first and the wheel paints the receipt", () => {
   );
   const turn = swap.slice(swap.indexOf("const targets = strips()"));
   const order = [
-    "outgoing: notchColors(control)",
+    "outgoing: paletteColors(outgoingTheme === DARK)",
     "setTheme(toDark)",
-    "notchColors(target.control)",
+    "paletteColors(toDark)",
     "paintWheels(wheels, frameAt(0))",
     "requestAnimationFrame(",
   ].map((step) => turn.indexOf(step));
@@ -108,8 +108,8 @@ test("the theme changes first and the wheel paints the receipt", () => {
   }
   assert.match(
     turn,
-    /makeWheel\(\s*target,\s*outgoingTheme,\s*target\.outgoing,\s*notchColors\(target\.control\),\s*\)/,
-    "the built wheel takes both captured palettes",
+    /makeWheel\(\s*target,\s*outgoingTheme,\s*target\.outgoing,\s*paletteColors\(toDark\) \?\? notchColors\(target\.control\),\s*\)/,
+    "the built wheel takes both declared palettes",
   );
   assert.match(
     turn,
@@ -211,5 +211,41 @@ test("the theme does not follow the system preference", () => {
     ["shell.sh", shell],
   ]) {
     assert.doesNotMatch(source, /prefers-color-scheme/, `${name} stays manual`);
+  }
+});
+
+test("the wheel reads declared palettes, not the fading page", () => {
+  // A switch starts the token fade before the wheel is built, so a computed
+  // colour at that moment is a blend of the two palettes. The wheel must land
+  // on the incoming palette, which only the stylesheet's declarations hold.
+  assert.match(
+    theme,
+    /function collectTokens\(rule, selector, declared\) \{[\s\S]*getPropertyValue\(token\)/,
+    "the values come from the stylesheet's declared tokens",
+  );
+  assert.match(
+    theme,
+    /function paletteColors\(dark\) \{/,
+    "a declared palette resolves per theme",
+  );
+  assert.match(
+    theme,
+    /const selector = dark \? `:root\[data-theme="\$\{DARK\}"\]` : ":root";/,
+    "each theme is read from its own rule",
+  );
+  // The strip's colours are the token list the stylesheet paints, in order.
+  for (const token of [
+    "--ink",
+    "--accent",
+    "--accent-bright",
+    "--sky-1",
+    "--sky-2",
+    "--sky-3",
+    "--sky-4",
+  ]) {
+    assert.ok(
+      theme.includes(`"${token}"`),
+      `${token} is one of the strip's colours`,
+    );
   }
 });

@@ -75,6 +75,9 @@ unregistered property would cut the page over half-way through the fade.
   `TURN_MS`), its easing (`smoothstep`) and the ramp lerp. The stylesheet
   repeats the duration and the equivalent cubic bezier; a test fails if they
   drift.
+- The wheel reads its two palettes from the stylesheet's declared token values,
+  not from a live element. A computed colour read after the fade has begun is a
+  blend of both palettes, so the incoming row would land on that blend.
 
 ## Rejected alternatives
 
