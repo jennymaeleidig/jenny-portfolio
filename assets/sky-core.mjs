@@ -18,24 +18,28 @@
  *
  * The browser layer (assets/sky.js) is the only part that touches the DOM.
  *
- * Star sources (FORCE11):
+ * Star sources (idea-level re-implementation, no code copied; FORCE11):
  *   Joy-less. (2025). AnimatedStarfieldShader [Computer software]. GitHub.
+ *     MIT, © 2025 Joyless.
  *     https://github.com/Joy-less/AnimatedStarfieldShader
  *   xcv145336. (2025). [2D] Sparkling star effect (Version 2.1) [Computer
- *     software]. Godot Shaders.
+ *     software]. Godot Shaders. CC0-1.0.
  *     https://godotshaders.com/shader/2d-sparkling-star-effect-ver-2-0/
  *   xcv145336. (2025). [2D] Starfield in the sky with scrolling effect (Version
- *     1.0) [Computer software]. Godot Shaders.
+ *     1.0) [Computer software]. Godot Shaders. CC0-1.0.
  *     https://godotshaders.com/shader/2d-starfield-in-the-sky-with-scrolling-effect-ver-1-0/
+ * What carries over from them is ideas only: one star per cell, a random
+ * twinkle phase, bright cores fading to dim extremities. No expression,
+ * constant, or code block is copied, so only the credit is owed.
  *
  * Source (visual reference only, no code copied):
  *   Paper, "Paper Shaders: ultra-fast zero-dependency shaders",
  *   Apache-2.0, https://shaders.paper.design/
  *   Code: https://github.com/paper-design/shaders
- * The dither, grain and gradient vocabulary here follows that library's look.
- * Nothing from it is vendored, so only the credit is owed. Its NOTICE file
- * ("Powered by Paper Shaders: https://shaders.paper.design") has to travel
- * only if shader code is ever copied in.
+ * The dither vocabulary here follows that library's look. Nothing from it is
+ * vendored, so only the credit is owed. Its NOTICE file ("Powered by Paper
+ * Shaders: https://shaders.paper.design") has to travel only if shader code
+ * is ever copied in.
  */
 
 import { TURN_MS } from "./wheel-core.mjs";

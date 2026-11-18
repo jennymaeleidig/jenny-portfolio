@@ -1,0 +1,6 @@
+version = 1
+
+[[annotations]]
+path = "src/*"
+SPDX-FileCopyrightText = "2024 Jane Doe"
+SPDX-License-Identifier = "MIT"

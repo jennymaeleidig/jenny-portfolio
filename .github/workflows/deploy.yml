@@ -30,6 +30,21 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      - name: Check REUSE provenance
+        run: |
+          python3 -m venv /tmp/reuse-venv
+          /tmp/reuse-venv/bin/pip install "reuse[charset-normalizer]"
+          /tmp/reuse-venv/bin/reuse lint
+
+      - name: Lint provenance
+        run: make lint:provenance
+
+      - name: Validate the citation file
+        run: |
+          python3 -m venv /tmp/cff-venv
+          /tmp/cff-venv/bin/pip install cffconvert
+          /tmp/cff-venv/bin/cffconvert --validate
+
       - name: Install the markdown parser
         run: |
           sudo apt-get update

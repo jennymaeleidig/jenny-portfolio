@@ -1,0 +1,31 @@
+{
+  "@context": "https://w3id.org/codemeta/4.0",
+  "@type": "SoftwareSourceCode",
+  "name": "Jenny Leidig's portfolio",
+  "description": "A portfolio site built from shell and content files.",
+  "codeRepository": "https://github.com/jennymaeleidig/jenny-portfolio",
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "Jenny",
+      "familyName": "Leidig"
+    }
+  ],
+  "license": "https://spdx.org/licenses/CC0-1.0",
+  "softwareRequirements": [
+    {
+      "@type": "SoftwareSourceCode",
+      "name": "jenny: a bash-based static blog generator",
+      "author": [
+        {
+          "@type": "Person",
+          "givenName": "Conrado Patricio",
+          "familyName": "Ambrosio"
+        }
+      ],
+      "version": "1.2.5",
+      "codeRepository": "https://github.com/hmngwy/jenny",
+      "license": "https://spdx.org/licenses/MIT"
+    }
+  ]
+}

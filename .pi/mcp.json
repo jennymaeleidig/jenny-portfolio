@@ -1,5 +1,8 @@
 {
   "mcpServers": {
+    "github":{
+      "enabled": true
+    },
     "playwright": {
       "command": "npx",
       "args": [
@@ -12,7 +15,7 @@
         "--allow-unrestricted-file-access"
       ],
       "exposure": "codemode",
-      "description": "Drive a local Chrome to load the built site, click through pages, take screenshots, and print PDFs."
+      "description": "Drive a local Chromium to load the built site, click through pages, take screenshots, and print PDFs."
     }
   }
 }

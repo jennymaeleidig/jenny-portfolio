@@ -17,3 +17,7 @@ assets/sky-poster.svg
 
 # Vendored reset, copied verbatim
 assets/reset.css
+
+# Fixture trees carrying intentionally malformed provenance files
+tests/fixtures/provenance/bad-citation/
+tests/fixtures/provenance/bad-codemeta/
