@@ -81,9 +81,10 @@ function post_hook() {
 }
 EOF
 
-# Source: Conrado Patricio Ambrosio (hmngwy), "jenny: a bash-based static
-# blog generator", v1.2.5, commit 6242518, MIT. Vendored unmodified at
-# vendor/jenny; its notice is vendor/jenny/LICENSE.txt and its pin VERSION.
+# The generator invoked below is vendored, not copied into this script:
+# Conrado Patricio Ambrosio (hmngwy), "jenny: a bash-based static blog
+# generator", v1.2.5, commit 6242518, MIT, byte-identical at vendor/jenny;
+# its notice is vendor/jenny/LICENSE.txt and its pin VERSION.
 (
   cd "$staging"
   SUPPRESS_UTILS_WARN=1 "$root/vendor/jenny/bin/jenny" -n

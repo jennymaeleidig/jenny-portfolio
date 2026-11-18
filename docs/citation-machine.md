@@ -195,12 +195,21 @@ scoped to the paths where code lands:
 paths: assets/**, layouts/**, scripts/**, content/**
 source: docs/citation-machine.md:187
 
-Code added or changed in this diff that is copied or adapted from an upstream work must carry an SPDX snippet block on or beside the borrowed code: `SPDX-SnippetBegin` and `SPDX-SnippetEnd` markers around `SPDX-SnippetCopyrightText`, `SPDX-License-Identifier`, and `SPDX-SnippetFileComment` lines for `Source`, `SourceVersion`, and `SourceURL` — the schema the `cite-lint` script validates. Judge the rule from what the changed file itself shows: a comment, heading, or name citing an upstream work — "borrowed from", "adapted from", "based on", a bare "sources:" list — sitting over or beside added code with no snippet block in sight is the violation. The citation's own words must state copying status honestly: "adapted from" only where expression was actually taken, never over code whose upstream was only read for reference, and a bare "sources:" heading only where code was actually copied — code that took ideas alone names what inspired it without implying copying.
+Code added or changed in this diff that is copied or adapted from an upstream work must carry an SPDX snippet block on or beside the borrowed code: `SPDX-SnippetBegin` and `SPDX-SnippetEnd` markers around `SPDX-SnippetCopyrightText`, `SPDX-License-Identifier`, and `SPDX-SnippetFileComment` lines for `Source`, `SourceVersion`, and `SourceURL` — the schema the `cite-lint` script validates. Judge the rule from what the changed file itself shows: a comment, heading, or name citing an upstream work — "borrowed from", "adapted from", "based on", a bare "sources:" list — sitting over or beside added code with no snippet block in sight is the violation. The citation's own words must state copying status honestly: "adapted from" only where expression was actually taken, never over code whose upstream was only read for reference, and a bare "sources:" heading only where code was actually copied — code that took ideas alone names what inspired it without implying copying. A borrow that is the whole file — a fork, a vendored tree, a vendored binary — is the REUSE layer's slice: its citation is the upstream notice in or beside the file plus the REUSE.toml annotation, and no snippet block is demanded of it; this rule judges part-file borrows.
 ```
 
 The honesty clause is the rule's second, unautomatable half: the linter proves
 a block exists and is well-formed; only judgment can prove the block's claims
 match what actually happened.
+
+A whole-file borrow is not a snippet. A fork that is the entire file (the
+pilot's stylesheet), a vendored tree (the generator), and a vendored binary
+(the font) carry their citations as the upstream notices travelling with the
+files plus their REUSE.toml annotations, mirrored in the `CITATION.cff`
+references. The snippet-block demand is for the other shape: code borrowed
+into a file that is otherwise first-party. The rule says so, so a fork header
+or a vendoring note is judged on its honesty alone, never on the absence of a
+snippet block.
 
 ## Gate placement as shipped
 
