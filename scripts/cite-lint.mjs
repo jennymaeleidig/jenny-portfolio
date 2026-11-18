@@ -3,9 +3,9 @@
 // cite-lint: a deterministic, structure-only linter for provenance
 // metadata. It checks shape — never truthfulness, never the network,
 // never an upstream tree — and exits non-zero with structured findings
-// when a tree's citation blocks, citation file, or REUSE config are
-// malformed. A tree that simply lacks these files passes: coverage is
-// other tools' job, this one validates what is there.
+// when a tree's citation blocks, citation file, or REUSE and codemeta
+// config are malformed. A tree that simply lacks these files passes:
+// coverage is other tools' job, this one validates what is there.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";

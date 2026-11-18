@@ -107,10 +107,10 @@ content rules are probabilistic and see only a window of the write. The
 machine extends REUSE's SPDX snippet blocks with repo-convention source keys
 and validates them with a purpose-built linter, `cite-lint`: a small Node
 script, one Makefile target, deterministic and structure-only. It checks block
-pairing, required fields, license-expression well-formedness, license
-resolution
-against `LICENSES/`, and that `CITATION.cff` and `REUSE.toml` parse. It does no
-network access and no upstream diffing — truth is the judgment layer's job.
+pairing, required fields, license-expression well-formedness, license resolution
+against `LICENSES/`, and that `CITATION.cff`, `REUSE.toml`, and `codemeta.json`
+parse. It does no network access and no upstream diffing — truth is the
+judgment layer's job.
 
 Its report is structured JSON (`ok`, plus `findings` of `code`, `path`,
 `line`, `message`) and its exit code is binary — 0 clean, 1 findings, 2 usage
@@ -120,19 +120,19 @@ error — so it composes into any future gate.
 
 The half no linter can staff: live, per-edit judgment that a citation on
 borrowed code is truthful and attached. The rule lives in the repo's local
-warden rule file — local-first, so the convention is primed at turn start for
-any agent working here; promotion to a user-global rule waits until the pilot
-proves out. Warden's judgment model scores each edit per rule
-(`compliant`/`violation`/`not_applicable`, cutoff 0.7); content rules are
+warden rule file; a developer's user config names it in `rules.files`, so the
+convention is primed at turn start. Promotion to the user-global rule file
+waits until the pilot proves out. Warden's judgment model scores each edit per
+rule (`compliant`/`violation`/`not_applicable`, cutoff 0.7); content rules are
 probabilistic and hold a write only through escalation. Its deterministic
 parts act on commands and paths only, never file content; there is no
 deterministic CI mode (headless runs spend judgment requests, and if the judge
 is down the call is allowed with a warning). It cannot resolve URLs, pin
 versions, or cross-check a citation against the actual upstream tree — exactly
 the checks the deterministic layers own. Together with the warden
-configuration that skips the vendored tree and the fixtures area, the
-deterministic gates and the judge cover disjoint mistakes: the linters catch
-malformed and missing, warden catches dishonest and detached.
+configuration that skips the fixtures area and the walk's built-in `vendor/`
+skip, the deterministic gates and the judge cover disjoint mistakes: the
+linters catch malformed and missing, warden catches dishonest and detached.
 
 ## The snippet-block schema
 
@@ -219,8 +219,9 @@ reading the colon in the target's name as the rule separator.
 The pre-push hook runs `make test` and `make lint:provenance` — fast, local,
 no Python — so provenance breakage is caught before CI does. Pre-commit is
 deliberately untouched: day-to-day committing stays fast, and the provenance
-gates ride the slower checkpoints. The build output directory is untracked, so
-every gate covers the tracked tree only.
+gates ride the slower checkpoints. The build output directory is untracked and
+the gates skip it: `reuse lint` reads the tracked set, while `cite-lint` and
+prettier walk the working tree and therefore also see untracked files.
 
 ### The fixture and REUSE interaction
 
@@ -259,14 +260,11 @@ one MIT, two CC0, one Apache-2.0 whose NOTICE line is quoted in the header —
 and none of their obligations attach to copied expression, because none was
 copied.
 
-The verdict language is the example worth copying: the header claims
-"idea-level re-implementation, no code copied" explicitly for the star
-sources, names each license inline, and adds no preemptive MIT notice — a
-notice not owed would assert an obligation that does not attach, and the
-snippet convention plus the warden rule guard the future case where literal
-code does land. That is the machine's honesty discipline in one header: state
-the copying status in words a reviewer can weigh, never implying more copying
-than happened.
+The header claims "idea-level re-implementation, no code copied" explicitly
+for the star sources, names each license inline, and adds no preemptive MIT
+notice — a notice not owed would assert an obligation that does not attach, and
+the snippet convention plus the warden rule guard the future case where literal
+code does land.
 
 ## What the research established
 
@@ -286,7 +284,7 @@ convention, not an adopted standard.
 **The REUSE + CFF pairing is established practice; snippet blocks are rare and
 improvised.** Field data shows hundreds of `CITATION.cff` files on GitHub
 carrying REUSE headers — the covered-file gotcha, handled in the wild — and a
-ten-repo sample of such projects all carry `REUSE.toml`. Snippet blocks appear
+seven-repo sample of such projects all carry `REUSE.toml`. Snippet blocks appear
 in roughly 1,700 files across all of GitHub, and every observed example
 improvises the bibliographic half the spec does not define: non-spec keys,
 stacked copyright lines, version context in prose comments, hand-rolled

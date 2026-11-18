@@ -51,6 +51,13 @@ precedence = "closest"
 SPDX-FileCopyrightText = "2026 Jenny Leidig"
 SPDX-License-Identifier = "LicenseRef-AllRightsReserved"
 
+# The favicon cloud is a CC0 asset by Kuramaru, credited in assets/favicon.md.
+[[annotations]]
+path = "assets/favicon.png"
+precedence = "closest"
+SPDX-FileCopyrightText = "Kuramaru (kuramarushka)"
+SPDX-License-Identifier = "CC0-1.0"
+
 # The identity block is site plumbing (code, not prose): CC0.
 [[annotations]]
 path = "content/identity.sh"

@@ -108,7 +108,7 @@ test("an empty required field fails, naming the field", () => {
   assert.match(finding.message, /SourceVersion/);
 });
 
-test("a malformed license identifier fails", () => {
+test("a malformed license expression fails", () => {
   const { status, report } = lintFixture("malformed-license");
   assert.equal(status, 1);
   const finding = report.findings.find(
