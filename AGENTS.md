@@ -14,4 +14,4 @@ Single-context: `GLOSSARY.md` at the repo root plus `docs/adr/`. See `docs/agent
 
 ### Warden scope
 
-Which files pi-warden audits, the per-developer user-config step, and the verification commands. See `docs/agents/warden.md`.
+The active local rules live in `warden-local-rules.md`; the audit scope and exclusions are configured in `.pi/pi-warden.json`. The convention those rules enforce is documented in `docs/citation-machine.md`.
