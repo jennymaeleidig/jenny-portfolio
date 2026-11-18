@@ -174,9 +174,11 @@ The linter's findings, by code:
                             checked when that directory exists
   citation-unparsable        CITATION.cff is not parsable YAML mapping
   reuse-unparsable           REUSE.toml is not parsable TOML
+  codemeta-unparsable        codemeta.json is not parsable JSON mapping
 ```
 
-A missing `LICENSES/`, `CITATION.cff`, or `REUSE.toml` passes: the linter
+A missing `LICENSES/`, `CITATION.cff`, `REUSE.toml`, or `codemeta.json`
+passes: the linter
 validates shape, not coverage. The tree's `.git`, `node_modules`, and `dist`
 directories are never scanned, nor is its `tests/fixtures` subtree — that is
 where the linter's own tests keep synthetic trees, some deliberately
@@ -296,15 +298,19 @@ What the machine deliberately leaves out: no DOI, Zenodo, or archival
 registration — persistence is assigned to the archive by the citation
 principles, and the pilot stays lean. No rendering or consumption of snippet
 blocks exists today; the schema is repo convention until a consumer appears.
-No `codemeta.json` — its one unique claim, machine-readable dependencies,
-now also lives in `CITATION.cff`'s `references` entries (the CodeMeta
-crosswalk itself maps CFF `references` onto its dependency property); no
-consumer in the pilot's set reads it (GitHub's citation widget ignores it,
-Software Heritage indexes only older versions, Zenodo has no official
-consumption), and current-version validation tooling is thin. Revisit only
-when a rollout repo targets a consumer that reads codemeta directly — then
-the file sits at the repo root under the REUSE globs and cite-lint gains one
-unparsable-config finding for it.
+
+A root `codemeta.json` ships for completeness, not for a consumer: no
+reader in the pilot's set exists (GitHub's citation widget ignores it,
+Software Heritage indexes only older context versions, Zenodo has no
+official consumption), so it rides the machine's own gates — cite-lint
+parses it (`codemeta-unparsable`), REUSE covers it with the bulk globs.
+Its unique claim is machine-readable dependencies in `softwareRequirements`,
+which `CITATION.cff`'s `references` entries also now carry; keep the two in
+step. Validation tooling exists for the 3.0 context (`pydantic-codemeta`,
+active) but not the 4.0 context this file uses, so no external validator
+stands behind it yet — cite-lint checks shape only, as with every other
+config. Adopt it in rollout repos only where a consumer that reads
+codemeta actually exists.
 
 ## Rolling the machine into the next repo
 

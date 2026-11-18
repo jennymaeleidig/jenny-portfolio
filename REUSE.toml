@@ -12,6 +12,7 @@ path = [
   ".prettierignore",
   ".prettierrc.json",
   "Makefile",
+  "codemeta.json",
   "jsconfig.json",
   "package.json",
   "package-lock.json",

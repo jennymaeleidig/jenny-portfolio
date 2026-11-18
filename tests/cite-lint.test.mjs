@@ -191,6 +191,16 @@ test("an unparsable REUSE.toml fails", () => {
   assert.equal(finding.path, "REUSE.toml");
 });
 
+test("an unparsable codemeta.json fails", () => {
+  const { status, report } = lintFixture("bad-codemeta");
+  assert.equal(status, 1);
+  const finding = report.findings.find(
+    (candidate) => candidate.code === "codemeta-unparsable",
+  );
+  assert.ok(finding, `codes were: ${findingCodes(report).join(", ")}`);
+  assert.equal(finding.path, "codemeta.json");
+});
+
 test("the linter's help text states the snippet-block schema", () => {
   const result = spawnSync(process.execPath, [citeLint, "--help"], {
     encoding: "utf8",

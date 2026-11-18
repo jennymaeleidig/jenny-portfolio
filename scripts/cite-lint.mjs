@@ -60,9 +60,10 @@ Checks
                             checked when that directory exists
   citation-unparsable        CITATION.cff is not parsable YAML mapping
   reuse-unparsable           REUSE.toml is not parsable TOML
+  codemeta-unparsable        codemeta.json is not parsable JSON mapping
 
-A missing LICENSES/, CITATION.cff, or REUSE.toml passes: this linter
-validates shape, not coverage.
+A missing LICENSES/, CITATION.cff, REUSE.toml, or codemeta.json passes:
+this linter validates shape, not coverage.
 
 The tree's .git, node_modules, and dist directories are never scanned,
 nor is its tests/fixtures subtree: that is where this linter's own
@@ -431,6 +432,18 @@ function checkReuseConfig(tree, report) {
   );
 }
 
+function checkCodemetaFile(tree, report) {
+  checkParsedConfig(
+    tree,
+    "codemeta.json",
+    JSON.parse,
+    "JSON",
+    "mapping",
+    "codemeta-unparsable",
+    report,
+  );
+}
+
 function main(argv) {
   if (argv.includes("--help")) {
     process.stdout.write(HELP);
@@ -452,6 +465,7 @@ function main(argv) {
   checkLicenseResolution(tree, licenses, report);
   checkCitationFile(tree, report);
   checkReuseConfig(tree, report);
+  checkCodemetaFile(tree, report);
 
   findings.sort((a, b) => {
     if (a.path !== b.path) return a.path < b.path ? -1 : 1;
