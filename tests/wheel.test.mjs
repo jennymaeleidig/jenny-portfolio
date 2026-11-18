@@ -33,7 +33,7 @@ test("the wheel turns one seven-notch step of 105 degrees", () => {
   assert.equal(TURN_MS, 640);
 });
 
-test("the radius follows the square's real size", () => {
+test("the radius follows the row's pitch", () => {
   close(planTurn(20, "light", "header").radius, 75.96, "20 px");
   close(planTurn(16, "light", "header").radius, 60.77, "16 px");
 });

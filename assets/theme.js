@@ -144,13 +144,17 @@ function roleOf(control) {
  *   viewport: HTMLSpanElement,
  *   stage: HTMLSpanElement,
  *   notches: Notch[],
- *   size: number,
+ *   pitch: number,
  *   plan: import("./wheel-core.mjs").Plan,
  * }} Wheel
  */
 
 /**
  * Build fourteen notches onto a wheel inside the strip's reserved box.
+ *
+ * A row that butts its squares edge to edge lays out at the square's own
+ * width; a row that spreads them across the sheet lays out at the distance
+ * between two squares, so the notches land where the squares sit.
  *
  * @param {Target} target
  * @param {import("./wheel-core.mjs").Theme} outgoingTheme
@@ -162,7 +166,15 @@ function makeWheel(target, outgoingTheme, outgoing, incoming) {
   const { control, role } = target;
   const squares = [...control.querySelectorAll(":scope > span")];
   const size = squares[0]?.getBoundingClientRect().width ?? 0;
-  const plan = planTurn(size, outgoingTheme, role);
+  const xs = squares
+    .map((square) => square.getBoundingClientRect().x)
+    .sort((a, b) => a - b);
+  const measured =
+    xs.length > 1 ? (xs[xs.length - 1] - xs[0]) / (xs.length - 1) : size;
+  // A single square or overlapping boxes would measure a pitch below the
+  // square's own width; the row never lays out tighter than its squares.
+  const pitch = Math.max(measured, size);
+  const plan = planTurn(pitch, outgoingTheme, role);
   const reversed = role === "footer";
 
   const viewport = document.createElement("span");
@@ -205,7 +217,14 @@ function makeWheel(target, outgoingTheme, outgoing, incoming) {
   control.append(viewport);
   control.classList.add("is-wheeling");
 
-  return { control, viewport, stage, notches, size, plan };
+  return {
+    control,
+    viewport,
+    stage,
+    notches,
+    pitch,
+    plan,
+  };
 }
 
 /**
@@ -224,7 +243,7 @@ function paintWheel(wheel, frame) {
       notch.wheelOffset * ANGLE_PER_NOTCH +
       wheel.plan.rotation * frame.progress;
     const radians = (angle * Math.PI) / 180;
-    const flatX = notch.flatOffset * wheel.size;
+    const flatX = notch.flatOffset * wheel.pitch;
     const cylinderX = wheel.plan.radius * Math.sin(radians);
     const cylinderZ = wheel.plan.radius * (Math.cos(radians) - 1);
     const x = (1 - curvature) * flatX + curvature * cylinderX;

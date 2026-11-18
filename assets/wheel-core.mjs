@@ -53,19 +53,21 @@ export const TURN_MS = PINCH_MS + ROTATE_MS + SETTLE_MS;
 /**
  * The wheel's shape for a strip and the turn it is about to make.
  *
- * Radius is half the square divided by tan(7.5 degrees), so notches butt
- * together on a 24-face cylinder. A light header turns left toward dark and a
- * dark header turns right toward light; the footer mirrors each turn. The
- * incoming palette starts seven positions away, on the side the turn comes
- * from.
+ * Radius is half the pitch divided by tan(7.5 degrees): the pitch is the
+ * distance from one square to the next, square-wide when the strip butts its
+ * squares edge to edge and wider when it spreads them across the sheet. Either
+ * way notches meet their row's spacing on a 24-face cylinder. A light header
+ * turns left toward dark and a dark header turns right toward light; the
+ * footer mirrors each turn. The incoming palette starts seven positions away,
+ * on the side the turn comes from.
  *
- * @param {number} size The measured square size, in pixels.
+ * @param {number} pitch The distance from one square to the next, in pixels.
  * @param {Theme} outgoing The theme the strip is showing.
  * @param {Role} role The strip's place on the sheet.
  * @returns {Plan}
  */
-export function planTurn(size, outgoing, role) {
-  const radius = size / 2 / Math.tan(((ANGLE_PER_NOTCH / 2) * Math.PI) / 180);
+export function planTurn(pitch, outgoing, role) {
+  const radius = pitch / 2 / Math.tan(((ANGLE_PER_NOTCH / 2) * Math.PI) / 180);
   const direction =
     (outgoing === "light" ? -1 : 1) * (role === "footer" ? -1 : 1);
   const rotation = direction * NOTCH_COUNT * ANGLE_PER_NOTCH;

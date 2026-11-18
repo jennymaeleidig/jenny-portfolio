@@ -52,9 +52,10 @@
  * The theme colours are registered as <color> so the browser can interpolate
  * them. Theme switching then transitions the tokens themselves, and every
  * var() consumer follows, including color-mix(). Browsers without @property
- * fall back to today's instant swap. The duration and easing match the sky's
- * crossing (TRANSITION_MS and smoothstep in sky-core.mjs) and the palette
- * strip's wheel turn, so the whole page switches as one gesture.
+ * fall back to today's instant swap. The duration matches both the sky's
+ * crossing (TRANSITION_MS in sky-core.mjs) and the palette strip's wheel
+ * turn, and the easing matches the sky's smoothstep, so the whole page
+ * switches as one gesture.
  */
 @property --paper {
   syntax: "<color>";
@@ -757,6 +758,11 @@ main > :last-child > :last-child {
   --notch-inset-y: calc(
     var(--sheet-pad-y) + (var(--line-height) - var(--notch-size)) / 2
   );
+  /* The squares are smaller than the 24px a touch target wants. The padding
+     grows the button's box around them rather than the squares themselves, and
+     the anchors below pull the box back so the squares keep their line. The
+     padding is symmetric, so the wheel's centre still sits on their centre. */
+  --strip-tap-pad: max(0px, (24px - var(--notch-size)) / 2);
   font-size: var(--sheet-font-size);
   position: absolute;
   right: var(--sheet-pad-x);
@@ -765,7 +771,7 @@ main > :last-child > :last-child {
   justify-content: flex-end;
   appearance: none;
   margin: 0;
-  padding: 0;
+  padding: var(--strip-tap-pad) 0;
   border: 0;
   background: none;
   color: inherit;
@@ -807,7 +813,7 @@ main > :last-child > :last-child {
 }
 
 .site-header .palette-strip {
-  top: var(--notch-inset-y);
+  top: calc(var(--notch-inset-y) - var(--strip-tap-pad));
 }
 
 /*
@@ -816,7 +822,7 @@ main > :last-child > :last-child {
  */
 .site-footer .palette-strip {
   right: auto;
-  bottom: var(--notch-inset-y);
+  bottom: calc(var(--notch-inset-y) - var(--strip-tap-pad));
   left: var(--sheet-pad-x);
   flex-direction: row-reverse;
 }
@@ -1318,9 +1324,9 @@ th {
 /*
  * Narrow viewports. At and below this width the featured grid becomes one
  * column, so its cards keep their reading order instead of sitting side by
- * side; the catalogue turns into blocks at 640px. The header and filters move
- * to their own lines rather than leaving a single word orphaned on a second
- * row.
+ * side; the catalogue turns into blocks at 640px. At 560px the header stacks
+ * onto its own lines and the filters drop a type step, rather than leaving a
+ * single word orphaned on a second row.
  */
 @media screen and (max-width: 760px) {
   .grid > * {
@@ -1351,14 +1357,55 @@ th {
     gap: calc(var(--line-height) / 4);
   }
 
+  /* The menu and the footer's line justify across the sheet and hold one
+     line: the name opens, the last link closes, and nothing wraps between
+     them. The footer's email link drops the auto margin that pushes it right
+     at wider sizes, so the row spreads its three pieces evenly. */
+  .site-header nav {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    width: 100%;
+    gap: 1ch;
+    font-size: 0.8125rem;
+  }
+
   .site-footer {
+    flex-wrap: nowrap;
+    justify-content: space-between;
     gap: 1ch;
     font-size: 0.75rem;
   }
 
-  .site-header nav {
-    gap: 1ch;
-    font-size: 0.8125rem;
+  .site-footer a {
+    margin-left: 0;
+  }
+
+  /* Narrow enough that the strip cannot keep the line without a link painting
+     over its squares: it becomes a band on a row of its own, below the menu
+     and above the footer's line, inset to the sheet's content width. The
+     squares keep their size and spread across the band, so the wheel lays its
+     notches out at the row's pitch, not at the square's edge. */
+  .palette-strip {
+    /* Still positioned, though no longer taken out of flow: the wheel's
+       viewport is an absolute child inset to the strip, so a static strip
+       would anchor it to the sheet and turn the wheel mid-page. */
+    position: relative;
+    justify-content: space-between;
+  }
+
+  /* The desktop offsets would become relative offsets here, so each band
+     clears them and takes its place from the flow and its margins. */
+  .site-header .palette-strip {
+    inset: auto;
+    width: 100%;
+    margin-top: calc(var(--line-height) / 4);
+  }
+
+  .site-footer .palette-strip {
+    inset: auto;
+    order: -1;
+    flex-basis: 100%;
+    margin-bottom: calc(var(--line-height) / 4);
   }
 
   .filters {
@@ -1376,6 +1423,14 @@ th {
      alone on a line. */
   .career-meta {
     display: block;
+  }
+}
+
+/* The footer's justified line stops fitting at 0.75rem; the row drops a
+   type step instead of wrapping. */
+@media screen and (max-width: 360px) {
+  .site-footer {
+    font-size: 0.625rem;
   }
 }
 

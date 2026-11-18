@@ -27,7 +27,7 @@ _Avoid_: label, key, kind
 
 **Catalogue**:
 The `/work/` table of every project in canonical order, and the per-category
-tables beneath it.
+tables its filters lead to.
 _Avoid_: index, listing, projects page
 
 **Catalogue row**:
@@ -91,6 +91,12 @@ theme switch. A click switches the palette, turning the strip as a wheel unless
 motion is reduced.
 _Avoid_: swatches
 
+**Band**:
+The full-width row the palette strip becomes on narrow screens: below the
+header's menu and above the footer's line, its squares spread across the
+sheet's content width.
+_Avoid_: bar, strip row
+
 **Wheel**:
 The temporary 3D drum the palette strip becomes during a turn: two seven-notch
 palettes on a 105° arc, one turn apart.
@@ -100,6 +106,13 @@ _Avoid_: carousel, picker, ring
 One square on the wheel. Seven notches make a palette row, and the rows sit one
 105° turn apart.
 _Avoid_: face, swatch
+
+**Pitch**:
+The distance from one square to the next along the palette strip's row: the
+square's own size when the strip butts its squares, and wider when the
+narrow band spreads them. The wheel lays its notches out at the pitch, so
+they land where the squares sit.
+_Avoid_: gap, spacing, stride
 
 **Sky**:
 The pixelated, drifting background behind the sheet: clouds in both themes,

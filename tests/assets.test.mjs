@@ -353,13 +353,27 @@ test("every page runs the palette strip in its header and its footer", () => {
   );
   assert.match(
     siteCss,
-    /\.site-header \.palette-strip\s*\{\s*top:\s*var\(--notch-inset-y\)/s,
-    "the header strip sits on the header's text line",
+    /\.site-header \.palette-strip\s*\{\s*top:\s*calc\(var\(--notch-inset-y\)[^;]*\)/s,
+    "the header strip sits on the header's text line, less its tap padding",
   );
   assert.match(
     siteCss,
-    /\.site-footer \.palette-strip\s*\{[^}]*bottom:\s*var\(--notch-inset-y\)/s,
-    "the footer strip sits on the footer's text line",
+    /\.site-footer \.palette-strip\s*\{[^}]*bottom:\s*calc\(var\(--notch-inset-y\)[^;]*\)/s,
+    "the footer strip sits on the footer's text line, less its tap padding",
+  );
+  // The squares are smaller than the touch minimum, so the button's padding
+  // grows the hit box around them and the anchors above cancel it out; the
+  // squares stay on the text line, and the wheel, centred on the box, stays
+  // centred on them.
+  assert.match(
+    siteCss,
+    /\.palette-strip\s*\{[^}]*--strip-tap-pad:\s*max\(0px,\s*\(24px - var\(--notch-size\)\) \/ 2\)/s,
+    "the strip pads its box out to the 24px touch minimum",
+  );
+  assert.match(
+    siteCss,
+    /\.palette-strip\s*\{[^}]*padding:\s*var\(--strip-tap-pad\) 0/s,
+    "the strip's padding is vertical, so the wheel keeps the box's centre",
   );
   assert.match(
     siteCss,
@@ -370,6 +384,60 @@ test("every page runs the palette strip in its header and its footer", () => {
     siteCss,
     /\.palette-strip > \*:not\(\.wheel-viewport\)\s*\{[^}]*width:\s*var\(--notch-size\)[^}]*height:\s*var\(--notch-size\)/s,
     "every static square is 1x1 and the wheel viewport is excluded",
+  );
+  // A narrow sheet cannot hold the menu and the strip on one line, so the
+  // menu and the footer's line justify and hold one line, and the strip moves
+  // under it as a band inset to the sheet's content width: the squares keep
+  // their size and spread across the band, so the wheel lays its notches out
+  // at the row's pitch rather than at the square's edge.
+  const narrow =
+    siteCss.match(
+      /@media screen and \(max-width: 560px\) \{[\s\S]*?\n\}/,
+    )?.[0] ?? "";
+  assert.match(
+    narrow,
+    /\.site-header nav\s*\{[^}]*flex-wrap:\s*nowrap[^}]*justify-content:\s*space-between/s,
+    "the narrow menu justifies and holds one line",
+  );
+  assert.match(
+    narrow,
+    /\.site-footer\s*\{[^}]*flex-wrap:\s*nowrap[^}]*justify-content:\s*space-between/s,
+    "the narrow footer's line justifies and holds one line",
+  );
+  assert.match(
+    narrow,
+    /\.site-footer a\s*\{\s*margin-left:\s*0/s,
+    "the footer's email drops the auto margin so the line spreads evenly",
+  );
+  assert.match(
+    narrow,
+    /\.palette-strip\s*\{[^}]*position:\s*relative[^}]*justify-content:\s*space-between/s,
+    "the narrow squares keep their size and spread across the band",
+  );
+  assert.doesNotMatch(
+    narrow,
+    /\.palette-strip\s*\{[^}]*position:\s*static/s,
+    "the narrow strip still anchors the wheel's viewport, so the turn happens in the band",
+  );
+  assert.match(
+    siteCss,
+    /@media screen and \(max-width: 560px\)\s*\{[\s\S]*?--notch-size:\s*1rem/s,
+    "the mobile strip keeps its 16 px square",
+  );
+  assert.match(
+    narrow,
+    /\.site-header \.palette-strip\s*\{[^}]*inset:\s*auto/s,
+    "the header band clears the desktop offsets instead of inheriting them",
+  );
+  assert.match(
+    narrow,
+    /\.site-footer \.palette-strip\s*\{[^}]*inset:\s*auto[^}]*order:\s*-1[^}]*flex-basis:\s*100%/s,
+    "the footer's band clears the offsets and holds its own line above the footer's own",
+  );
+  assert.doesNotMatch(
+    narrow,
+    /\.palette-strip\s*\{[^}]*margin-inline/s,
+    "the narrow band is inset to the sheet's content width, not bled to the paper's edge",
   );
   const sheetBlock = siteCss.match(/\.sheet\s*\{([^}]*)\}/s)?.[1] ?? "";
   assert.match(
@@ -403,7 +471,9 @@ test("every page runs the palette strip in its header and its footer", () => {
   }
   assert.doesNotMatch(
     siteCss,
-    /\\.palette-strip > :nth-child\\(\\d+\\)\\s*\\{\\s*background:\\s*var\\(--paper\\)/,
+    new RegExp(
+      `\\.palette-strip > :nth-child\\(\\d+\\)\\s*\\{\\s*background:\\s*var\\(--paper\\)`,
+    ),
     "paper is the sheet, not a strip square",
   );
 });
@@ -468,12 +538,9 @@ test("the strip's turn stays inside its reserved box and stays flat", () => {
       );
     }
   }
+});
 
-  assert.match(
-    siteCss,
-    /@media screen and \(max-width: 560px\)\s*\{[\s\S]*?--notch-size:\s*1rem/s,
-    "the mobile strip keeps its 16 px square",
-  );
+test("the build emits no prototype tree", () => {
   assert.equal(
     existsSync(join(output, "prototypes")),
     false,
@@ -571,8 +638,8 @@ test("the page palette crosses in step with the sky", () => {
     );
   }
 
-  // Same duration as the sky, and the cubic bezier that is exactly
-  // smoothstep: P1 = (1/3, 0), P2 = (2/3, 1).
+  // Same duration as the sky, and the cubic bezier of smoothstep carried
+  // to five decimal places: P1 = (1/3, 0), P2 = (2/3, 1).
   const crossing = `cubic-bezier\\(0\\.33333, 0, 0\\.66667, 1\\)`;
   assert.match(
     siteCss,
@@ -626,9 +693,9 @@ test("the sky starts its crossing on the wheel's clock", () => {
 });
 
 test("each registered token starts at the colour its theme declares", () => {
-  // The initial value is one of three copies of the light palette: it is what
-  // a browser uses before (or without) the :root declarations, so a palette
-  // edit that misses it would show a stale colour.
+  // The initial value is a second copy of the light palette beside :root: it
+  // is what a browser uses before (or without) the :root declarations, so a
+  // palette edit that misses it would show a stale colour.
   const lightBlock = siteCss.slice(
     siteCss.indexOf(":root {") + 1,
     siteCss.indexOf("}", siteCss.indexOf(":root {")),
