@@ -1369,11 +1369,19 @@ th {
     font-size: 0.8125rem;
   }
 
+  /* The footer keeps wrapping so the band below can claim a row of its own,
+     and its three pieces refuse to break internally, so that row is one
+     line. */
   .site-footer {
-    flex-wrap: nowrap;
     justify-content: space-between;
     gap: 1ch;
     font-size: 0.75rem;
+  }
+
+  .site-footer a,
+  .site-footer .site-separator,
+  .site-footer .site-location {
+    white-space: nowrap;
   }
 
   .site-footer a {
@@ -1404,7 +1412,9 @@ th {
   .site-footer .palette-strip {
     inset: auto;
     order: -1;
-    flex-basis: 100%;
+    /* Unshrinkable: a 100% basis beside the footer's text would otherwise be
+       clamped down and share that line instead of taking the row above it. */
+    flex: 0 0 100%;
     margin-bottom: calc(var(--line-height) / 4);
   }
 

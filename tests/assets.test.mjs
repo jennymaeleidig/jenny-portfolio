@@ -401,8 +401,18 @@ test("every page runs the palette strip in its header and its footer", () => {
   );
   assert.match(
     narrow,
-    /\.site-footer\s*\{[^}]*flex-wrap:\s*nowrap[^}]*justify-content:\s*space-between/s,
-    "the narrow footer's line justifies and holds one line",
+    /\.site-footer\s*\{[^}]*justify-content:\s*space-between/s,
+    "the narrow footer's line justifies",
+  );
+  assert.doesNotMatch(
+    narrow,
+    /\.site-footer\s*\{[^}]*flex-wrap:\s*nowrap/s,
+    "the footer keeps wrapping, or its band cannot claim a row of its own",
+  );
+  assert.match(
+    narrow,
+    /\.site-footer a,\s*\.site-footer \.site-separator,\s*\.site-footer \.site-location\s*\{[^}]*white-space:\s*nowrap/s,
+    "the footer's pieces stay whole, so its row is one line",
   );
   assert.match(
     narrow,
@@ -431,8 +441,8 @@ test("every page runs the palette strip in its header and its footer", () => {
   );
   assert.match(
     narrow,
-    /\.site-footer \.palette-strip\s*\{[^}]*inset:\s*auto[^}]*order:\s*-1[^}]*flex-basis:\s*100%/s,
-    "the footer's band clears the offsets and holds its own line above the footer's own",
+    /\.site-footer \.palette-strip\s*\{[^}]*inset:\s*auto[^}]*order:\s*-1[^}]*flex:\s*0 0 100%/s,
+    "the footer's band clears the offsets and holds its own unshrunken line above the footer's own",
   );
   assert.doesNotMatch(
     narrow,
