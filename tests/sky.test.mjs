@@ -30,6 +30,7 @@ import {
   transitionMix,
   updateStarGains,
 } from "../assets/sky-core.mjs";
+import { defaultsText } from "../assets/sky-levers.mjs";
 import { TURN_MS } from "../assets/wheel-core.mjs";
 
 function rawToneIndex(value, bandThresholds, dither, bayer) {
@@ -1263,4 +1264,43 @@ test("back-band birds are hidden by the cloud bands", () => {
   for (const block of ink) {
     assert.equal(bands[block], 0, `block ${block} is a bird behind a cloud`);
   }
+});
+
+test("a bird-only rebuild swaps the flock and leaves the rest of the scene", () => {
+  const scene = createScene({
+    config: birdConfig,
+    cols: birdLayout.cols,
+    rows: birdLayout.rows,
+    cellPx: birdLayout.cellPx,
+  });
+  const { field, starLayer } = scene;
+  const rebuilt = createBirdLayer({
+    cols: birdLayout.cols,
+    rows: birdLayout.rows,
+    cellPx: birdLayout.cellPx,
+    config: { ...birdConfig, l1Count: birdConfig.l1Count + 1 },
+  });
+
+  assert.notDeepEqual(rebuilt, scene.birdLayer, "the flock is rebuilt");
+  assert.equal(field, scene.field, "the noise field keeps its identity");
+  assert.equal(starLayer, scene.starLayer, "the star layer keeps its identity");
+  assert.equal(
+    rebuilt.birds.filter((bird) => bird.layer === 0).length,
+    birdConfig.l1Count + 1,
+    "the new count is what changed",
+  );
+});
+
+test("copy values renders every shipped key, the flock's included", () => {
+  const text = defaultsText(
+    Object.freeze({ ...SKY_DEFAULTS, l1Count: 5, birds: 0 }),
+  );
+
+  for (const key of Object.keys(SKY_DEFAULTS)) {
+    assert.match(text, new RegExp(`^  ${key}: `, "m"), `${key} is copied`);
+  }
+  assert.match(text, /^  birds: 0,$/m);
+  assert.match(text, /^  l1Count: 5,$/m);
+  assert.match(text, /^  l2Spread: 0.64,$/m);
+  assert.match(text, /^  mode: "frame",$/m);
 });

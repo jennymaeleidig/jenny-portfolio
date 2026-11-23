@@ -15,6 +15,7 @@ import { isDark } from "./theme-core.mjs";
 import {
   SKY_DEFAULTS,
   TRANSITION_MS,
+  createBirdLayer,
   createScene,
   frameLayout,
   renderFrame,
@@ -155,6 +156,19 @@ if (sky && canvas) {
       draw();
     }
 
+    // A bird lever resizes or reseeds only the flock. The noise field, the
+    // star layer, the offsets and the canvas image keep their identities, so
+    // tuning a bird never re-rolls the clouds or the stars.
+    function rebuildBirds() {
+      birdLayer = createBirdLayer({
+        cols: canvas.width,
+        rows: canvas.height,
+        cellPx,
+        config,
+      });
+      draw();
+    }
+
     function stop() {
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
@@ -256,6 +270,7 @@ if (sky && canvas) {
         config,
         redraw: draw,
         rebuild: resize,
+        rebuildBirds,
         restart: start,
       };
     }

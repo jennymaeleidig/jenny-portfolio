@@ -13,7 +13,7 @@
  * clipboard in that shape.
  */
 
-import { OFFSET_Y_LIMIT } from "./sky-core.mjs";
+import { OFFSET_Y_LIMIT, SKY_DEFAULTS } from "./sky-core.mjs";
 
 const controller = globalThis.skyLevers;
 
@@ -252,6 +252,83 @@ const sliders = [
     group: "stars",
     hint: "smallest star tier that twinkles: 1 is one block, 3 is the plus",
   },
+  {
+    key: "birds",
+    label: "birds",
+    min: 0,
+    max: 1,
+    step: 1,
+    rebuild: true,
+    birds: true,
+    group: "birds",
+    hint: "the flock: 0 hides it entirely",
+  },
+  {
+    key: "l1Count",
+    label: "count",
+    min: 0,
+    max: 8,
+    step: 1,
+    rebuild: true,
+    birds: true,
+    group: "birds-near",
+    hint: "near birds aloft",
+  },
+  {
+    key: "l1Scale",
+    label: "scale",
+    min: 8,
+    max: 200,
+    step: 1,
+    rebuild: true,
+    birds: true,
+    group: "birds-near",
+    hint: "near wing cutoff, CSS px",
+  },
+  {
+    key: "l1Speed",
+    label: "speed",
+    min: 0,
+    max: 60,
+    step: 1,
+    rebuild: true,
+    birds: true,
+    group: "birds-near",
+    hint: "near drift, CSS px/s",
+  },
+  {
+    key: "l2Count",
+    label: "count",
+    min: 0,
+    max: 8,
+    step: 1,
+    rebuild: true,
+    birds: true,
+    group: "birds-far",
+    hint: "far birds aloft",
+  },
+  {
+    key: "l2Scale",
+    label: "scale",
+    min: 8,
+    max: 200,
+    step: 1,
+    rebuild: true,
+    birds: true,
+    group: "birds-far",
+    hint: "far wing cutoff, CSS px",
+  },
+  {
+    key: "l2Speed",
+    label: "speed",
+    min: 0,
+    max: 60,
+    step: 1,
+    rebuild: true,
+    birds: true,
+    group: "birds-far",
+    hint: "far drift, CSS px/s",
+  },
 ];
 
 const STYLE = `
@@ -379,6 +456,26 @@ function nearestStep(slider, value) {
   return slider.min + steps * slider.step;
 }
 
+/**
+ * The config as a SKY_DEFAULTS-shaped object literal. Every shipped key is
+ * printed in its shipped order, so the deeper flock values that have no
+ * slider round-trip with the ones that do. Clipboard first, console as
+ * fallback in the panel.
+ *
+ * @param {Record<string, string | number>} config
+ */
+export function defaultsText(config) {
+  const body = Object.keys(SKY_DEFAULTS)
+    .map((key) => {
+      const value = config[key];
+      const literal =
+        typeof value === "string" ? JSON.stringify(value) : String(value);
+      return `  ${key}: ${literal},`;
+    })
+    .join("\n");
+  return `// paste into SKY_DEFAULTS in assets/sky-core.mjs\n{\n${body}\n}`;
+}
+
 if (controller) {
   const { config } = controller;
   /** @type {HTMLCanvasElement | null} */
@@ -427,6 +524,9 @@ if (controller) {
   const sky = sliders.filter((slider) => !slider.life && !slider.group);
   const stars = sliders.filter((slider) => slider.group === "stars");
   const life = sliders.filter((slider) => slider.life);
+  const birds = sliders.filter((slider) => slider.group === "birds");
+  const nearBirds = sliders.filter((slider) => slider.group === "birds-near");
+  const farBirds = sliders.filter((slider) => slider.group === "birds-far");
 
   const markup = `
     <div class="sky-levers-handle" tabindex="0"
@@ -467,6 +567,12 @@ if (controller) {
     ${life.map(sliderMarkup).join("")}
     <h4>stars</h4>
     ${stars.map(sliderMarkup).join("")}
+    <h4>birds</h4>
+    ${birds.map(sliderMarkup).join("")}
+    <h4>birds · near</h4>
+    ${nearBirds.map(sliderMarkup).join("")}
+    <h4>birds · far</h4>
+    ${farBirds.map(sliderMarkup).join("")}
     <div class="sky-levers-actions">
       <button type="button" data-action="copy">copy values</button>
       <button type="button" data-action="reset">reset</button>
@@ -494,7 +600,10 @@ if (controller) {
       const raw = Number(input.value);
       config[slider.key] = raw * (slider.mul ?? 1);
       output.textContent = format(slider, raw);
-      if (slider.rebuild) controller.rebuild();
+      // A bird lever rebuilds the flock alone, so the clouds and stars in
+      // flight are not re-rolled.
+      if (slider.birds) controller.rebuildBirds();
+      else if (slider.rebuild) controller.rebuild();
       else controller.redraw();
       controller.restart();
     };
@@ -570,24 +679,8 @@ if (controller) {
     }
   });
 
-  // The panel's whole purpose is retuning the shipped defaults, so it prints
-  // them in the shape SKY_DEFAULTS uses. Clipboard first, console as fallback.
-  // `seed` is left out: a visit picks a fresh one, so the value on screen is
-  // not a default. The poster's seed is the one in SKY_DEFAULTS.
   function copyValues(button) {
-    const entries = [
-      ["mode", `"${config.mode}"`],
-      ...sliders.map((slider) => [
-        slider.key,
-        format(slider, position(slider)),
-      ]),
-      ["maxFps", config.maxFps],
-    ];
-    const body = entries
-      .map(([key, value]) => `  ${key}: ${value},`)
-      .join("\n");
-    const text = `// paste into SKY_DEFAULTS in assets/sky-core.mjs\n{\n${body}\n}`;
-
+    const text = defaultsText(config);
     console.log(text);
     const done = () => {
       button.textContent = "copied";
