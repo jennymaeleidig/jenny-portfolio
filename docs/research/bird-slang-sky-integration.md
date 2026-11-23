@@ -1,5 +1,11 @@
 # Turning bird.slang into a sky-integrated flock pass
 
+> **Retired, 2026-11-23.** `assets/shaders/bird.slang` and both prototype
+> branches (`prototype/bird-flock`, `prototype/bird-sky-migration`) were
+> retired after the flock was folded into the sky. This note is the surviving
+> record; its file and line references describe the now-deleted prototype,
+> not shipped code.
+
 Research question: what does `assets/shaders/bird.slang` actually do today, what conventions does the site's sky already establish that a flock pass must obey (ramp, dither, cells, stars, levers, light/dark gating), and what does the official Slang playground offer beyond `[playground::SLIDER]` for tuning and per-bird randomization?
 
 Date: 2026-11-23. All repo claims verified against the repo's own code with line numbers. Slang playground claims verified against the playground's own compiler source and user-facing documentation (the `shader-slang/slang-playground` repository, pinned at commit `631c0d8`), which are the primary sources for the attribute set; `docs.shader-slang.com` was unreachable from this machine (fetch failures on every path), so the official playground docs shipped inside the playground repo — `engine/slang-compilation-engine/media/playgroundDocumentation.md` — stand in as the primary documentation.
