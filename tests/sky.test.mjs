@@ -71,7 +71,7 @@ test("the sky ships at the values that were tuned", () => {
     sky: 87,
     stark: 77,
     seed: 12,
-    maxFps: 60,
+    maxFps: 24,
     starCell: 67,
     starDensity: 67,
     starMedium: 27,

@@ -228,7 +228,7 @@ export const SKY_DEFAULTS = Object.freeze({
   sky: 87,
   stark: 77,
   seed: 12,
-  maxFps: 60,
+  maxFps: 24,
   starCell: 67, // jittered grid spacing, CSS px
   starDensity: 67, // share of cells that hold a star, %
   starMedium: 27, // share of stars two blocks across, %
