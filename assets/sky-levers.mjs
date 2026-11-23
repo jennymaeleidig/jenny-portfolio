@@ -456,18 +456,23 @@ function nearestStep(slider, value) {
   return slider.min + steps * slider.step;
 }
 
+const RUNTIME_SEED_KEYS = new Set(["seed", "birdSeed"]);
+
 /**
  * The config as a SKY_DEFAULTS-shaped object literal. Every shipped key is
  * printed in its shipped order, so the deeper flock values that have no
- * slider round-trip with the ones that do. Clipboard first, console as
- * fallback in the panel.
+ * slider round-trip with the ones that do. The live visit seeds are pinned
+ * to the shipped defaults: a paste should reproduce a tune, not freeze one
+ * random visit. Clipboard first, console as fallback in the panel.
  *
  * @param {Record<string, string | number>} config
  */
 export function defaultsText(config) {
   const body = Object.keys(SKY_DEFAULTS)
     .map((key) => {
-      const value = config[key];
+      const value = RUNTIME_SEED_KEYS.has(key)
+        ? SKY_DEFAULTS[key]
+        : config[key];
       const literal =
         typeof value === "string" ? JSON.stringify(value) : String(value);
       return `  ${key}: ${literal},`;

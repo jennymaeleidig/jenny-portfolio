@@ -1130,9 +1130,10 @@ function paintBirds({
     const raw = time * bird.speed + bird.offset;
     let bx = cols + 2 * wing - (raw % bird.span);
 
-    // Flap: eased sine, held in steps, one phase for droop and bob alike.
-    let flap =
-      0.5 + 0.5 * Math.sin((time * flapHz(layer.flap) + bird.phase) * TAU);
+    // Flap: eased sine at this bird's rolled rate, held in steps, one phase
+    // for droop and bob alike.
+    const beat = time * flapHz(layer.flap) * bird.flapVariance + bird.phase;
+    let flap = 0.5 + 0.5 * Math.sin(beat * TAU);
     flap = Math.pow(flap, layer.flapEase);
     if (layer.invert >= 0.5) flap = 1 - flap;
     const steps = Math.max(1, Math.round(layer.flapSteps));
