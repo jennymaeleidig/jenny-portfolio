@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   BAYER4,
+  BIRD_INK,
   DARK_RAMP,
   OFFSET_Y_LIMIT,
   RAMP,
@@ -10,6 +11,7 @@ import {
   STAR_DIM,
   STAR_TINTS,
   TRANSITION_MS,
+  createBirdLayer,
   createField,
   createScene,
   createStarLayer,
@@ -79,6 +81,49 @@ test("the sky ships at the values that were tuned", () => {
     starTwinkle: 70,
     starTwinkleSpeed: 220,
     starTwinkleSize: 2,
+    birds: 1,
+    birdSeed: 19,
+    birdThickness: 0.05,
+    birdDither: 0.06,
+    birdCovSteps: 1,
+    birdMaxSlope: 3,
+    birdSnap: 1,
+    l1Count: 3,
+    l1Scale: 31,
+    l1ScaleJitter: 0.32,
+    l1Speed: 18,
+    l1SpeedJitter: 0.3,
+    l1Gap: 0.35,
+    l1Flap: 12,
+    l1FlapJitter: 0.15,
+    l1DroopMax: 0,
+    l1DroopMin: 0.67,
+    l1FlapSteps: 12,
+    l1FlapEase: 1,
+    l1Invert: 0,
+    l1Lift: 8,
+    l1Y: 0,
+    l1YSpread: 100,
+    l1Body: 0.6,
+    l1Spread: 0.8,
+    l2Count: 6,
+    l2Scale: 14,
+    l2ScaleJitter: 0.3,
+    l2Speed: 8,
+    l2SpeedJitter: 0.3,
+    l2Gap: 0.5,
+    l2Flap: 12,
+    l2FlapJitter: 0.15,
+    l2DroopMax: 0.12,
+    l2DroopMin: 1,
+    l2FlapSteps: 3,
+    l2FlapEase: 1,
+    l2Invert: 0,
+    l2Lift: 8,
+    l2Y: 0,
+    l2YSpread: 100,
+    l2Body: 0.62,
+    l2Spread: 0.64,
   });
 
   assert.deepEqual(RAMP, [
@@ -1012,4 +1057,210 @@ test("an interrupted crossing has no seam at the interrupt", () => {
     "the test samples a crossing in flight",
   );
   assert.equal(seam, 0, "the interrupt adds no step of its own");
+});
+
+const birdConfig = {
+  ...SKY_DEFAULTS,
+  // small, quick birds so a short test frame shows the flock aloft
+  l1Scale: 20,
+  l1Speed: 60,
+  l1Count: 2,
+  l2Scale: 14,
+  l2Speed: 40,
+  l2Count: 2,
+  seed: 12,
+};
+
+const birdLayout = {
+  cols: 120,
+  rows: 60,
+  cellPx: 2,
+  config: birdConfig,
+};
+
+const birdField = createField({
+  cols: birdLayout.cols,
+  rows: birdLayout.rows,
+  cellPx: birdLayout.cellPx,
+  scale: 150,
+  seed: 12,
+});
+
+/** Every block painted exactly in the ink, and where it landed. */
+function inkBlocks(pixels, cols, rows) {
+  const found = [];
+  for (let i = 0; i < cols * rows; i += 1) {
+    if (
+      pixels[i * 4] === BIRD_INK[0] &&
+      pixels[i * 4 + 1] === BIRD_INK[1] &&
+      pixels[i * 4 + 2] === BIRD_INK[2]
+    )
+      found.push([i % cols, Math.floor(i / cols)]);
+  }
+  return found;
+}
+
+test("the bird layer is deterministic for a seed and split between layers", () => {
+  const first = createBirdLayer(birdLayout);
+  const second = createBirdLayer(birdLayout);
+  assert.deepEqual(first, second);
+
+  assert.equal(first.birds.length, birdConfig.l1Count + birdConfig.l2Count);
+  const layers = new Set(first.birds.map((bird) => bird.layer));
+  assert.deepEqual([...layers].sort(), [0, 1], "both layers are flown");
+
+  const front = first.birds.filter((bird) => bird.layer === 0);
+  const back = first.birds.filter((bird) => bird.layer === 1);
+  for (const bird of front) {
+    for (const rear of back) {
+      assert.ok(
+        bird.wing > rear.wing,
+        "the near layer flies larger birds than the far",
+      );
+      assert.ok(
+        bird.speed > rear.speed,
+        "the near layer drifts faster than the far",
+      );
+    }
+  }
+
+  const other = createBirdLayer({
+    ...birdLayout,
+    config: { ...birdConfig, seed: 13 },
+  });
+  assert.notDeepEqual(other, first);
+});
+
+test("the flock is spread over its passes and the count sets density", () => {
+  const layer = createBirdLayer(birdLayout);
+
+  // Every bird is somewhere on its own pass from the first frame, so the
+  // flock reads as a sky rather than arriving one bird at a time.
+  const first = inkBlocks(
+    renderFrame({
+      field: birdField,
+      config: birdConfig,
+      time: 0,
+      birdLayer: layer,
+    }),
+    birdLayout.cols,
+    birdLayout.rows,
+  );
+  assert.ok(first.length > 0, "the flock is aloft at load");
+
+  const offsets = layer.birds.map((bird) => bird.offset / bird.span);
+  for (const offset of offsets) {
+    assert.ok(offset >= 0 && offset <= 1, `offset ${offset} is inside a pass`);
+  }
+  // Within a layer no two birds share a slot; the two layers are free to
+  // overlap because they fly different passes over each other.
+  for (const band of [0, 1]) {
+    const sorted = layer.birds
+      .filter((bird) => bird.layer === band)
+      .map((bird) => bird.offset / bird.span)
+      .sort((a, b) => a - b);
+    for (let i = 1; i < sorted.length; i += 1) {
+      assert.ok(
+        sorted[i] - sorted[i - 1] > 0.05,
+        "no two birds in a layer share a slot",
+      );
+    }
+  }
+
+  // Raising the count raises how much of the sheet the flock inks.
+  const inkAt = (count) => {
+    const config = { ...birdConfig, l1Count: count, l2Count: count };
+    const built = createBirdLayer({ ...birdLayout, config });
+    return inkBlocks(
+      renderFrame({ field: birdField, config, time: 4, birdLayer: built }),
+      birdLayout.cols,
+      birdLayout.rows,
+    ).length;
+  };
+  assert.ok(inkAt(4) > inkAt(1), "more birds ink more of the sheet");
+
+  // The pass wraps off-screen left to off-screen right: at any time every
+  // painted block is inside the sheet, never wrapped into the middle.
+  for (const time of [0, 1, 2, 4, 8]) {
+    const blocks = inkBlocks(
+      renderFrame({
+        field: birdField,
+        config: birdConfig,
+        time,
+        birdLayer: layer,
+      }),
+      birdLayout.cols,
+      birdLayout.rows,
+    );
+    for (const [x, y] of blocks) {
+      assert.ok(
+        x >= 0 && x < birdLayout.cols,
+        `block ${x} is outside the sheet`,
+      );
+      assert.ok(y >= 0 && y < birdLayout.rows, `row ${y} is outside the sheet`);
+    }
+  }
+});
+
+test("the birds keep to the light sky", () => {
+  const layer = createBirdLayer(birdLayout);
+  const light = renderFrame({
+    field: birdField,
+    config: birdConfig,
+    time: 5,
+    birdLayer: layer,
+  });
+  assert.ok(
+    inkBlocks(light, birdLayout.cols, birdLayout.rows).length > 0,
+    "the flock paints in the light sky",
+  );
+
+  const dark = renderFrame({
+    field: birdField,
+    config: birdConfig,
+    time: 5,
+    birdLayer: layer,
+    mix: 1,
+  });
+  assert.equal(
+    inkBlocks(dark, birdLayout.cols, birdLayout.rows).length,
+    0,
+    "the flock clears once the sky has crossed to night",
+  );
+
+  const off = createBirdLayer({
+    ...birdLayout,
+    config: { ...birdConfig, birds: 0 },
+  });
+  assert.equal(off, null, "the flock can be turned off entirely");
+});
+
+test("back-band birds are hidden by the cloud bands", () => {
+  const layer = createBirdLayer({
+    ...birdLayout,
+    config: { ...birdConfig, l1Count: 3, l2Count: 3 },
+  });
+  // The front band inks over the clouds, so the occlusion rule is tested on
+  // the back band alone: it may only paint where the sky is clear.
+  const backOnly = { birds: layer.birds.filter((bird) => bird.layer === 1) };
+  assert.ok(backOnly.birds.length > 0, "the back band has birds to test");
+
+  const bands = new Uint8Array(birdLayout.cols * birdLayout.rows);
+  const pixels = renderFrame({
+    field: birdField,
+    bands,
+    config: { ...birdConfig, l1Count: 3, l2Count: 3 },
+    time: 6,
+    birdLayer: backOnly,
+  });
+  const ink = new Set(
+    inkBlocks(pixels, birdLayout.cols, birdLayout.rows).map(
+      ([x, y]) => y * birdLayout.cols + x,
+    ),
+  );
+  assert.ok(ink.size > 0, "the back band paints against the clear sky");
+
+  for (const block of ink) {
+    assert.equal(bands[block], 0, `block ${block} is a bird behind a cloud`);
+  }
 });
