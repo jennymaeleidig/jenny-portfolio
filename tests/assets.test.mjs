@@ -146,6 +146,39 @@ test("a SKY_LEVERS=1 build carries the levers on every page", () => {
   ]) {
     assert.match(levers, new RegExp(`key: "${key}"`), `${key} has a lever`);
   }
+
+  // The ship set is deliberately short: on/off and count, scale and speed per
+  // layer. Deeper flock values stay in SKY_DEFAULTS.
+  const flockKeys = [...levers.matchAll(/key: "([^"]+)"/g)]
+    .map((match) => match[1])
+    .filter((key) => key === "birds" || /^l[12]/.test(key))
+    .sort();
+  assert.deepEqual(flockKeys, [
+    "birds",
+    "l1Count",
+    "l1Scale",
+    "l1Speed",
+    "l2Count",
+    "l2Scale",
+    "l2Speed",
+  ]);
+
+  // Every bird lever takes the bird-only path, and that path rebuilds the
+  // flock alone: no scene, field, star or canvas reallocation.
+  assert.match(levers, /birds: true/);
+  assert.match(levers, /controller\.rebuildBirds\(\)/);
+
+  const sky = readFileSync(join(dist, "assets", "sky.js"), "utf8");
+  const start = sky.indexOf("function rebuildBirds()");
+  assert.ok(start >= 0, "the sky publishes a bird-only rebuild");
+  const body = sky.slice(start, sky.indexOf("function stop()", start));
+  assert.match(body, /createBirdLayer\(/);
+  assert.doesNotMatch(
+    body,
+    /createScene|createField|createStarLayer|image\s*=|pixels\s*=|field\s*=|starLayer\s*=|offsetY\s*=/,
+    "a bird rebuild touches nothing but the flock",
+  );
+  assert.match(sky, /rebuildBirds[,:]/);
 });
 
 test("the committed posters are static frames of the current sky", () => {

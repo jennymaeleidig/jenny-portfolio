@@ -15,14 +15,17 @@ import { isDark } from "./theme-core.mjs";
 import {
   SKY_DEFAULTS,
   TRANSITION_MS,
+  createBirdLayer,
   createScene,
   frameLayout,
   renderFrame,
   transitionMix,
 } from "./sky-core.mjs";
 
-// A visit gets its own sky. The seed is chosen once per page load, so the
-// field stays put across internal navigation and is only new on a real load.
+// A visit gets its own sky, and its own flock. Both seeds are chosen once
+// per page load, so the field and the birds stay put across internal
+// navigation and are only new on a real load. The flock mixes its own seed
+// with the visit seed, so a new sky never repeats a previous flight.
 function randomSeed() {
   if (globalThis.crypto?.getRandomValues) {
     return globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
@@ -30,7 +33,7 @@ function randomSeed() {
   return Math.floor(Math.random() * 0xffffffff);
 }
 
-const config = { ...SKY_DEFAULTS, seed: randomSeed() };
+const config = { ...SKY_DEFAULTS, seed: randomSeed(), birdSeed: randomSeed() };
 
 /** @type {HTMLElement | null} */
 const sky = document.querySelector(".sky");
@@ -52,6 +55,7 @@ if (sky && canvas) {
 
     let field = null;
     let starLayer = null;
+    let birdLayer = null;
     let dark = isDark(document.documentElement.dataset.theme);
     // The mix the sky has reached, and the crossing in flight, if any. A
     // crossing is interrupted by taking the current mix as its new origin, so
@@ -108,6 +112,7 @@ if (sky && canvas) {
         offsetY,
         mix: mixNow(now),
         starLayer,
+        birdLayer,
       });
       context.putImageData(image, 0, 0);
     }
@@ -144,9 +149,23 @@ if (sky && canvas) {
       });
       field = scene.field;
       starLayer = scene.starLayer;
+      birdLayer = scene.birdLayer;
       offsetY = scene.offsetY;
       image = context.createImageData(layout.cols, layout.rows);
       pixels = image.data;
+      draw();
+    }
+
+    // A bird lever resizes or reseeds only the flock. The noise field, the
+    // star layer, the offsets and the canvas image keep their identities, so
+    // tuning a bird never re-rolls the clouds or the stars.
+    function rebuildBirds() {
+      birdLayer = createBirdLayer({
+        cols: canvas.width,
+        rows: canvas.height,
+        cellPx,
+        config,
+      });
       draw();
     }
 
@@ -251,6 +270,7 @@ if (sky && canvas) {
         config,
         redraw: draw,
         rebuild: resize,
+        rebuildBirds,
         restart: start,
       };
     }
