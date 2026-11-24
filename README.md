@@ -25,12 +25,14 @@ sudo apt-get install cmark-gfm
 ```
 
 ```sh
-npm install  # Prettier, Husky, lint-staged and the editor language servers
+npm install  # ESLint, Prettier, Husky, lint-staged and the editor language servers
 
 make build   # writes dist/, the same tree CI deploys
 make test    # builds into a temporary directory and checks the emitted files
 make clean
 ```
+
+Node.js 20.17 or newer is required for the tests and the tooling.
 
 ### Formatting
 
@@ -44,6 +46,19 @@ it by hand with:
 npm run format        # rewrite the tree
 npm run format:check  # fail if anything is unformatted
 ```
+
+### Linting
+
+ESLint checks JavaScript and the ESM modules under `assets/`, `scripts/`
+and `tests/` with browser and Node globals as appropriate. Run it by hand
+with:
+
+```sh
+npm run lint      # report findings
+npm run lint:fix  # apply fixes
+```
+
+Husky runs ESLint and Prettier through lint-staged on commit.
 
 ### Theme
 
@@ -85,4 +100,4 @@ Then open `http://localhost:8000/` in a browser.
 
 ## Deployment
 
-A push to `main` runs `.github/workflows/deploy.yml`: build, test, upload the Pages artifact, deploy. The workflow does not commit a `CNAME` file; the custom domain is configured in the repository's Pages settings.
+A push to `main` runs `.github/workflows/deploy.yml`: install, format check, lint, build, test, upload the Pages artifact, deploy. The workflow does not commit a `CNAME` file; the custom domain is configured in the repository's Pages settings.
