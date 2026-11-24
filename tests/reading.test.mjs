@@ -216,7 +216,7 @@ test("/404 says what happened, and the site header is the way back", () => {
 
   // The page itself carries no second list of routes: the header above it is
   // the way back, and it is on every page, including this one.
-  for (const route of ["/", "/work/", "/about/", "/now/"]) {
+  for (const route of ["/", "/work/projects/", "/about/", "/now/"]) {
     assert.match(
       page,
       new RegExp(

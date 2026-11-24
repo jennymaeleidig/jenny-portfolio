@@ -23,7 +23,7 @@ if [[ -n $category ]]; then
   heading=$(vocabulary_label categories "$category")
   description="Every project in the catalogue filed under $heading."
 else
-  # The route is /work/, but the tab the reader is on is Projects.
+  # The route is /work/projects/, named for the tab the reader is on.
   heading="Projects"
   description="The catalogue: every project, pinned first, then newest, with its blurb, category and year."
 fi

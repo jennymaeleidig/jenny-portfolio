@@ -773,7 +773,8 @@ test("the route table names every page the build emits, in one order", () => {
     }),
     `${[
       "/\u001ftrue",
-      "/work/\u001ftrue",
+      "/work/projects/\u001ftrue",
+      "/work/\u001ffalse",
       "/work/games/\u001ftrue",
       "/work/sound/\u001ftrue",
       "/work/hardware/\u001ftrue",
@@ -810,6 +811,7 @@ test("a route record carries what renders it, and an article has no page route",
     `${[
       "layout\u001fhome\u001f\u001f",
       "layout\u001fwork\u001f\u001f",
+      "layout\u001fredirect\u001f/work/projects/\u001f",
       "layout\u001fwork\u001fgames\u001f",
       "layout\u001fwork\u001fsound\u001f",
       "layout\u001fwork\u001fhardware\u001f",
@@ -840,6 +842,7 @@ test("a route's output is its address under the dist tree", () => {
     }),
     `${[
       `/\u001f${join(dist, "index.html")}`,
+      `/work/projects/\u001f${join(dist, "work", "projects", "index.html")}`,
       `/work/\u001f${join(dist, "work", "index.html")}`,
       `/work/games/\u001f${join(dist, "work", "games", "index.html")}`,
       `/work/sound/\u001f${join(dist, "work", "sound", "index.html")}`,

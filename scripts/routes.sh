@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# The route table: every page the build emits, with the address it declares.
+# The route table: every route the build emits, with the address it declares.
 #
 # One record drives both jobs that used to derive addresses separately: the
 # renderer walks it to produce output, and the sitemap walks it to publish
 # locs. A route is a page, so it carries what renders it as well as where it
-# lives. An article has no page, so the project record's publishability rule
-# keeps it out of the table rather than leaving a second check in the renderer.
+# lives — the one exception is a redirect, a route that forwards to a real
+# page instead of being one. An article has no page, so the project record's
+# publishability rule keeps it out of the table rather than leaving a second
+# check in the renderer.
 #
 # Records are unit-separated, the same as the project and career modules. A
 # row carries these named fields, emitted in the order the caller lists them:
@@ -90,7 +92,14 @@ layout_route_records() {
   done
 
   route_row / "$(route_output /)" true layout home "" "" "${fields[@]}"
-  route_row /work/ "$(route_output /work/)" true layout work "" "" "${fields[@]}"
+
+  # The catalogue sits at /work/projects/, the same shape as /work/career/, and
+  # the bare /work/ address forwards to it. The redirect's target is spelled
+  # here rather than asked of route_address, which would re-enter this table.
+  route_row /work/projects/ "$(route_output /work/projects/)" true \
+    layout work "" "" "${fields[@]}"
+  route_row /work/ "$(route_output /work/)" false \
+    layout redirect /work/projects/ "" "${fields[@]}"
 
   while IFS= read -r category; do
     route_row "/work/$category/" "$(route_output "/work/$category/")" true \

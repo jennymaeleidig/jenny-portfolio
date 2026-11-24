@@ -185,10 +185,25 @@ export const SITE_NAME = readFileSync(join(fixtureSite, "identity.sh"), "utf8")
   .match(/^SITE_NAME="?([^"\n]*)"?$/m)[1]
   .trim();
 
+// A redirect page forwards to a real route and is not a page of its own, so
+// the page-wide tests skip it the way they skip the Pages 404 fallback. The
+// refresh directive is what the redirect layout emits and nothing else does.
+export function isRedirectPage(file) {
+  return /http-equiv="refresh"/.test(readFileSync(file, "utf8"));
+}
+
+// The catalogue's page, spelled once for every test that reads it.
+export function cataloguePage(base) {
+  return join(base, "work", "projects", "index.html");
+}
+
 // The route set as a visitor could enumerate it: every index.html under the
-// dist tree, with the Pages 404 fallback and the /404 route itself excluded.
-// This walks the emitted filesystem rather than reading the sitemap, so a page
-// with no sitemap entry and a sitemap entry with no page both fail below.
+// dist tree, with the Pages 404 fallback, the /404 route itself and redirects
+// excluded. This walks the emitted filesystem rather than reading the sitemap,
+// so a page with no sitemap entry and a sitemap entry with no page both fail
+// below. A redirect is matched by what the redirect layout emits, not by a
+// broad noindex match, so a real page that accidentally asks not to be
+// indexed still fails the tests.
 export function emittedRoutes(base) {
   const routes = [];
   for (const file of walk(base)) {
@@ -203,7 +218,7 @@ export function emittedRoutes(base) {
       routes.push("/");
     } else if (rel.endsWith("/index.html")) {
       const route = `/${rel.slice(0, -"index.html".length)}`;
-      if (route !== "/404/") {
+      if (route !== "/404/" && !isRedirectPage(file)) {
         routes.push(route);
       }
     }
@@ -279,7 +294,9 @@ export async function sharedSite() {
   }
   shared = {
     output: dir,
-    htmlFiles: walk(dir).filter((path) => path.endsWith(".html")),
+    htmlFiles: walk(dir).filter(
+      (path) => path.endsWith(".html") && !isRedirectPage(path),
+    ),
     siteCss: readFileSync(join(dir, "assets", "site.css"), "utf8"),
   };
   return shared;

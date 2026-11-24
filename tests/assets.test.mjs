@@ -13,6 +13,7 @@ import {
   TOKENS,
   build,
   contrast,
+  isRedirectPage,
   posterHash,
   root,
   sharedSite,
@@ -101,7 +102,9 @@ test("a SKY_LEVERS=1 build carries the levers on every page", () => {
   const dist = mkdtempSync(join(tmpdir(), "portfolio-levers-"));
   build(dist, { SKY_LEVERS: "1" });
 
-  const pages = walk(dist).filter((path) => path.endsWith(".html"));
+  const pages = walk(dist).filter(
+    (path) => path.endsWith(".html") && !isRedirectPage(path),
+  );
   assert.ok(pages.length > 0, "the development build emits pages");
 
   for (const file of pages) {

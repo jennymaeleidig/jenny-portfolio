@@ -7,6 +7,7 @@ import { join } from "node:path";
 import {
   build,
   buildFixture,
+  cataloguePage,
   catalogueRows,
   writeProject,
 } from "./support/site.mjs";
@@ -24,7 +25,7 @@ category: games`,
 
   build(dist, { CONTENT_DIR: content });
 
-  const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
+  const catalogue = readFileSync(cataloguePage(dist), "utf8");
   const headers = [...catalogue.matchAll(/<th scope="col">([^<]+)<\/th>/g)].map(
     ([, text]) => text,
   );
@@ -74,7 +75,7 @@ featured: true`,
 
   build(dist, { CONTENT_DIR: content });
 
-  const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
+  const catalogue = readFileSync(cataloguePage(dist), "utf8");
   assert.match(
     catalogue,
     /<td class="catalogue-blurb"><p>A <em>quiet<\/em> game with a <a href="https:\/\/example\.com">link<\/a>\.<\/p><\/td>/,
@@ -128,7 +129,7 @@ category: software`,
     true,
   );
 
-  const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
+  const catalogue = readFileSync(cataloguePage(dist), "utf8");
   assert.deepEqual(catalogueRows(catalogue), [
     "https://example.com/a-paper",
     "https://example.com/a-live-piece",

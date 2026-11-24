@@ -8,6 +8,7 @@ import {
   CAREER_SECTIONS,
   build,
   careerHeadings,
+  cataloguePage,
   careerSection,
   catalogueRows,
   currentFilters,
@@ -23,7 +24,7 @@ import {
 
 const { output, siteCss } = await sharedSite();
 
-test("/work lists every project, newest first, with order pinning above newer work", () => {
+test("/work/projects lists every project, newest first, with order pinning above newer work", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-catalogue-"));
   const dist = mkdtempSync(join(tmpdir(), "portfolio-catalogue-dist-"));
   writeProject(
@@ -51,7 +52,7 @@ order: 1`,
 
   build(dist, { CONTENT_DIR: content });
 
-  const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
+  const catalogue = readFileSync(cataloguePage(dist), "utf8");
   assert.deepEqual(catalogueRows(catalogue), [
     "/projects/pinned/",
     "/projects/beta/",
@@ -101,7 +102,7 @@ publication: https://example.com/article-one`,
 
   build(dist, { CONTENT_DIR: content });
 
-  const all = readFileSync(join(dist, "work", "index.html"), "utf8");
+  const all = readFileSync(cataloguePage(dist), "utf8");
   assert.equal(
     catalogueRows(all).length,
     5,
@@ -153,7 +154,7 @@ publication: https://example.com/an-article`,
 
   build(dist, { CONTENT_DIR: content });
 
-  const catalogue = readFileSync(join(dist, "work", "index.html"), "utf8");
+  const catalogue = readFileSync(cataloguePage(dist), "utf8");
   const routes = new Set(emittedRoutes(dist));
   const hrefs = catalogueRows(catalogue);
 
@@ -170,14 +171,17 @@ publication: https://example.com/an-article`,
 
 test("the work pages carry Projects and Career tabs, marking only the current page", () => {
   const routes = [
-    [join(output, "work", "index.html"), "/work/"],
+    [cataloguePage(output), "/work/projects/"],
     [join(output, "work", "career", "index.html"), "/work/career/"],
     ...CAREER_SECTIONS.map((section) => [
       join(output, "work", "career", section, "index.html"),
       "/work/career/",
     ]),
     ...["games", "sound", "hardware", "software", "articles"].map(
-      (category) => [join(output, "work", category, "index.html"), "/work/"],
+      (category) => [
+        join(output, "work", category, "index.html"),
+        "/work/projects/",
+      ],
     ),
   ];
 
@@ -186,7 +190,7 @@ test("the work pages carry Projects and Career tabs, marking only the current pa
     const bar = tabBar(html);
     assert.match(
       bar,
-      /<a href="\/work\/"[^>]*>Projects<\/a>/,
+      /<a href="\/work\/projects\/"[^>]*>Projects<\/a>/,
       `${relative(root, file)} links to Projects`,
     );
     assert.match(
@@ -220,7 +224,7 @@ test("the work pages carry Projects and Career tabs, marking only the current pa
     "Skills",
   ]);
 
-  const projects = readFileSync(join(output, "work", "index.html"), "utf8");
+  const projects = readFileSync(cataloguePage(output), "utf8");
   assert.deepEqual(filterLabels(projects), [
     "All",
     "Games",
@@ -283,21 +287,24 @@ test("the page header marks the current section, and current links stay ink", ()
   const routes = [
     [join(output, "index.html"), ["/"]],
     [join(output, "404.html"), []],
-    [join(output, "work", "index.html"), ["/work/"]],
-    [join(output, "work", "career", "index.html"), ["/work/"]],
+    [cataloguePage(output), ["/work/projects/"]],
+    [join(output, "work", "career", "index.html"), ["/work/projects/"]],
     .../** @type {Array<[string, string[]]>} */ (
       CAREER_SECTIONS.map((section) => [
         join(output, "work", "career", section, "index.html"),
-        ["/work/"],
+        ["/work/projects/"],
       ])
     ),
     .../** @type {Array<[string, string[]]>} */ (
       ["games", "sound", "hardware", "software", "articles"].map((category) => [
         join(output, "work", category, "index.html"),
-        ["/work/"],
+        ["/work/projects/"],
       ])
     ),
-    [join(output, "projects", "example-project", "index.html"), ["/work/"]],
+    [
+      join(output, "projects", "example-project", "index.html"),
+      ["/work/projects/"],
+    ],
     [join(output, "about", "index.html"), ["/about/"]],
     [join(output, "now", "index.html"), ["/now/"]],
   ];

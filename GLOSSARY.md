@@ -26,13 +26,19 @@ printed verbatim, with no vocabulary and no capitalisation.
 _Avoid_: label, key, kind
 
 **Catalogue**:
-The `/work/` table of every project in canonical order, and the per-category
+The `/work/projects/` table of every project in canonical order, and the per-category
 tables its filters lead to.
 _Avoid_: index, listing, projects page
 
 **Catalogue row**:
 One project's line in the catalogue: title, blurb, category and year.
 _Avoid_: record, item
+
+**Redirect**:
+A route that forwards to a real page instead of being one: a meta-refresh
+page whose argument names the target address, and which claims no address
+of its own. `/work/` is one, forwarding to the catalogue.
+_Avoid_: alias, forwarding page, placeholder
 
 **Blurb**:
 The opening paragraph after a project's title, used by its catalogue row and
