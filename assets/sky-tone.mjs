@@ -1,7 +1,7 @@
 /**
  * The sky's tone and ramp vocabulary: the two ramps, the crossing between
  * them, the tone thresholds and quantiser, and the ordered dither. The field,
- * the star layer and the flock all read from here, so none of them has to
+ * the star layer and the bird layer all read from here, so none of them has to
  * import another layer.
  */
 

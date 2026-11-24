@@ -1,7 +1,8 @@
 /**
- * The sky's flock: the per-bird layout, the wing maths, and the stamping pass.
+ * The sky's bird layer: the per-bird layout, the wing maths, and the stamping
+ * pass.
  *
- * The flock is built once per layout and seed, then paints itself into the
+ * The bird layer is built once per layout and seed, then paints itself into the
  * shared frame state. It reads the sheet's band record for the far layer's
  * occlusion, so it never needs a handoff from the composition or the field.
  *
@@ -60,8 +61,8 @@ export function birdLayer(config, layerIndex) {
 }
 
 /**
- * The flock, built once per layout and seed like the star layer. The per-bird
- * roll decides scale, speed, altitude, flap phase and entry delay, all from
+ * The bird layer, built once per layout and seed like the star layer. The
+ * per-bird roll decides scale, speed, altitude, flap phase and entry delay, all from
  * the shared hash. Geometry is fixed here; the beat values are read from the
  * config at paint time, so they tune without a rebuild.
  */
@@ -106,12 +107,12 @@ export function build({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
         ),
         phase,
         // Per-bird beat variance: no two birds flap at the same rate, so the
-        // flock never falls into a shared rhythm even mid-flight.
+        // bird layer never falls into a shared rhythm even mid-flight.
         flapVariance: 1 + (flapRoll - 0.5) * 2 * params.flapJitter,
         span,
         // Where this bird sits in its own pass, as a distance along the span.
-        // The flock is spread evenly over the pass with half a slot of jitter,
-        // so every bird is aloft at once and the count is what sets density.
+        // The bird layer is spread evenly over the pass with half a slot of
+        // jitter, so every bird is aloft at once and the count is what sets density.
         // Adding a bird never stacks it on another, and a bird that finishes
         // its pass reappears off-screen right rather than popping mid-sky.
         offset:
@@ -135,12 +136,12 @@ export function build({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
     stampBytes,
   };
 
-  layer.paint = (frame) => paintFlock(layer, frame);
+  layer.paint = (frame) => paintBirdLayer(layer, frame);
 
   return layer;
 }
 
-/** The flock's stable name for the same build. */
+/** The bird layer's stable name for the same build. */
 export function createBirdLayer(options) {
   return build(options);
 }
@@ -305,7 +306,7 @@ function blitStamp(stamp, step, bx, by, back, frame, visible, denom) {
     const ditherRow = (y & 3) * 4;
     const rowBase = (y - by - stamp.dyLo) * stamp.width;
     for (let x = xLo; x <= xHi; x += 1) {
-      // The cloud bands cover the far flock, exactly as they cover stars.
+      // The cloud bands cover the far birds, exactly as they cover stars.
       if (back && bands[y * cols + x] > 0) continue;
 
       const hits = grid[rowBase + (x - bx - stamp.dxLo)];
@@ -318,14 +319,14 @@ function blitStamp(stamp, step, bx, by, back, frame, visible, denom) {
 }
 
 /**
- * Stamp the flock onto the painted sheet. One shared phase per bird drives
+ * Stamp the bird layer onto the painted sheet. One shared phase per bird drives
  * both the droop and the bob, so they cannot drift apart; the bob amplitude
  * is derived from the wing (a bigger wing lifts more) and rides the power
  * stroke. Coverage is an NxN sample grid per block, thresholded through the
  * same ordered dither the tone bands use. The far layer reads the frame's band
  * record and skips every block a cloud band owns.
  */
-function paintFlock(flock, frame) {
+function paintBirdLayer(layerState, frame) {
   const { pixels, bands: birdBands, cols, rows, config, time, blend } = frame;
   const visible = 1 - clamp01(blend);
   const thickness = config.birdThickness;
@@ -338,11 +339,11 @@ function paintFlock(flock, frame) {
   const params = [birdLayer(config, 0), birdLayer(config, 1)];
   const shaping = params.map((layer) => stampShaping(layer, config));
   const stamped = shaping.map(
-    (shape, index) => snap && sameShaping(shape, flock.shaping[index]),
+    (shape, index) => snap && sameShaping(shape, layerState.shaping[index]),
   );
 
-  for (let index = 0; index < flock.birds.length; index += 1) {
-    const bird = flock.birds[index];
+  for (let index = 0; index < layerState.birds.length; index += 1) {
+    const bird = layerState.birds[index];
     const layer = params[bird.layer];
     const back = bird.layer === 1;
     const wing = bird.wing;
@@ -350,7 +351,7 @@ function paintFlock(flock, frame) {
     // Drift: right to left, wrapping off-screen left back to off-screen
     // right, so a bird is always somewhere on its own pass and never appears
     // mid-sky. Before its entry offset it sits further off-screen right, so
-    // the whole flock enters from the same edge.
+    // the whole bird layer enters from the same edge.
     const raw = time * bird.speed + bird.offset;
     let bx = cols + 2 * wing - (raw % bird.span);
 
@@ -377,7 +378,7 @@ function paintFlock(flock, frame) {
 
     if (stamped[bird.layer]) {
       blitStamp(
-        flock.stamps[index],
+        layerState.stamps[index],
         stepIndex,
         bx,
         by,
@@ -389,8 +390,8 @@ function paintFlock(flock, frame) {
       continue;
     }
 
-    // A continuous or retuned flock has no stamp to blit, so it re-cuts each
-    // block from the wing maths.
+    // A continuous or retuned bird layer has no stamp to blit, so it re-cuts
+    // each block from the wing maths.
     const droop = layer.droopMax + (layer.droopMin - layer.droopMax) * flap;
     const tol = thickness;
     const yMax = wing * (layer.body * Math.sqrt(layer.spread) + tol * 2);
@@ -402,7 +403,7 @@ function paintFlock(flock, frame) {
     for (let y = yLo; y <= yHi; y += 1) {
       const ditherRow = (y & 3) * 4;
       for (let x = xLo; x <= xHi; x += 1) {
-        // The cloud bands cover the far flock, exactly as they cover stars.
+        // The cloud bands cover the far birds, exactly as they cover stars.
         if (back && birdBands[y * cols + x] > 0) continue;
 
         const hits = coverageAt(

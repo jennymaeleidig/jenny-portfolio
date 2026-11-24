@@ -148,12 +148,12 @@ test("a SKY_LEVERS=1 build carries the levers on every page", () => {
   }
 
   // The ship set is deliberately short: on/off and count, scale and speed per
-  // layer. Deeper flock values stay in SKY_DEFAULTS.
-  const flockKeys = [...levers.matchAll(/key: "([^"]+)"/g)]
+  // layer. Deeper bird layer values stay in SKY_DEFAULTS.
+  const birdLayerKeys = [...levers.matchAll(/key: "([^"]+)"/g)]
     .map((match) => match[1])
     .filter((key) => key === "birds" || /^l[12]/.test(key))
     .sort();
-  assert.deepEqual(flockKeys, [
+  assert.deepEqual(birdLayerKeys, [
     "birds",
     "l1Count",
     "l1Scale",
@@ -164,7 +164,7 @@ test("a SKY_LEVERS=1 build carries the levers on every page", () => {
   ]);
 
   // Every bird lever takes the bird-only path, and that path rebuilds the
-  // flock alone: no scene, field, star or canvas reallocation.
+  // bird layer alone: no scene, field, star or canvas reallocation.
   assert.match(levers, /birds: true/);
   assert.match(levers, /controller\.rebuildBirds\(\)/);
 
@@ -176,7 +176,7 @@ test("a SKY_LEVERS=1 build carries the levers on every page", () => {
   assert.doesNotMatch(
     body,
     /createScene|createField|createStarLayer|image\s*=|pixels\s*=|field\s*=|starLayer\s*=|offsetY\s*=/,
-    "a bird rebuild touches nothing but the flock",
+    "a bird rebuild touches nothing but the bird layer",
   );
   assert.match(sky, /rebuildBirds[,:]/);
 });

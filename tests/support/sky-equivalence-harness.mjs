@@ -432,8 +432,8 @@ export function runPerformance({
 /** The frame states the repo test asks the harness to compare. */
 export const REPRESENTATIVE_FRAMES = Object.freeze([
   { name: "light", time: 0, offset: 0, mix: 0 },
-  { name: "light-flock-a", time: 4.2, offset: 17.3, mix: 0 },
-  { name: "light-flock-b", time: 11.7, offset: 41.6, mix: 0 },
+  { name: "light-birds-a", time: 4.2, offset: 17.3, mix: 0 },
+  { name: "light-birds-b", time: 11.7, offset: 41.6, mix: 0 },
   { name: "mid-crossing", time: 2.4, offset: 9.5, mix: 0.5 },
   { name: "dark-twinkle-a", time: 1.3, offset: 5.2, mix: 1 },
   { name: "dark-twinkle-b", time: 3.7, offset: 13.1, mix: 1 },

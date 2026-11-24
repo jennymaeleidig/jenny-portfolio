@@ -124,21 +124,22 @@ The generated stars painted over the clear band of the dark sky. It is built
 once per layout and seed, then twinkled by gain.
 _Avoid_: starfield, particle layer
 
-**Flock**:
+**Bird layer**:
 The generated birds drifting across the light sky, in two depth layers: a far
 layer that flies behind the clouds, occluded by the cloud bands, and a near
-layer that inks over whatever it passes. The flock is built once per layout and
-seed like the star layer, and stamped per block over the painted sheet.
-_Avoid_: bird layer, particles, sprites
+layer that inks over whatever it passes. The bird layer is built once per
+layout and seed like the star layer, and stamped per block over the painted
+sheet.
+_Avoid_: flock, particle layer, sprites
 
 **Sky layer**:
 One resident of the sky scene behind the shared paint interface: the field,
-the star layer, or the flock.
+the star layer, or the bird layer.
 _Avoid_: pass, plugin, drawable
 
 **Sky scene**:
-One sky's built state for a layout: the field, the star layer and the flock,
-all built from one seed and one config.
+One sky's built state for a layout: the field, the star layer and the bird
+layer, all built from one seed and one config.
 _Avoid_: world, stage, setup
 
 **Sky renderer**:

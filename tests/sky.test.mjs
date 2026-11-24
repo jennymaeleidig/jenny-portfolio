@@ -31,7 +31,7 @@ import {
   updateStarGains,
 } from "../assets/sky-core.mjs";
 import { build as buildField } from "../assets/sky-field.mjs";
-import { build as buildFlock } from "../assets/sky-flock.mjs";
+import { build as buildBirdLayer } from "../assets/sky-flock.mjs";
 import { defaultsText } from "../assets/sky-levers.mjs";
 import { build as buildStar } from "../assets/sky-stars.mjs";
 import { createCpuRenderer } from "../assets/sky-renderer.mjs";
@@ -1164,7 +1164,7 @@ test("an interrupted crossing has no seam at the interrupt", () => {
 
 const birdConfig = {
   ...SKY_DEFAULTS,
-  // small, quick birds so a short test frame shows the flock aloft
+  // small, quick birds so a short test frame shows the birds aloft
   l1Scale: 20,
   l1Speed: 60,
   l1Count: 2,
@@ -1189,7 +1189,7 @@ const birdField = createField({
   seed: 12,
 });
 
-/** The blocks inked for one flock config and time, as x/y pairs. */
+/** The blocks inked for one bird-layer config and time, as x/y pairs. */
 function birdInk(config, time) {
   const birdLayer = createBirdLayer({ ...birdLayout, config });
   return inkBlocks(
@@ -1278,7 +1278,7 @@ function inkBlocks(pixels, cols, rows) {
   return found;
 }
 
-test("the flock is deterministic for a seed", () => {
+test("the bird layer is deterministic for a seed", () => {
   const times = [0, 0.7, 2.3, 5.1];
   const frames = (config) => times.map((time) => birdInk(config, time));
 
@@ -1346,9 +1346,9 @@ test("each bird flaps at its own rolled rate", () => {
   assert.ok(painted, "the per-bird beat variance changes the painted wings");
 });
 
-test("the flock is aloft at load, spread over distinct slots", () => {
+test("the bird layer is aloft at load, spread over distinct slots", () => {
   // A tighter pass makes several birds visible in the first frame; the
-  // columns they ink show the flock spread across the sheet, not stacked.
+  // columns they ink show the birds spread across the sheet, not stacked.
   const spread = { ...birdConfig, l1Count: 4, l2Count: 0, l1Gap: 0 };
   const runs = inkRuns(birdInk(spread, 0));
   assert.ok(runs.length >= 3, "several birds are aloft at load");
@@ -1362,11 +1362,11 @@ test("the flock is aloft at load, spread over distinct slots", () => {
   }
   assert.ok(
     Math.min(...centres) < birdLayout.cols / 3,
-    "the flock reaches the left of the sheet",
+    "the birds reach the left of the sheet",
   );
   assert.ok(
     Math.max(...centres) > (birdLayout.cols * 2) / 3,
-    "the flock reaches the right of the sheet",
+    "the birds reach the right of the sheet",
   );
 });
 
@@ -1376,7 +1376,7 @@ test("the count sets density", () => {
   assert.ok(inkAt(4) > inkAt(1), "more birds ink more of the sheet");
 });
 
-test("the flock enters from off-screen right and wraps off-screen left", () => {
+test("the bird layer enters from off-screen right and wraps off-screen left", () => {
   const config = { ...birdConfig, l1Count: 1, l2Count: 0, l1Gap: 0 };
   const birdLayer = createBirdLayer({ ...birdLayout, config });
   const step = 0.02;
@@ -1429,7 +1429,7 @@ test("the birds keep to the light sky", () => {
   });
   assert.ok(
     inkBlocks(light, birdLayout.cols, birdLayout.rows).length > 0,
-    "the flock paints in the light sky",
+    "the bird layer paints in the light sky",
   );
 
   const dark = renderFrame({
@@ -1442,14 +1442,14 @@ test("the birds keep to the light sky", () => {
   assert.equal(
     inkBlocks(dark, birdLayout.cols, birdLayout.rows).length,
     0,
-    "the flock clears once the sky has crossed to night",
+    "the bird layer clears once the sky has crossed to night",
   );
 
   const off = createBirdLayer({
     ...birdLayout,
     config: { ...birdConfig, birds: 0 },
   });
-  assert.equal(off, null, "the flock can be turned off entirely");
+  assert.equal(off, null, "the bird layer can be turned off entirely");
 });
 
 test("back-band birds are hidden by the cloud bands", () => {
@@ -1477,15 +1477,15 @@ test("back-band birds are hidden by the cloud bands", () => {
   }
 });
 
-test("the flock builds and paints through the shared layer interface", () => {
+test("the bird layer builds and paints through the shared layer interface", () => {
   // Only the far layer flies, so the band record gates every painted block.
   const config = { ...birdConfig, l1Count: 0, l2Count: 3 };
-  const layer = buildFlock({ ...birdLayout, config });
+  const layer = buildBirdLayer({ ...birdLayout, config });
 
   assert.deepEqual(
     layer.birds,
     createBirdLayer({ ...birdLayout, config }).birds,
-    "the stable name builds the same flock",
+    "the stable name builds the same bird layer",
   );
 
   const paint = (bands) => {
@@ -1503,7 +1503,7 @@ test("the flock builds and paints through the shared layer interface", () => {
   };
 
   const clear = paint(new Uint8Array(birdLayout.cols * birdLayout.rows));
-  assert.ok(clear.length > 0, "the flock paints into the shared pixels");
+  assert.ok(clear.length > 0, "the bird layer paints into the shared pixels");
 
   const covered = paint(
     new Uint8Array(birdLayout.cols * birdLayout.rows).fill(1),
@@ -1511,21 +1511,21 @@ test("the flock builds and paints through the shared layer interface", () => {
   assert.equal(
     covered.length,
     0,
-    "the flock's own paint honours the shared bands",
+    "the bird layer's own paint honours the shared bands",
   );
 });
 
-test("the flock's stamp cache stays inside its memory bound", () => {
+test("the bird layer's stamp cache stays inside its memory bound", () => {
   const defaults = createBirdLayer({
     cols: 480,
     rows: 270,
     cellPx: 4,
     config: SKY_DEFAULTS,
   });
-  assert.ok(defaults.stampBytes > 0, "the flock bakes stamps");
+  assert.ok(defaults.stampBytes > 0, "the bird layer bakes stamps");
   assert.ok(
     defaults.stampBytes <= 200 * 1024,
-    `the shipped flock's stamps take ${defaults.stampBytes} bytes`,
+    `the shipped bird layer's stamps take ${defaults.stampBytes} bytes`,
   );
 
   const stress = createBirdLayer({
@@ -1534,11 +1534,11 @@ test("the flock's stamp cache stays inside its memory bound", () => {
   });
   assert.ok(
     stress.stampBytes <= 200 * 1024,
-    `a crowded flock's stamps take ${stress.stampBytes} bytes`,
+    `a crowded bird layer's stamps take ${stress.stampBytes} bytes`,
   );
 });
 
-test("a bird-only rebuild swaps the flock and leaves the rest of the scene", () => {
+test("a bird-only rebuild swaps the bird layer and leaves the rest of the scene", () => {
   const scene = createScene({
     config: birdConfig,
     cols: birdLayout.cols,
@@ -1565,12 +1565,12 @@ test("a bird-only rebuild swaps the flock and leaves the rest of the scene", () 
     });
     if (before.some((value, i) => value !== after[i])) swapped = true;
   }
-  assert.ok(swapped, "the rebuilt flock paints differently");
+  assert.ok(swapped, "the rebuilt bird layer paints differently");
   assert.equal(field, scene.field, "the noise field keeps its identity");
   assert.equal(starLayer, scene.starLayer, "the star layer keeps its identity");
 });
 
-test("copy values renders every shipped key, the flock's included", () => {
+test("copy values renders every shipped key, the bird layer's included", () => {
   const text = defaultsText(
     Object.freeze({ ...SKY_DEFAULTS, l1Count: 5, birds: 0 }),
   );

@@ -261,7 +261,7 @@ const sliders = [
     rebuild: true,
     birds: true,
     group: "birds",
-    hint: "the flock: 0 hides it entirely",
+    hint: "the bird layer: 0 hides it entirely",
   },
   {
     key: "l1Count",
@@ -460,7 +460,7 @@ const RUNTIME_SEED_KEYS = new Set(["seed", "birdSeed"]);
 
 /**
  * The config as a SKY_DEFAULTS-shaped object literal. Every shipped key is
- * printed in its shipped order, so the deeper flock values that have no
+ * printed in its shipped order, so the deeper bird layer values that have no
  * slider round-trip with the ones that do. The live visit seeds are pinned
  * to the shipped defaults: a paste should reproduce a tune, not freeze one
  * random visit. Clipboard first, console as fallback in the panel.
@@ -605,7 +605,7 @@ if (controller) {
       const raw = Number(input.value);
       config[slider.key] = raw * (slider.mul ?? 1);
       output.textContent = format(slider, raw);
-      // A bird lever rebuilds the flock alone, so the clouds and stars in
+      // A bird lever rebuilds the bird layer alone, so the clouds and stars in
       // flight are not re-rolled.
       if (slider.birds) controller.rebuildBirds();
       else if (slider.rebuild) controller.rebuild();

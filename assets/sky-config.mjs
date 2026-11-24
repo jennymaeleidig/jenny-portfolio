@@ -118,7 +118,7 @@ export const SKY_DEFAULTS = Object.freeze({
   starTwinkle: 70, // how deep the dim step goes, %
   starTwinkleSpeed: 220, // multiplier on the twinkle speed, %
   starTwinkleSize: 2, // smallest size tier that twinkles (1-3)
-  birds: 1, // the flock, 0 hides it entirely
+  birds: 1, // the bird layer, 0 hides it entirely
   birdSeed: 19, // rerolls every per-bird value without rebuilding the sky
   birdThickness: 0.05, // wing half-width, relative to the wing cutoff
   birdDither: 0.06, // ordered dither on the wing edge

@@ -3,7 +3,7 @@
  *
  * A renderer paints a sky scene for one frame state onto a surface it owns.
  * The scene is the built state from ./sky-core.mjs: the field, the star layer,
- * the flock and the lift. The frame state is what moves: seconds of
+ * the bird layer and the lift. The frame state is what moves: seconds of
  * animation, drift in cells, the lift in cells, and the light/dark mix.
  *
  * The interface every renderer satisfies:

@@ -24,9 +24,9 @@ import {
 import { createCpuRenderer } from "./sky-renderer.mjs";
 import { createWebglRenderer } from "./sky-webgl.mjs";
 
-// A visit gets its own sky, and its own flock. Both seeds are chosen once
+// A visit gets its own sky, and its own birds. Both seeds are chosen once
 // per page load, so the field and the birds stay put across internal
-// navigation and are only new on a real load. The flock mixes its own seed
+// navigation and are only new on a real load. The bird layer mixes its own seed
 // with the visit seed, so a new sky never repeats a previous flight.
 function randomSeed() {
   if (globalThis.crypto?.getRandomValues) {
@@ -161,7 +161,7 @@ if (sky && canvas) {
       draw();
     }
 
-    // A bird lever resizes or reseeds only the flock. The noise field, the
+    // A bird lever resizes or reseeds only the bird layer. The noise field, the
     // star layer, the offsets and the renderer's surface keep their identities,
     // so tuning a bird never re-rolls the clouds or the stars.
     function rebuildBirds() {

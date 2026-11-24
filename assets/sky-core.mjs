@@ -2,13 +2,13 @@
  * The pixelated sky: the composition module.
  *
  * The field lives in ./sky-field.mjs, the star layer in ./sky-stars.mjs, the
- * flock in ./sky-flock.mjs, the tuning values in ./sky-config.mjs, and the
+ * bird layer in ./sky-flock.mjs, the tuning values in ./sky-config.mjs, and the
  * shared tone vocabulary in ./sky-tone.mjs. This module builds a press of them
  * into a sky scene and composes one frame by painting each layer through the
  * same interface.
  *
  * The optional star layer paints its own tints and twinkle over the clear
- * band, and the optional flock stamps its own birds over the sheet.
+ * band, and the optional bird layer stamps its own birds over the sheet.
  *
  * The browser layer (assets/sky.js) is the only part that touches the DOM.
  *
@@ -24,7 +24,7 @@
 
 import { SKY_DEFAULTS } from "./sky-config.mjs";
 import { build as buildField } from "./sky-field.mjs";
-import { build as buildFlock } from "./sky-flock.mjs";
+import { build as buildBirdLayer } from "./sky-flock.mjs";
 import { build as buildStar } from "./sky-stars.mjs";
 import { clamp01, rampAt, rampIndex, thresholds } from "./sky-tone.mjs";
 
@@ -98,7 +98,7 @@ export function createScene({ config = SKY_DEFAULTS, cols, rows, cellPx }) {
       margin: Math.ceil(OFFSET_Y_LIMIT / cellPx),
     }),
     starLayer: buildStar({ cols, rows, cellPx, config }),
-    birdLayer: buildFlock({ cols, rows, cellPx, config }),
+    birdLayer: buildBirdLayer({ cols, rows, cellPx, config }),
     offsetY: config.offsetY / cellPx,
   };
 }
@@ -126,7 +126,7 @@ export function createField({
  * pans the whole sky up (+) or down (-), also in cells. `mix` crosses the sky
  * between the light ramp (0) and the dark ramp (1); `dark` is the two-state
  * shorthand for it. The star layer fades in with the same mix, blended over
- * the clear band's own colour. The flock fades out on that mix.
+ * the clear band's own colour. The bird layer fades out on that mix.
  */
 export function renderFrame({
   field,
@@ -148,11 +148,12 @@ export function renderFrame({
   const ramp = rampAt(blend);
   const tones = Math.min(ramp.length, Math.max(2, config.tones | 0));
   const stars = blend > 0 && starLayer ? starLayer : null;
-  const flock = birdLayer && blend < 1 ? birdLayer : null;
-  // The flock and the stars need the tone each block landed on. Sharing the
-  // caller's bands buffer keeps this one sheet of per-frame state.
+  const birdLayerState = birdLayer && blend < 1 ? birdLayer : null;
+  // The bird layer and the stars need the tone each block landed on. Sharing
+  // the caller's bands buffer keeps this one sheet of per-frame state.
   const bandBuffer =
-    bands ?? (stars || flock ? new Uint8Array(cols * rows) : undefined);
+    bands ??
+    (stars || birdLayerState ? new Uint8Array(cols * rows) : undefined);
 
   const frame = {
     pixels,
@@ -174,12 +175,12 @@ export function renderFrame({
   field.paint(frame);
   if (stars) stars.paint(frame);
 
-  // The flock, painted per block after the sheet. Far-layer birds land only
-  // on clear-sky blocks, so the cloud bands occlude them the same way they
+  // The bird layer, painted per block after the sheet. Far-layer birds land
+  // only on clear-sky blocks, so the cloud bands occlude them the same way they
   // occlude the stars; near-layer birds ink over anything. Both positions
   // snap to whole blocks, so a bird advances a block at a time and is
   // pixel-identical between snaps — the same hold the twinkle uses.
-  if (flock) flock.paint(frame);
+  if (birdLayerState) birdLayerState.paint(frame);
 
   return pixels;
 }

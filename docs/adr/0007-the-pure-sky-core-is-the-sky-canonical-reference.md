@@ -36,10 +36,10 @@ not a replacement.
 ## The crossing
 
 The kernel duplicates only the per-frame pass: sample the field, stretch the
-contrast, dither, quantise to the ramp, tint the stars, stamp the flock. It
+contrast, dither, quantise to the ramp, tint the stars, stamp the bird layer. It
 does not duplicate the integer hash, the value noise, the fBm build, the star
-layout or the flock layout: those are baked on the CPU and uploaded as static
-textures, because porting a 32-bit integer hash to GLSL would break exact
+layout or the bird layer's layout: those are baked on the CPU and uploaded as
+static textures, because porting a 32-bit integer hash to GLSL would break exact
 cross-GPU determinism where it is load-bearing and gain nothing.
 
 The contract between the two is visual equivalence, not bit-match: the same

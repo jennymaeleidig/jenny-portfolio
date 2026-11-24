@@ -4,12 +4,12 @@
  * The pure core in ./sky-core.mjs stays the canonical reference. This adapter
  * carries only the per-frame pass onto the GPU: the field and evolution field
  * are packed once per scene into static RG8 textures, the star layout is
- * packed once, and the flock rides small per-bird uniforms. Every frame is
+ * packed once, and the bird layer rides small per-bird uniforms. Every frame is
  * uniforms plus one draw; nothing is uploaded or read back from the browser
  * between frames.
  *
  * The kernel deliberately does not reproduce the integer hash, the fBm build,
- * the star layout or the flock layout. Those are baked by the core. The
+ * the star layout or the bird layer's layout. Those are baked by the core. The
  * sampling, contrast, evolution subtraction, dither, ramp selection, star
  * tinting and wing stamping are reproduced here, because they are per frame.
  *
@@ -769,13 +769,13 @@ export function createWebglRenderer({ canvas, config = SKY_DEFAULTS } = {}) {
   }
 
   function uploadBirds(state) {
-    const flock = current.birdLayer;
+    const birds = current.birdLayer;
     const visible = Math.max(0, 1 - state.blend);
     birdA.fill(0);
     birdB.fill(0);
     let count = 0;
 
-    if (flock && visible > 0) {
+    if (birds && visible > 0) {
       const field = current.field;
       const params = [birdLayer(config, 0), birdLayer(config, 1)];
       layerShape.set([
@@ -789,7 +789,7 @@ export function createWebglRenderer({ canvas, config = SKY_DEFAULTS } = {}) {
         config.birdMaxSlope,
       ]);
 
-      for (const bird of flock.birds) {
+      for (const bird of birds.birds) {
         if (count >= MAX_BIRDS) break;
         const layer = bird.layer === 0 ? params[0] : params[1];
         const wing = bird.wing;
