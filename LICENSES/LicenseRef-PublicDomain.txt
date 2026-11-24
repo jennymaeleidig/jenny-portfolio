@@ -1,7 +1,0 @@
-License: none (public domain)
-
-The author's own statement, as carried in the header of the meyerweb reset
-stylesheet (v2.0, 20110126,
-<http://meyerweb.com/eric/tools/css/reset/>). No license terms apply: the
-author dedicated the work to the public domain. This is not a CC0
-dedication; no Creative Commons legal code has been applied to this work.
