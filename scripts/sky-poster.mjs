@@ -3,10 +3,11 @@
  * Regenerate assets/sky-poster.svg and assets/sky-poster-dark.svg from the sky
  * core.
  *
- * The posters are static frames at the shipped cell size: the field, tuned
- * values and lift from SKY_DEFAULTS, with the palette chosen by the poster's
- * theme, rendered at time 0. They are embedded as PNG data URIs so the committed
- * files stay text, while costing a fraction of an equivalent vector poster.
+ * The posters are static frames at the shipped cell size: the field, the bird
+ * layer, tuned values and lift from SKY_DEFAULTS, with the palette chosen by
+ * the poster's theme, rendered at time 0. They are embedded as PNG data URIs so
+ * the committed files stay text, while costing a fraction of an equivalent
+ * vector poster.
  *
  * Each SVG records a hash of the raw frame. tests/assets.test.mjs recomputes
  * both hashes from the core, so a changed seed or palette fails the suite
@@ -94,7 +95,7 @@ export function posterArtifact(theme = LIGHT) {
   const { cols, rows, cellPx } = POSTER;
   // The canvas carries sky above and below the window so the lift can pan;
   // building the scene the same way makes the poster the shipped framing.
-  const { field, starLayer, offsetY } = createScene({
+  const { field, starLayer, birdLayer, offsetY } = createScene({
     config: SKY_DEFAULTS,
     cols,
     rows,
@@ -108,6 +109,7 @@ export function posterArtifact(theme = LIGHT) {
     offsetY,
     dark,
     starLayer,
+    birdLayer,
   });
 
   const rgb = Buffer.alloc(cols * rows * 3);
