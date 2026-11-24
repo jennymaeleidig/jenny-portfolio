@@ -13,16 +13,18 @@
  * sampling, contrast, evolution subtraction, dither, ramp selection, star
  * tinting and wing stamping are reproduced here, because they are per frame.
  *
- * The surface keeps the seam's shape (`cols`, `rows`, `present()`), but a
- * framebuffer cannot expose a CPU-readable `pixels` array without a stall.
- * `pixels` is therefore allocated and left untouched until `readFrame()` is
- * called; that method does one `readPixels` after the frame and flips it to
- * top-down order. It exists for a harness or a test, never for the frame loop.
+ * The surface keeps the seam's shape (`cols`, `rows`, `pixels`, `present()`,
+ * `readFrame()`), but a framebuffer cannot expose a CPU-readable `pixels`
+ * array without a stall. `pixels` is therefore not the frame: it is allocated
+ * and left untouched until `readFrame()` is called, which does one
+ * `readPixels` after the frame and flips it to top-down order. `readFrame()` is
+ * part of the surface contract for a harness or a test, never for the frame
+ * loop.
  *
  * There is no gains-texture fallback for twinkle chatter. The stateless sine
  * through the dithered star thresholds is the crossing recorded for this
- * adapter; if chatter is ever measured, the gain texture is the documented
- * next step.
+ * adapter, and the harness measures its frame-to-frame level changes against
+ * the CPU's held steps.
  *
  * No shader code is copied. The port is from this repository's own core.
  */

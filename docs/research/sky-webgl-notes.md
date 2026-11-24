@@ -1,6 +1,6 @@
 # The sky's WebGL2 crossing: per-frame contract, wing stamps, shader layout, and headless testing
 
-Research question: what exactly must the planned WebGL2 fragment kernel receive per frame, how should the flock's CPU wing silhouettes be cached, how should the shader source and context be laid out, and how can the adapter be tested headless against the pure core — verified against primary sources rather than assumed? This note feeds issue #66 under ADR-0007.
+Research question: what exactly must the planned WebGL2 fragment kernel receive per frame, how should the flock's CPU wing silhouettes be cached, how should the shader source and context be laid out, and how can the adapter be tested headless against the pure core — verified against primary sources rather than assumed? This note feeds the plan recorded in ADR-0007.
 
 Date: 2026-11-23. All claims are verified against primary sources (Khronos registry specification PDFs fetched and text-extracted, the WebGL 2.0 spec, MDN, vendor docs, project READMEs via the GitHub API), fetched directly. Where a source does not answer something, that is stated rather than inferred, and the gap is filled by reasoning-from-the-repo, labelled as such.
 

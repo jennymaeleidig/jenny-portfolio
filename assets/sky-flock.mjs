@@ -331,7 +331,6 @@ function paintFlock(flock, frame) {
   const thickness = config.birdThickness;
   const dither = config.birdDither;
   const n = Math.max(1, Math.round(config.birdCovSteps));
-  const invN = 1 / n;
   const denom = n * n;
   const maxSlope = config.birdMaxSlope;
   const snap = config.birdSnap >= 0.5;
@@ -406,25 +405,18 @@ function paintFlock(flock, frame) {
         // The cloud bands cover the far flock, exactly as they cover stars.
         if (back && birdBands[y * cols + x] > 0) continue;
 
-        let hits = 0;
-        for (let sy = 0; sy < n; sy += 1) {
-          for (let sx = 0; sx < n; sx += 1) {
-            const u = (x + (sx + 0.5) * invN - bx) / wing;
-            // Screen rows grow downward; the wing's own y grows upward.
-            const v = (by - (y + (sy + 0.5) * invN)) / wing;
-            if (Math.abs(u) > 1) continue;
-            const slope = wingSlope(
-              u,
-              droop,
-              layer.body,
-              layer.spread,
-              maxSlope,
-            );
-            const width = tol * Math.sqrt(1 + slope * slope);
-            const wingY = wingHeight(u, droop, layer.body, layer.spread);
-            if (Math.abs(v - wingY) < width) hits += 1;
-          }
-        }
+        const hits = coverageAt(
+          x - bx,
+          y - by,
+          wing,
+          droop,
+          layer.body,
+          layer.spread,
+          tol,
+          maxSlope,
+          n,
+          1 / n,
+        );
 
         const bayer = BAYER4[ditherRow + (x & 3)];
         if (hits / denom + dither * bayer < 0.5) continue;

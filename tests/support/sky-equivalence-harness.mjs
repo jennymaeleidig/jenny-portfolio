@@ -201,20 +201,11 @@ export function compareFrame({
   return measure(cpuPixels, gpuPixels, scene, blockCount, blend, config.tones);
 }
 
-/**
- * Build one scene, render each frame state through both adapters, and return
- * the measured difference for every frame. Frames run in the order given, so
- * the CPU twinkle sees the same sequence a page would.
- */
-export function runEquivalence({
+/** Build one scene and the two adapters that paint it. */
+export function createAdapters({
   layout = DEFAULT_LAYOUT,
-  frames,
   config = SKY_DEFAULTS,
 } = {}) {
-  if (!Array.isArray(frames) || frames.length === 0) {
-    throw new Error("the equivalence harness needs at least one frame state");
-  }
-
   const scene = createScene({
     config,
     cols: layout.cols,
@@ -234,6 +225,25 @@ export function runEquivalence({
   const cpu = createCpuRenderer({ config });
   cpu.setScene(scene);
   webgl.setScene(scene);
+
+  return { scene, cpu, webgl };
+}
+
+/**
+ * Build one scene, render each frame state through both adapters, and return
+ * the measured difference for every frame. Frames run in the order given, so
+ * the CPU twinkle sees the same sequence a page would.
+ */
+export function runEquivalence({
+  layout = DEFAULT_LAYOUT,
+  frames,
+  config = SKY_DEFAULTS,
+} = {}) {
+  if (!Array.isArray(frames) || frames.length === 0) {
+    throw new Error("the equivalence harness needs at least one frame state");
+  }
+
+  const { scene, cpu, webgl } = createAdapters({ layout, config });
 
   const results = frames.map((frame) => {
     const state = {
@@ -256,6 +266,167 @@ export function runEquivalence({
   });
 
   return { layout, results };
+}
+
+/** The performance grid: the layout the baseline was measured at. */
+export const PERFORMANCE_LAYOUT = Object.freeze({
+  cols: 480,
+  rows: 270,
+  cellPx: 4,
+});
+
+/** Read one frame's star level for every star-owned block. */
+function starLevelSheet(pixels, scene, blend, tones) {
+  const owner = scene.starLayer?.owner;
+  const levels = new Int8Array(owner ? owner.length : 0).fill(-1);
+  if (!owner) return levels;
+
+  for (let block = 0; block < owner.length; block += 1) {
+    if (owner[block] < 0) continue;
+    const outcomes = starOutcomes(blend, scene.starLayer.tint[block], tones);
+    levels[block] = nearestStarLevel(
+      pixels,
+      block * 4,
+      outcomes,
+      DIFFERENCE_THRESHOLD,
+    );
+  }
+  return levels;
+}
+
+/**
+ * Render consecutive frames at the animation cadence and count the star blocks
+ * whose level changes from one frame to the next, for each adapter. Only the
+ * blocks that classify as a star level in both adjacent frames are compared,
+ * so a cloud band crossing a star cannot be read as chatter.
+ */
+export function runStarChatter({
+  layout = DEFAULT_LAYOUT,
+  config = SKY_DEFAULTS,
+  frames = 24,
+  fps = 24,
+  offset = 0,
+  mix = 1,
+} = {}) {
+  const { scene, cpu, webgl } = createAdapters({ layout, config });
+  const owner = scene.starLayer?.owner;
+  if (!owner) throw new Error("this scene has no star layer to measure");
+
+  const starBlocks = [];
+  for (let block = 0; block < owner.length; block += 1) {
+    if (owner[block] >= 0) starBlocks.push(block);
+  }
+
+  const blend = mix === undefined ? 1 : mix;
+  const tones = config.tones;
+  let previousCpu = null;
+  let previousGpu = null;
+  let cpuFlips = 0;
+  let gpuFlips = 0;
+  let gpuFlipsWhileCpuHeld = 0;
+  let pairs = 0;
+  const perFrame = [];
+
+  for (let index = 0; index < frames; index += 1) {
+    const state = { time: index / fps, offset, mix };
+    cpu.render(state);
+    webgl.render(state);
+    const gpuPixels = webgl.surface.readFrame();
+    if (!gpuPixels)
+      throw new Error("the WebGL2 surface could not be read back");
+    const cpuLevels = starLevelSheet(cpu.surface.pixels, scene, blend, tones);
+    const gpuLevels = starLevelSheet(gpuPixels, scene, blend, tones);
+
+    if (previousCpu && previousGpu) {
+      let frameCpu = 0;
+      let frameGpu = 0;
+      let frameHeld = 0;
+      let framePairs = 0;
+      for (const block of starBlocks) {
+        const cpuWas = previousCpu[block];
+        const cpuNow = cpuLevels[block];
+        const gpuWas = previousGpu[block];
+        const gpuNow = gpuLevels[block];
+        if (cpuWas < 0 || cpuNow < 0 || gpuWas < 0 || gpuNow < 0) continue;
+        framePairs += 1;
+        const cpuFlip = cpuWas !== cpuNow;
+        const gpuFlip = gpuWas !== gpuNow;
+        if (cpuFlip) frameCpu += 1;
+        if (gpuFlip) frameGpu += 1;
+        if (!cpuFlip && gpuFlip) frameHeld += 1;
+      }
+      cpuFlips += frameCpu;
+      gpuFlips += frameGpu;
+      gpuFlipsWhileCpuHeld += frameHeld;
+      pairs += framePairs;
+      perFrame.push({
+        frame: index,
+        pairs: framePairs,
+        cpuFlips: frameCpu,
+        gpuFlips: frameGpu,
+      });
+    }
+
+    previousCpu = cpuLevels;
+    previousGpu = gpuLevels;
+  }
+
+  return {
+    layout,
+    fps,
+    frames,
+    starBlocks: starBlocks.length,
+    pairs,
+    cpuFlips,
+    gpuFlips,
+    gpuFlipsWhileCpuHeld: gpuFlipsWhileCpuHeld,
+    cpuFlipRate: pairs ? cpuFlips / pairs : 0,
+    gpuFlipRate: pairs ? gpuFlips / pairs : 0,
+    perFrame,
+  };
+}
+
+/** Time one adapter's render call, after a warm-up, over the settled grid. */
+function timeAdapter(renderer, { warmup, frames, fps }) {
+  for (let index = 0; index < warmup; index += 1) {
+    renderer.render({ time: index / fps, offset: index * 0.25, mix: 0.5 });
+  }
+  const samples = new Array(frames);
+  for (let index = 0; index < frames; index += 1) {
+    const step = warmup + index;
+    const start = performance.now();
+    renderer.render({ time: step / fps, offset: step * 0.25, mix: 0.5 });
+    samples[index] = performance.now() - start;
+  }
+  samples.sort((a, b) => a - b);
+  return {
+    median: samples[Math.floor(samples.length / 2)],
+    min: samples[0],
+    max: samples[samples.length - 1],
+  };
+}
+
+/**
+ * Measure both adapters on the same scene at the performance grid. Warm-up
+ * frames are excluded from the samples; the median is the reported number.
+ */
+export function runPerformance({
+  layout = PERFORMANCE_LAYOUT,
+  config = SKY_DEFAULTS,
+  warmup = 20,
+  frames = 120,
+  fps = 24,
+} = {}) {
+  const { cpu, webgl } = createAdapters({ layout, config });
+  const timing = { warmup, frames, fps };
+  return {
+    layout,
+    warmup,
+    frames,
+    fps,
+    webgl: timeAdapter(webgl, timing),
+    cpu: timeAdapter(cpu, timing),
+  };
 }
 
 /** The frame states the repo test asks the harness to compare. */

@@ -8,12 +8,14 @@ settles, before either is written for the GPU, which of them owns the truth.
 The pure core is the canonical reference. The GLSL kernel is a deliberate,
 minimal duplicate of the per-frame pass only.
 
-The plan behind this decision is recorded in the architecture review of
-2026-11-23: the field re-quantise, the star twinkle and the flock together
-cost a measured 8.9 ms of main-thread JavaScript per frame at the 24 fps cap,
-which is the whole frame budget on a mobile CPU. A WebGL2 adapter removes that
-cost by uploading the CPU-built field, evolution field and star layout once
-as static textures and sending only small uniforms per frame.
+The plan behind this decision is recorded in
+`docs/research/sky-webgl-notes.md`, and rests on the baseline measured in
+Chrome DevTools on the built site: a full frame costs 7.0–7.1 ms of
+main-thread JavaScript at the 480×270 grid (the field re-quantise is ~6.8 ms
+of that), ~30 ms per frame under a 4× CPU throttle, with the scene build ~30 ms
+once. A WebGL2 adapter removes that cost by uploading the CPU-built field,
+evolution field and star layout once as static textures and sending only small
+uniforms per frame.
 
 ## Why
 
@@ -79,5 +81,6 @@ because it is an upload, not a readback.
 - **Port everything to the shader.** The integer hash, the field build and the
   layouts are exactly the parts where GPU floats drift; keeping them on the
   CPU preserves the determinism the poster hash and the tests rely on.
-- **Ship only the CPU renderer.** The measured 8.9 ms/frame on the main
-  thread is the whole budget on mobile, and no CPU optimisation removes it.
+- **Ship only the CPU renderer.** The measured 7.0–7.1 ms/frame on the main
+  thread becomes ~30 ms/frame under a 4× CPU throttle, most of the 24 fps
+  budget on a mobile CPU, and no CPU optimisation removes it.

@@ -141,6 +141,25 @@ One sky's built state for a layout: the field, the star layer and the flock,
 all built from one seed and one config.
 _Avoid_: world, stage, setup
 
+**Sky renderer**:
+The seam that paints a built sky scene for one frame state onto a surface it
+owns. Two adapters satisfy it: the CPU renderer, the canonical reference, and
+the WebGL2 renderer.
+_Avoid_: engine, backend, pipeline
+
+**Surface**:
+The buffer a sky renderer paints a frame into: the grid's block count, its
+pixels, and the step that presents them. The CPU surface's `pixels` is the
+frame buffer; the GPU surface's frame is read back only through `readFrame()`,
+for verification.
+_Avoid_: canvas, framebuffer, target
+
+**Frame state**:
+What moves between frames: seconds of animation, drift and lift in cells, and
+the light/dark mix. A sky renderer receives it for each frame; the sky scene is
+what stays built.
+_Avoid_: frame, input, tick
+
 **Poster**:
 The static image of the sky shown when the canvas cannot run: a light poster
 and a dark poster.

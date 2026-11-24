@@ -11,41 +11,45 @@
  *   setScene(scene)   Replace the sky scene. The surface is reallocated only
  *                     when the scene's grid differs from the current one.
  *                     Returns the surface.
- *   render(state)     Paint one frame onto the surface and present it.
+ *   render(state)     Paint one frame state onto the surface and present it.
  *                     `state` is { time, offset, offsetY, mix, dark };
  *                     `offsetY` defaults to the scene's lift. Returns the
- *                     surface, whose pixels now hold the frame.
+ *                     surface.
  *   surface           The adapter-owned drawing surface:
- *                     { cols, rows, pixels, present() }, where `pixels` is a
- *                     Uint8ClampedArray of cols × rows RGBA blocks.
+ *                     { cols, rows, pixels, present(), readFrame() }.
+ *                     On the CPU surface `pixels` is the frame buffer: a
+ *                     Uint8ClampedArray of cols × rows RGBA blocks. On the
+ *                     GPU surface `pixels` is not the frame; the frame is
+ *                     read back through `readFrame()`. `readFrame()` is part
+ *                     of the surface contract but exists for a harness or a
+ *                     test, never for the frame loop.
  *
  * A renderer is created once per page load. The CPU adapter below is the
  * canonical reference for the sky's look; it composes the layers through
- * renderFrame. A WebGL2 adapter would upload the scene once and paint from
- * its own framebuffer, presenting through the same surface contract.
+ * renderFrame. The WebGL2 adapter in ./sky-webgl.mjs uploads the scene once
+ * and paints from its own framebuffer, presenting through the same surface
+ * contract.
  */
 
 import { SKY_DEFAULTS, renderFrame } from "./sky-core.mjs";
 
-/** A surface for environments with no canvas. */
-function pixelSurface(cols, rows) {
+/**
+ * A surface for a 2D context, or a bare pixel buffer when there is no context.
+ * The context's ImageData owns the pixels it presents; without one the surface
+ * owns a plain buffer.
+ */
+function createSurface(cols, rows, context = null) {
+  const image = context ? context.createImageData(cols, rows) : null;
+  const pixels = image ? image.data : new Uint8ClampedArray(cols * rows * 4);
   return {
     cols,
     rows,
-    pixels: new Uint8ClampedArray(cols * rows * 4),
-    present() {},
-  };
-}
-
-/** A surface backed by a 2D context's ImageData. */
-function imageSurface(context, cols, rows) {
-  const image = context.createImageData(cols, rows);
-  return {
-    cols,
-    rows,
-    pixels: image.data,
+    pixels,
     present() {
-      context.putImageData(image, 0, 0);
+      if (image) context.putImageData(image, 0, 0);
+    },
+    readFrame() {
+      return pixels;
     },
   };
 }
@@ -69,9 +73,7 @@ export function createCpuRenderer({
     current = next;
     const { cols, rows } = next.field;
     if (!surface || surface.cols !== cols || surface.rows !== rows) {
-      surface = context
-        ? imageSurface(context, cols, rows)
-        : pixelSurface(cols, rows);
+      surface = createSurface(cols, rows, context);
     }
     return surface;
   }

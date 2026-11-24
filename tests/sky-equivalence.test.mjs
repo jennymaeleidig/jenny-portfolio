@@ -22,6 +22,7 @@ import { chromium } from "playwright";
 import {
   DEFAULT_LAYOUT,
   DIFFERENCE_THRESHOLD,
+  PERFORMANCE_LAYOUT,
   REPRESENTATIVE_FRAMES,
 } from "./support/sky-equivalence-harness.mjs";
 
@@ -56,6 +57,18 @@ const MAX_PER_CHANNEL_ABS = 0.3;
 const MAX_OVER_THRESHOLD_SHARE = 0.01;
 const MAX_STAR_LEVEL_SHARE = 0.02;
 
+// Performance bounds in milliseconds of main-thread JavaScript per frame. The
+// GPU allowance is the done-ness target; the CPU allowance is the
+// measured full-frame baseline at the same grid.
+const MAX_WEBGL_FRAME_MS = 1;
+const MAX_CPU_FRAME_MS = 7;
+
+// A star may change level from one frame to the next, but the GPU's chatter
+// must stay in proportion to the CPU's held-step twinkle. The small floor
+// absorbs a frame where dither alone moves a block the CPU happened to hold.
+const MAX_STAR_CHATTER_RATIO = 2;
+const STAR_CHATTER_FLOOR = 12;
+
 function makeHarnessPage() {
   const directory = mkdtempSync(join(tmpdir(), "sky-equivalence-"));
   mkdirSync(join(directory, "assets"));
@@ -76,8 +89,14 @@ function makeHarnessPage() {
 <html>
   <body>
     <script type="module">
-      import { runEquivalence } from "./tests/support/sky-equivalence-harness.mjs";
+      import {
+        runEquivalence,
+        runPerformance,
+        runStarChatter,
+      } from "./tests/support/sky-equivalence-harness.mjs";
       window.runSkyEquivalence = runEquivalence;
+      window.runSkyPerformance = runPerformance;
+      window.runStarChatter = runStarChatter;
       window.skyHarnessReady = true;
     </script>
   </body>
@@ -211,6 +230,100 @@ test(
 
       // The measured difference, frame by frame, is part of the test's report.
       console.log(JSON.stringify(report.results.map(summary), null, 2));
+    } finally {
+      await browser.close();
+      server.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  },
+);
+
+function formatMilliseconds(value) {
+  return `${value.toFixed(3)} ms`;
+}
+
+test(
+  "the WebGL2 and CPU adapters stay inside the frame-time budget",
+  { skip: skipReason },
+  async () => {
+    const directory = makeHarnessPage();
+    const server = await serve(directory);
+    const { port } = server.address();
+    const browser = await chromium.launch({
+      headless: true,
+      args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
+    });
+
+    try {
+      const page = await browser.newPage();
+      const errors = [];
+      page.on("pageerror", (error) => errors.push(String(error)));
+      await page.goto(`http://127.0.0.1:${port}/`);
+      await page.waitForFunction(() => window.skyHarnessReady === true);
+
+      const measure = () =>
+        page.evaluate(({ layout }) => window.runSkyPerformance({ layout }), {
+          layout: PERFORMANCE_LAYOUT,
+        });
+
+      let report = await measure();
+      if (
+        report.webgl.median > MAX_WEBGL_FRAME_MS ||
+        report.cpu.median > MAX_CPU_FRAME_MS
+      ) {
+        report = await measure();
+      }
+
+      assert.deepEqual(errors, []);
+      console.log(JSON.stringify(report, null, 2));
+      assert.ok(
+        report.webgl.median <= MAX_WEBGL_FRAME_MS,
+        `WebGL2 median ${formatMilliseconds(report.webgl.median)} is over ${formatMilliseconds(MAX_WEBGL_FRAME_MS)}`,
+      );
+      assert.ok(
+        report.cpu.median <= MAX_CPU_FRAME_MS,
+        `CPU median ${formatMilliseconds(report.cpu.median)} is over ${formatMilliseconds(MAX_CPU_FRAME_MS)}`,
+      );
+    } finally {
+      await browser.close();
+      server.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "consecutive frames do not make the GPU's stars chatter past the CPU's",
+  { skip: skipReason },
+  async () => {
+    const directory = makeHarnessPage();
+    const server = await serve(directory);
+    const { port } = server.address();
+    const browser = await chromium.launch({
+      headless: true,
+      args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
+    });
+
+    try {
+      const page = await browser.newPage();
+      const errors = [];
+      page.on("pageerror", (error) => errors.push(String(error)));
+      await page.goto(`http://127.0.0.1:${port}/`);
+      await page.waitForFunction(() => window.skyHarnessReady === true);
+
+      const report = await page.evaluate(
+        ({ layout }) =>
+          window.runStarChatter({ layout, frames: 24, fps: 24, mix: 1 }),
+        { layout: PERFORMANCE_LAYOUT },
+      );
+
+      assert.deepEqual(errors, []);
+      console.log(JSON.stringify(report, null, 2));
+      assert.ok(
+        report.gpuFlips <=
+          report.cpuFlips * MAX_STAR_CHATTER_RATIO + STAR_CHATTER_FLOOR,
+        `GPU star chatter (${report.gpuFlips} flips) exceeds the CPU's (${report.cpuFlips} flips) beyond the allowance`,
+      );
     } finally {
       await browser.close();
       server.close();
