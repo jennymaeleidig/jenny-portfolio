@@ -1,5 +1,0 @@
-{
-  "@context": "https://w3id.org/codemeta/4.0",
-  "@type": "SoftwareSourceCode",
-  "name": "Example",
-  "codeRepository": "https://example.org/repository"

@@ -95,9 +95,8 @@ precedence = "closest"
 SPDX-FileCopyrightText = "2017-2021 Conrado Patricio Ambrosio"
 SPDX-License-Identifier = "MIT"
 
-# Synthetic provenance trees for cite-lint's own tests: deliberately malformed
-# inventories, so their notices come from this table alone and their file
-# contents are never read for tags.
+# Synthetic fixture trees: their notices come from this table alone and
+# their file contents are never read for tags.
 [[annotations]]
 path = "tests/fixtures/**"
 precedence = "override"

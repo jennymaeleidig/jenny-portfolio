@@ -1,9 +1,0 @@
-cff-version: 1.2.0
-message: "A synthetic fixture repository."
-title: Fixture Site
-authors:
-  - family-names: Doe
-    given-names: Jane
-type: software
-repository-code: "https://example.com/fixture"
-license: MIT

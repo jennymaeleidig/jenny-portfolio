@@ -1,1 +1,0 @@
-Synthetic LLVM-exception text, for fixture use only.
