@@ -1,15 +1,15 @@
 /**
  * The pixelated sky: the browser half.
  *
- * Pure maths lives in /assets/sky-core.mjs and the renderer seam in
- * /assets/sky-renderer.mjs. This file owns the canvas, the frame loop, and the
- * three reasons to stop: the tab is hidden, the canvas is out of view, or the
- * reader asked for reduced motion.
+ * Pure maths lives in /assets/sky-core.mjs, the renderer seam in
+ * /assets/sky-renderer.mjs and the GPU adapter in /assets/sky-webgl.mjs. This
+ * file owns the canvas, the frame loop, and the three reasons to stop: the tab
+ * is hidden, the canvas is out of view, or the reader asked for reduced motion.
  *
  * No content depends on this file. Without JavaScript the poster image covers
  * the viewport; if this module fails to load, the CSS gradient remains. Without
- * a 2D context the layer shows the poster over that gradient, so a canvas block
- * still reads as sky.
+ * a drawing context the layer shows the poster over that gradient, so a canvas
+ * block still reads as sky.
  */
 
 import { isDark } from "./theme-core.mjs";
@@ -22,6 +22,7 @@ import {
   transitionMix,
 } from "./sky-core.mjs";
 import { createCpuRenderer } from "./sky-renderer.mjs";
+import { createWebglRenderer } from "./sky-webgl.mjs";
 
 // A visit gets its own sky, and its own flock. Both seeds are chosen once
 // per page load, so the field and the birds stay put across internal
@@ -41,8 +42,22 @@ const sky = document.querySelector(".sky");
 /** @type {HTMLCanvasElement | null} */
 const canvas = document.querySelector(".sky-canvas");
 
-/** Pick the renderer for this page load. The CPU adapter is the only one. */
+/**
+ * Pick the renderer once for this page load. The GPU adapter paints the whole
+ * scene in one fragment pass; the CPU adapter stays canonical, backs a levers
+ * build, and serves a reader who already prefers reduced motion at load.
+ */
 function selectRenderer() {
+  const prefersCpu =
+    document.body.hasAttribute("data-sky-levers") ||
+    (typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  if (!prefersCpu) {
+    const webgl = createWebglRenderer({ canvas, config });
+    if (webgl) return webgl;
+  }
+
   const context =
     typeof canvas.getContext === "function"
       ? canvas.getContext("2d", { alpha: true })
@@ -181,6 +196,18 @@ if (sky && canvas) {
       offset += (config.speed * delta) / 1000 / cellPx;
       draw(now);
     }
+
+    // Losing the GPU context stops the loop; restoring it rebuilds the scene
+    // through the resize path, which re-uploads every static texture. The
+    // seeds live outside the adapter, so the restored sky is the same sky.
+    canvas.addEventListener("webglcontextlost", (event) => {
+      event.preventDefault();
+      stop();
+    });
+    canvas.addEventListener("webglcontextrestored", () => {
+      resize();
+      start();
+    });
 
     function start() {
       stop();
