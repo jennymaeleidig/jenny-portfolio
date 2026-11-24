@@ -4,18 +4,10 @@
       "enabled": true
     },
     "playwright": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp",
-        "--browser",
-        "chromium",
-        "--caps",
-        "pdf,vision",
-        "--allow-unrestricted-file-access"
-      ],
-      "exposure": "codemode",
-      "description": "Drive a local Chromium to load the built site, click through pages, take screenshots, and print PDFs."
+      "enabled": true
+    },
+    "chrome-devtools": {
+      "enabled": true
     }
   }
 }
