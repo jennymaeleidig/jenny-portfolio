@@ -6,5 +6,9 @@
     "tmp/",
     ".playwright-mcp/",
     ".pi/"
-  ]
+  ],
+  "rules": {
+    "no-console-except-error-js": { "ignorePaths": ["assets/sky-levers.mjs"] },
+    "no-flag-argument-js": { "ignorePaths": ["assets/sky-levers.mjs"] }
+  }
 }

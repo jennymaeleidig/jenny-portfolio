@@ -684,6 +684,8 @@ if (controller) {
     }
   });
 
+  // Clipboard first; the console line is the fallback for a context where the
+  // clipboard API is missing or refuses the write.
   function copyValues(button) {
     const text = defaultsText(config);
     console.log(text);

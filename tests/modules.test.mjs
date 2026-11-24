@@ -712,6 +712,7 @@ test("education is disclosed from its own fields, newest first", () => {
     dir,
     "education",
     "first",
+    // pi-lens-ignore: typos:unknown -- BA is a degree abbreviation, not a misspelling
     "institution: First School\nlocation: Roanoke, VA\ndegree: BA, English\nstart: 2014\nend: 2018",
   );
 

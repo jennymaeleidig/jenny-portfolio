@@ -170,6 +170,7 @@ function makeWheel(target, outgoingTheme, outgoing, incoming) {
     .map((square) => square.getBoundingClientRect().x)
     .sort((a, b) => a - b);
   const measured =
+    // pi-lens-ignore: prefer-at-js -- the [length - 1] form is the local idiom
     xs.length > 1 ? (xs[xs.length - 1] - xs[0]) / (xs.length - 1) : size;
   // A single square or overlapping boxes would measure a pitch below the
   // square's own width; the row never lays out tighter than its squares.
