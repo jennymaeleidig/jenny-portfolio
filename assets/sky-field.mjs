@@ -76,8 +76,12 @@ export function fbm(x, y, seed, periodX, octaves = 3, periodY = 0) {
   return sum / normaliser;
 }
 
+/** The evolution field's feature size as a multiple of `scale`, when a
+ * caller does not give one. */
+export const EVOLVE_SCALE_RATIO = 1.8;
+
 const EVOLVE = Object.freeze({
-  scaleRatio: 1.8, // × the sky's feature size, when evolveScale is not given
+  scaleRatio: EVOLVE_SCALE_RATIO, // × the sky's feature size, when evolveScale is not given
   octaves: 2,
   amount: 1, // half the bias at evolve = 100; the paint pass applies it twice
   driftX: 42, // cells/s at evolveSpeed = 100

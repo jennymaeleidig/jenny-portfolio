@@ -2,7 +2,7 @@
  * The pixelated sky: the composition module.
  *
  * The field lives in ./sky-field.mjs, the star layer in ./sky-stars.mjs, the
- * bird layer in ./sky-flock.mjs, the tuning values in ./sky-config.mjs, and the
+ * bird layer in ./sky-birds.mjs, the tuning values in ./sky-config.mjs, and the
  * shared tone vocabulary in ./sky-tone.mjs. This module builds a press of them
  * into a sky scene and composes one frame by painting each layer through the
  * same interface.
@@ -23,13 +23,13 @@
  */
 
 import { SKY_DEFAULTS } from "./sky-config.mjs";
-import { build as buildField } from "./sky-field.mjs";
-import { build as buildBirdLayer } from "./sky-flock.mjs";
+import { EVOLVE_SCALE_RATIO, build as buildField } from "./sky-field.mjs";
+import { build as buildBirdLayer } from "./sky-birds.mjs";
 import { build as buildStar } from "./sky-stars.mjs";
 import { clamp01, rampAt, rampIndex, thresholds } from "./sky-tone.mjs";
 
 export { SKY_DEFAULTS } from "./sky-config.mjs";
-export { BIRD_INK, birdLayer, createBirdLayer } from "./sky-flock.mjs";
+export { BIRD_INK, birdLayer, createBirdLayer } from "./sky-birds.mjs";
 export {
   STAR_DIM,
   STAR_THRESHOLDS,
@@ -113,7 +113,7 @@ export function createField({
   cellPx,
   scale,
   seed = SKY_DEFAULTS.seed,
-  evolveScale,
+  evolveScale = scale * EVOLVE_SCALE_RATIO,
   margin = 0,
 }) {
   return buildField({ cols, rows, cellPx, scale, seed, evolveScale, margin });

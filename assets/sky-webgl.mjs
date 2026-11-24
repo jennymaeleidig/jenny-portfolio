@@ -20,16 +20,14 @@
  * `readPixels` after the frame and flips it to top-down order. `readFrame()` is
  * part of the surface contract for a test, never for the frame loop.
  *
- * There is no gains-texture fallback for twinkle chatter. The stateless sine
- * through the dithered star thresholds is the crossing recorded for this
- * adapter, with the CPU's held steps as the reference. The CPU-side gains
- * texture named in the record is the remedy if chatter shows.
+ * There is no gains-texture fallback for twinkle chatter: the stateless sines
+ * through the dithered star thresholds carry the anti-chatter duty alone.
  *
  * No shader code is copied. The port is from this repository's own core.
  */
 
 import { SKY_DEFAULTS } from "./sky-config.mjs";
-import { BIRD_INK, birdLayer } from "./sky-flock.mjs";
+import { BIRD_INK, birdLayer } from "./sky-birds.mjs";
 import { STAR_DIM, STAR_THRESHOLDS, STAR_TINTS } from "./sky-stars.mjs";
 import { BAYER4, RAMP, clamp01, rampAt, thresholds } from "./sky-tone.mjs";
 

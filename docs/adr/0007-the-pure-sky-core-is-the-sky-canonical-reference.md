@@ -16,6 +16,13 @@ once. A WebGL2 adapter removes that cost by uploading the CPU-built field,
 evolution field and star layout once as static textures and sending only small
 uniforms per frame.
 
+The result, measured headless in Chromium (SwiftShader) at the same 480×270
+grid: a GPU frame costs a median 0.0 ms and at most 0.2 ms of main-thread
+time, against 4.8 ms for the CPU adapter on the same machine. The measured
+numbers are a one-time record; the retired comparison harness that produced
+them verified the crossing once and was then deleted, so they are history,
+not a CI gate.
+
 ## Why
 
 Cross-GPU determinism is unattainable for a fragment pass. Mobile GPUs differ
@@ -57,6 +64,11 @@ because it is an upload, not a readback.
 
 ## Consequences
 
+- Adapter choice is made once per page load, and deliberately skews to the
+  CPU adapter: a browser without WebGL2, a levers build, and a reader who
+  already prefers reduced motion at load all get the CPU path. There is no
+  device-class gating, and a reduced-motion reader sees one settled frame
+  either way.
 - `SKY_DEFAULTS` and every sky test stay pinned to the pure core. The GLSL
   kernel is never a test oracle.
 - Changes to the per-frame maths require touching the kernel as well as the

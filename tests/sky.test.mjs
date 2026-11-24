@@ -31,7 +31,7 @@ import {
   updateStarGains,
 } from "../assets/sky-core.mjs";
 import { build as buildField } from "../assets/sky-field.mjs";
-import { build as buildBirdLayer } from "../assets/sky-flock.mjs";
+import { build as buildBirdLayer } from "../assets/sky-birds.mjs";
 import { defaultsText } from "../assets/sky-levers.mjs";
 import { build as buildStar } from "../assets/sky-stars.mjs";
 import { createCpuRenderer } from "../assets/sky-renderer.mjs";
