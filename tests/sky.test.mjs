@@ -30,6 +30,7 @@ import {
   transitionMix,
   updateStarGains,
 } from "../assets/sky-core.mjs";
+import { build as buildField } from "../assets/sky-field.mjs";
 import { defaultsText } from "../assets/sky-levers.mjs";
 import { TURN_MS } from "../assets/wheel-core.mjs";
 
@@ -152,6 +153,27 @@ test("the field is deterministic for a seed", () => {
 
   assert.deepEqual([...first.data], [...second.data]);
   assert.equal(first.periodX, second.periodX);
+});
+
+test("the field layer builds from a config and exposes paint", () => {
+  const config = { ...SKY_DEFAULTS, seed: 31, scale: 150, evolveScale: 410 };
+  const layer = buildField({ cols: 24, rows: 12, cellPx: 2, config });
+  const legacy = createField({
+    cols: 24,
+    rows: 12,
+    cellPx: 2,
+    scale: config.scale,
+    seed: config.seed,
+    evolveScale: config.evolveScale,
+  });
+
+  assert.equal(typeof layer.paint, "function");
+  assert.equal(layer.scale, config.scale);
+  assert.equal(layer.seed, config.seed);
+  assert.equal(layer.evolveScale, config.evolveScale);
+  assert.equal(layer.width, legacy.width);
+  assert.equal(layer.height, legacy.height);
+  assert.deepEqual([...layer.data], [...legacy.data]);
 });
 
 test("a different seed gives a different field", () => {

@@ -1,17 +1,9 @@
 /**
- * The pixelated sky, as pure functions.
+ * The pixelated sky: the composition module.
  *
- * The field is an integer hash, value noise, three-octave fBm, a contrast
- * stretch, smoothstep and tone banding with a 4x4 ordered dither. It is
- * computed once per configuration change; each frame only re-quantises it.
- *
- * Four properties are load-bearing:
- *
- *   1. sampling is interpolated, never rounded;
- *   2. the field is periodic in x, so the drift wraps with no pop;
- *   3. tone bands are dithered, so boundaries dissolve instead of snapping;
- *   4. the cloud quantiser only ever emits indices into the active theme's
- *      ramp.
+ * The field lives in ./sky-field.mjs and the shared tone vocabulary in
+ * ./sky-tone.mjs. This module builds a press of them into a sky scene and
+ * composes one frame by painting each layer through the same interface.
  *
  * The optional star layer paints its own tints over the clear band; its layout
  * and twinkle are tested in tests/sky.test.mjs.
@@ -42,75 +34,38 @@
  * is ever copied in.
  */
 
-import { TURN_MS } from "./wheel-core.mjs";
+import { build as buildField, hash } from "./sky-field.mjs";
+import {
+  BAYER4,
+  clamp01,
+  lerpColour,
+  rampAt,
+  rampIndex,
+  thresholds,
+  toneIndex,
+} from "./sky-tone.mjs";
 
-/** The canonical sky ramp, lightest first. Matches the --sky-* tokens. */
-export const RAMP = Object.freeze([
-  Object.freeze([223, 229, 231]), // #DFE5E7
-  Object.freeze([197, 213, 229]), // #C5D5E5
-  Object.freeze([158, 200, 228]), // #9EC8E4
-  Object.freeze([33, 87, 204]), // #2157CC
-]);
-
-/** The dark ramp, lightest first. Matches the dark --sky-* tokens. */
-export const DARK_RAMP = Object.freeze([
-  Object.freeze([192, 187, 172]), // #C0BBAC
-  Object.freeze([119, 117, 120]), // #777578
-  Object.freeze([65, 64, 66]), // #414042
-  Object.freeze([27, 26, 22]), // #1B1A16
-]);
-
-/**
- * How long the sky takes to cross from the light ramp to the dark one, in
- * milliseconds. It is the palette strip's wheel turn, so the sky and the strip
- * finish as one gesture. The stylesheet carries the same time; a test pins it.
- */
-export const TRANSITION_MS = TURN_MS;
-
-/** Smoothstep over [0, 1], clamped outside it. Zero slope at both ends, so a
- * crossing settles rather than starting and stopping hard. */
-export function smoothstep(value) {
-  const t = clamp01(value);
-  return t * t * (3 - 2 * t);
-}
-
-/**
- * The eased mix between two crossings, `elapsed` milliseconds in. At or past
- * `duration` the mix is exactly `to`, so a caller can end a flight by checking
- * the elapsed time. Passing the current mix as `from` makes an interrupted
- * crossing continue from where it was instead of restarting.
- */
-export function transitionMix(from, to, elapsed, duration = TRANSITION_MS) {
-  if (elapsed >= duration) return to;
-  if (elapsed <= 0) return from;
-  return from + (to - from) * smoothstep(elapsed / duration);
-}
-
-/** Lerp two colours channel by channel, rounded to whole 8-bit values. */
-export function lerpColour(from, to, mix) {
-  const t = clamp01(mix);
-  return [
-    Math.round(from[0] + (to[0] - from[0]) * t),
-    Math.round(from[1] + (to[1] - from[1]) * t),
-    Math.round(from[2] + (to[2] - from[2]) * t),
-  ];
-}
-
-/** Lerp two ramps stop by stop, in RGB. Returns a fresh ramp. */
-export function lerpRamp(from, to, mix) {
-  return from.map((colour, index) => lerpColour(colour, to[index], mix));
-}
-
-/**
- * The ramp at a mix: the light ramp at 0, the dark ramp at 1, interpolated
- * between. The endpoints return the shipped constants, so a settled sky is
- * always painted from exactly the tokens it declares.
- */
-export function rampAt(mix) {
-  if (mix <= 0) return RAMP;
-  if (mix >= 1) return DARK_RAMP;
-  return lerpRamp(RAMP, DARK_RAMP, mix);
-}
+export {
+  BAYER4,
+  DARK_RAMP,
+  RAMP,
+  TRANSITION_MS,
+  lerpColour,
+  lerpRamp,
+  rampAt,
+  rampIndex,
+  smoothstep,
+  thresholds,
+  toneIndex,
+  transitionMix,
+} from "./sky-tone.mjs";
+export {
+  fbm,
+  hash,
+  sampleEvolve,
+  sampleField,
+  valueNoise,
+} from "./sky-field.mjs";
 
 /**
  * A star's two paints: its core, chosen per star, and the same dim edge for
@@ -286,91 +241,6 @@ export const SKY_DEFAULTS = Object.freeze({
   l2Spread: 0.64,
 });
 
-/**
- * 4x4 ordered dither, offset 1/32 below zero so thresholds sit between blocks
- * rather than on them.
- */
-export const BAYER4 = Object.freeze([
-  -0.5,
-  0,
-  -3 / 8,
-  1 / 8,
-  1 / 4,
-  -1 / 4,
-  3 / 8,
-  -1 / 8,
-  -5 / 16,
-  3 / 16,
-  -7 / 16,
-  1 / 16,
-  7 / 16,
-  -3 / 16,
-  5 / 16,
-  -1 / 16,
-]);
-
-function wrap(value, period) {
-  const wrapped = value % period;
-  return wrapped < 0 ? wrapped + period : wrapped;
-}
-
-/**
- * Integer hash. `x` wraps on the lattice period, which is what makes the
- * field tile seamlessly in x.
- */
-export function hash(x, y, seed, periodX, periodY = 0) {
-  const hx = wrap(x, periodX);
-  const hy = periodY ? wrap(y, periodY) : y | 0;
-  let h =
-    Math.imul(hx, 374761393) ^
-    Math.imul(hy, 668265263) ^
-    Math.imul(seed | 0, 1442695041);
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
-}
-
-/** Value noise with smoothstep interpolation between lattice corners. */
-export function valueNoise(x, y, seed, periodX, periodY = 0) {
-  const xi = Math.floor(x);
-  const yi = Math.floor(y);
-  const xf = x - xi;
-  const yf = y - yi;
-  const u = xf * xf * (3 - 2 * xf);
-  const v = yf * yf * (3 - 2 * yf);
-
-  const a = hash(xi, yi, seed, periodX, periodY);
-  const b = hash(xi + 1, yi, seed, periodX, periodY);
-  const c = hash(xi, yi + 1, seed, periodX, periodY);
-  const d = hash(xi + 1, yi + 1, seed, periodX, periodY);
-
-  return a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
-}
-
-/** Sum of octaves; the caller decides how many. */
-export function fbm(x, y, seed, periodX, octaves = 3, periodY = 0) {
-  let sum = 0;
-  let amplitude = 0.5;
-  let frequency = 1;
-  let normaliser = 0;
-
-  for (let i = 0; i < octaves; i += 1) {
-    sum +=
-      amplitude *
-      valueNoise(
-        x * frequency,
-        y * frequency,
-        seed + i * 101,
-        periodX,
-        periodY,
-      );
-    normaliser += amplitude;
-    amplitude *= 0.5;
-    frequency *= 2;
-  }
-
-  return sum / normaliser;
-}
-
 /** How far the sky may be slid up or down, in CSS px, either way. */
 export const OFFSET_Y_LIMIT = 400;
 
@@ -514,13 +384,11 @@ export function frameLayout({
  */
 export function createScene({ config = SKY_DEFAULTS, cols, rows, cellPx }) {
   return {
-    field: createField({
+    field: buildField({
       cols,
       rows,
       cellPx,
-      scale: config.scale,
-      seed: config.seed,
-      evolveScale: config.evolveScale,
+      config,
       // Sky above and below the window, so the lift can pan without repeating.
       margin: Math.ceil(OFFSET_Y_LIMIT / cellPx),
     }),
@@ -536,12 +404,6 @@ const TINT_YELLOW = 2;
 
 function starHash(x, y, seed, offset) {
   return hash(x, y, (seed + offset) | 0, STAR_PERIOD);
-}
-
-function clamp01(value) {
-  if (value < 0) return 0;
-  if (value > 1) return 1;
-  return value;
 }
 
 function clampPercent(value) {
@@ -707,35 +569,9 @@ export function updateStarGains(starLayer, config = SKY_DEFAULTS, time = 0) {
   return starLayer;
 }
 
-const EVOLVE = Object.freeze({
-  scaleRatio: 1.8, // × the sky's feature size, when evolveScale is not given
-  octaves: 2,
-  amount: 1, // half the bias at evolve = 100; renderFrame applies it twice
-  driftX: 42, // cells/s at evolveSpeed = 100
-});
-
-const GUTTER = 16;
-
 /**
- * Build one period of the field.
- *
- * `width` is `cols + 2 * GUTTER + 2` cells: room for the widest warp on both
- * sides. The lattice period is rounded to whole noise cells, and the x step
- * is chosen so the buffer is exactly one period wide. Adding `periodX` to a
- * sample in lattice units therefore returns the same value.
- *
- * `margin` builds extra rows above and below the visible band, so the whole sky
- * can be slid up or down (`renderFrame`'s `offsetY`) without wrapping and
- * without changing a single value in the band the page shows. The text of the
- * field is unchanged by a margin: row `y + margin` is row `y` of a field built
- * without one.
- *
- * The evolution field is a second, much larger noise field that decides where
- * tone thresholds are pushed up and pulled down. It is sampled by the same
- * machinery, with features `evolveScale` CSS px wide, drifting on both axes at
- * a rate set by `evolveSpeed` and `evolveTilt`. Because it varies across the
- * plane, masses swell in one place while they thin in another; because it
- * drifts continuously, no fixed spot breathes in and out.
+ * The field layer for an explicit scale and seed. `build` in sky-field.mjs is
+ * the layer interface; this keeps the options shape the poster and tests use.
  */
 export function createField({
   cols,
@@ -743,154 +579,20 @@ export function createField({
   cellPx,
   scale,
   seed = SKY_DEFAULTS.seed,
-  evolveScale = scale * EVOLVE.scaleRatio,
+  evolveScale,
   margin = 0,
 }) {
-  const width = cols + 2 * GUTTER + 2;
-  const height = rows + 2 * margin;
-  const periodX = Math.max(2, Math.round((width * cellPx) / scale));
-  const stepX = periodX / width;
-  const stepY = cellPx / scale;
-  const data = new Float32Array(width * height);
-
-  // Row `margin` is lattice row 0, so the band the page shows is the same sky
-  // with or without a margin, whichever way the lift goes.
-  for (let y = 0; y < height; y += 1) {
-    const row = y * width;
-    const vy = (y - margin) * stepY;
-    for (let x = 0; x < width; x += 1) {
-      data[row + x] = fbm(x * stepX, vy, seed, periodX);
-    }
-  }
-
-  // The flow is periodic on both axes, so it can drift in y forever without a
-  // seam where the buffer wraps. The price is that it repeats after one buffer
-  // height, as the sky already does after one width.
-  const evolvePeriod = Math.max(2, Math.round((width * cellPx) / evolveScale));
-  const evolvePeriodY = Math.max(2, Math.round((rows * cellPx) / evolveScale));
-  const evolveStepX = evolvePeriod / width;
-  const evolveStepY = evolvePeriodY / rows;
-  const evolve = new Float32Array(width * rows);
-  let evolveMean = 0;
-
-  for (let y = 0; y < rows; y += 1) {
-    const row = y * width;
-    const vy = y * evolveStepY;
-    for (let x = 0; x < width; x += 1) {
-      const value = fbm(
-        x * evolveStepX,
-        vy,
-        seed + 7919,
-        evolvePeriod,
-        EVOLVE.octaves,
-        evolvePeriodY,
-      );
-      evolve[row + x] = value;
-      evolveMean += value;
-    }
-  }
-
-  // Centre it. Evolution should move coverage from one region to another, not
-  // take white away from the sky as a whole.
-  evolveMean /= width * rows;
-  for (let i = 0; i < evolve.length; i += 1) evolve[i] -= evolveMean;
-
-  return {
-    data,
-    evolve,
-    width,
-    cols,
-    rows,
-    height,
-    margin,
-    periodX,
-    evolvePeriod,
-    evolvePeriodY,
-    cellPx,
-    scale,
-    evolveScale,
-    seed,
-  };
-}
-
-/** Read the field with x wrapped, so the period is continuous. */
-export function sampleField(field, x, y) {
-  const column = wrap(x, field.width);
-  const row = wrap(y, field.height);
-  return field.data[row * field.width + column];
-}
-
-/** Read the evolution field, wrapped on both axes. */
-export function sampleEvolve(field, x, y) {
-  const column = wrap(x, field.width);
-  const row = ((y % field.rows) + field.rows) % field.rows;
-  return field.evolve[row * field.width + column];
+  return buildField({ cols, rows, cellPx, scale, seed, evolveScale, margin });
 }
 
 /**
- * Tone thresholds. The interior bands are narrowed by `stark`, so the middle
- * tone can go from a third of the field to almost nothing.
- */
-export function thresholds(tones, stark) {
-  const count = Math.max(2, tones | 0);
-  const interior = Math.max(0, count - 2);
-  const mid = (1 / 3) * (1 - stark / 100) + 0.02 * (stark / 100);
-  const width = interior ? Math.min(mid, 0.96 / interior) : 0;
-  const edge = (1 - interior * width) / 2;
-
-  const bands = [edge];
-  for (let i = 0; i < interior; i += 1) bands.push(width);
-  bands.push(edge);
-
-  const result = [];
-  let accumulator = 0;
-  for (let i = 0; i < bands.length - 1; i += 1) {
-    accumulator += bands[i];
-    result.push(accumulator);
-  }
-  return result;
-}
-
-/**
- * Quantise a scalar to a band index.
+ * Compose one frame: build the shared state, then let each layer paint into it.
  *
- * The dither offset is bounded to one band either side of the undithered
- * result. Narrow bands would otherwise let a single sample cross two of them
- * as `dither` moves from 0 to 100, which is the sparkle this exists to stop.
- */
-export function toneIndex(value, bandThresholds, dither = 0, bayer = 0) {
-  const limit = bandThresholds.length;
-  let base = 0;
-  while (base < limit && value >= bandThresholds[base]) base += 1;
-
-  const shifted = value + dither * bayer;
-  let q = 0;
-  while (q < limit && shifted >= bandThresholds[q]) q += 1;
-
-  const lower = Math.max(0, base - 1);
-  const upper = Math.min(limit, base + 1);
-  return Math.max(lower, Math.min(upper, q));
-}
-
-/** Map a band index to a ramp index, lightest first. */
-export function rampIndex(band, tones) {
-  const levels = Math.min(RAMP.length, Math.max(2, tones | 0)) - 1;
-  return Math.max(0, Math.min(RAMP.length - 1, levels - band));
-}
-
-/**
- * Re-quantise the field into RGBA for one frame. No noise is evaluated here.
- *
- * `offset` is the drift in cells; `time` is seconds of animation. Both are
- * interpolated into the field, never rounded. `offsetY` pans the whole sky up
- * (+) or down (-), also in cells, within the margin the field was built with;
- * it stops at the edge rather than repeating.
- *
- * `mix` crosses the sky between the light ramp (0) and the dark ramp (1). The
- * ramp is interpolated first and the bands are quantised after, so every frame
- * mid-crossing is still valid banded, dithered pixel art. The star layer fades
- * in with the same mix, blended over the clear band's own colour. `dark` is
- * the two-state shorthand for `mix`: `dark: true` is `mix: 1`.
+ * `offset` is the drift in cells; `time` is seconds of animation. `offsetY`
+ * pans the whole sky up (+) or down (-), also in cells. `mix` crosses the sky
+ * between the light ramp (0) and the dark ramp (1); `dark` is the two-state
+ * shorthand for it. The star layer fades in with the same mix, blended over
+ * the clear band's own colour. The flock fades out on that mix.
  */
 export function renderFrame({
   field,
@@ -905,158 +607,40 @@ export function renderFrame({
   starLayer = null,
   birdLayer = null,
 }) {
-  const { data, evolve: flow, width, cols, rows, height, margin } = field;
+  const { cols, rows } = field;
   const pixels = out ?? new Uint8ClampedArray(cols * rows * 4);
 
   const blend = mix === undefined ? Number(dark) : clamp01(mix);
   const ramp = rampAt(blend);
   const tones = Math.min(ramp.length, Math.max(2, config.tones | 0));
-  const dither = config.dither / 100;
-  const bandThresholds = thresholds(tones, config.stark);
-
-  const evolve = config.evolve / 100;
-  const evolveSpeed = config.evolveSpeed / 100;
-  const evolveTilt = config.evolveTilt / 100;
-  const gain = config.gain;
-  const fallBase = config.falloff / 100;
-  const skyBias = (config.sky / 100 - 0.5) * 0.7;
-  const evolveBias = evolve * EVOLVE.amount;
-
-  const warpCells = (config.warp / 100) * 14;
-  const warpSpeed = (config.warpSpeed / 100) * 0.8;
-  const drift = wrap(offset, width);
-
   const stars = blend > 0 && starLayer ? starLayer : null;
-  const starDither = stars ? config.starDither / 100 : 0;
-  if (stars) updateStarGains(stars, config, time);
-  const clearColour = ramp[rampIndex(0, tones)];
-
-  // The flock is a light-sky resident: it fades out with the same mix the
-  // stars fade in on. Its bands need the tone each block landed on, so the
-  // quantised band is recorded while the sheet is painted.
   const flock = birdLayer && blend < 1 ? birdLayer : null;
-  const birdBands = flock ? new Uint8Array(cols * rows) : null;
+  // The flock and the stars need the tone each block landed on. Sharing the
+  // caller's bands buffer keeps this one sheet of per-frame state.
+  const bandBuffer =
+    bands ?? (stars || flock ? new Uint8Array(cols * rows) : undefined);
 
-  // The evolution field keeps its own clock, and drifts on both axes so the
-  // pattern passes rather than pulses. Sampling it per cell is what makes the
-  // swelling local: it pushes the thresholds up in one place and pulls them
-  // down in another.
-  const evolveShiftX = wrap(time * evolveSpeed * EVOLVE.driftX, width);
-  const evolveWhole = Math.floor(evolveShiftX);
-  const evolveFraction = evolveShiftX - evolveWhole;
-  const evolveInverse = 1 - evolveFraction;
-  const evolveShiftY = time * evolveSpeed * EVOLVE.driftX * evolveTilt;
-  const lift = margin + offsetY;
+  const frame = {
+    pixels,
+    cols,
+    rows,
+    bands: bandBuffer,
+    config,
+    time,
+    blend,
+    ramp,
+    tones,
+    bandThresholds: thresholds(tones, config.stark),
+    dither: config.dither / 100,
+    clearColour: ramp[rampIndex(0, tones)],
+    offset,
+    offsetY,
+  };
 
-  let pixel = 0;
-  for (let y = 0; y < rows; y += 1) {
-    const depth = rows > 1 ? y / (rows - 1) : 0;
-    const falloffBias = fallBase * depth * 0.55;
-    const sampleOffset =
-      drift + warpCells * Math.sin(y * 0.055 + time * warpSpeed);
-    const whole = Math.floor(sampleOffset);
-    const fraction = sampleOffset - whole;
-    const inverse = 1 - fraction;
-    const ditherRow = (y & 3) * 4;
-
-    // The sky pans vertically by sampling between two rows, so a fractional
-    // lift is smooth. With no lift the second row is not read at all.
-    const skyY = Math.min(Math.max(lift + y, 0), height - 1);
-    const skyRow = Math.floor(skyY);
-    const skyDepth = skyY - skyRow;
-    const skyRowData = skyRow * width;
-    const skyNextData = Math.min(skyRow + 1, height - 1) * width;
-
-    // The flow is interpolated between two rows, then between two columns, so
-    // it slides smoothly instead of stepping one block at a time.
-    const flowY = wrap(evolveShiftY + y, rows);
-    const flowRow = Math.floor(flowY) % rows;
-    const flowNext = (flowRow + 1) % rows;
-    const flowDepth = flowY - Math.floor(flowY);
-    const flowUp = 1 - flowDepth;
-    const flowRowData = flowRow * width;
-    const flowNextData = flowNext * width;
-
-    for (let x = 0; x < cols; x += 1) {
-      let a = (whole + x) % width;
-      if (a < 0) a += width;
-      let b = a + 1;
-      if (b >= width) b -= width;
-
-      let value;
-      if (skyDepth === 0) {
-        value =
-          data[skyRowData + a] * inverse + data[skyRowData + b] * fraction;
-      } else {
-        const top =
-          data[skyRowData + a] * inverse + data[skyRowData + b] * fraction;
-        const bottom =
-          data[skyNextData + a] * inverse + data[skyNextData + b] * fraction;
-        value = top * (1 - skyDepth) + bottom * skyDepth;
-      }
-      value = (value - 0.5) * gain + 0.5 - falloffBias - skyBias;
-
-      if (evolveBias > 0) {
-        let ea = (evolveWhole + x) % width;
-        if (ea < 0) ea += width;
-        let eb = ea + 1;
-        if (eb >= width) eb -= width;
-        const here =
-          (flow[flowRowData + ea] * evolveInverse +
-            flow[flowRowData + eb] * evolveFraction) *
-            flowUp +
-          (flow[flowNextData + ea] * evolveInverse +
-            flow[flowNextData + eb] * evolveFraction) *
-            flowDepth;
-        value -= here * 2 * evolveBias;
-      }
-
-      if (value < 0) value = 0;
-      else if (value > 1) value = 1;
-      value = value * value * (3 - 2 * value);
-
-      const band = toneIndex(
-        value,
-        bandThresholds,
-        dither,
-        BAYER4[ditherRow + (x & 3)],
-      );
-      if (bands) bands[y * cols + x] = band;
-      if (birdBands) birdBands[y * cols + x] = band;
-
-      let colour = ramp[rampIndex(band, tones)];
-
-      // Stars live only in the clear band, the darkest band. The cloud
-      // band's own edge is already dithered, so stars dissolve into it.
-      if (stars && band === 0) {
-        const starIndex = y * cols + x;
-        const starIndexOwner = stars.owner[starIndex];
-        if (starIndexOwner >= 0) {
-          const value =
-            stars.peak[starIndex] * stars.stars[starIndexOwner].gain;
-          const level = toneIndex(
-            value,
-            STAR_THRESHOLDS,
-            starDither,
-            BAYER4[ditherRow + (x & 3)],
-          );
-          let starColour = null;
-          if (level === 2) starColour = STAR_TINTS[stars.tint[starIndex]];
-          else if (level === 1) starColour = STAR_DIM;
-          if (starColour !== null) {
-            // A star fades in over the clear band, so at a partial mix it is a
-            // blend of its own tint and the band it sits on.
-            colour = lerpColour(clearColour, starColour, blend);
-          }
-        }
-      }
-
-      pixels[pixel] = colour[0];
-      pixels[pixel + 1] = colour[1];
-      pixels[pixel + 2] = colour[2];
-      pixels[pixel + 3] = 255;
-      pixel += 4;
-    }
+  field.paint(frame);
+  if (stars) {
+    updateStarGains(stars, config, time);
+    paintStars(stars, frame);
   }
 
   // The flock, painted per block after the sheet. Far-layer birds land only
@@ -1064,10 +648,49 @@ export function renderFrame({
   // occlude the stars; near-layer birds ink over anything. Both positions
   // snap to whole blocks, so a bird advances a block at a time and is
   // pixel-identical between snaps — the same hold the twinkle uses.
-  if (flock)
-    paintBirds({ flock, pixels, birdBands, cols, rows, config, time, blend });
+  if (flock) paintBirds(flock, frame);
 
   return pixels;
+}
+
+/**
+ * Tint the stars over the clear band. The cloud band's own edge is already
+ * dithered, so stars dissolve into it.
+ */
+function paintStars(stars, frame) {
+  const { pixels, cols, rows, bands, clearColour, blend, config } = frame;
+  const starDither = config.starDither / 100;
+
+  for (let y = 0; y < rows; y += 1) {
+    const ditherRow = (y & 3) * 4;
+    for (let x = 0; x < cols; x += 1) {
+      const index = y * cols + x;
+      if (bands[index] !== 0) continue;
+
+      const owner = stars.owner[index];
+      if (owner < 0) continue;
+
+      const value = stars.peak[index] * stars.stars[owner].gain;
+      const level = toneIndex(
+        value,
+        STAR_THRESHOLDS,
+        starDither,
+        BAYER4[ditherRow + (x & 3)],
+      );
+      let starColour = null;
+      if (level === 2) starColour = STAR_TINTS[stars.tint[index]];
+      else if (level === 1) starColour = STAR_DIM;
+      if (starColour === null) continue;
+
+      // A star fades in over the clear band, so at a partial mix it is a
+      // blend of its own tint and the band it sits on.
+      const colour = lerpColour(clearColour, starColour, blend);
+      const pixel = index * 4;
+      pixels[pixel] = colour[0];
+      pixels[pixel + 1] = colour[1];
+      pixels[pixel + 2] = colour[2];
+    }
+  }
 }
 
 /**
@@ -1097,16 +720,8 @@ function wingSlope(u, droop, body, spread, maxSlope) {
  * stroke. Coverage is an NxN sample grid per block, thresholded through the
  * same ordered dither the tone bands use.
  */
-function paintBirds({
-  flock,
-  pixels,
-  birdBands,
-  cols,
-  rows,
-  config,
-  time,
-  blend,
-}) {
+function paintBirds(flock, frame) {
+  const { pixels, bands: birdBands, cols, rows, config, time, blend } = frame;
   const visible = 1 - clamp01(blend);
   const thickness = config.birdThickness;
   const dither = config.birdDither;
