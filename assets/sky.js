@@ -1,9 +1,10 @@
 /**
  * The pixelated sky: the browser half.
  *
- * Pure maths lives in /assets/sky-core.mjs. This file owns the canvas, the
- * frame loop, and the three reasons to stop: the tab is hidden, the canvas is
- * out of view, or the reader asked for reduced motion.
+ * Pure maths lives in /assets/sky-core.mjs and the renderer seam in
+ * /assets/sky-renderer.mjs. This file owns the canvas, the frame loop, and the
+ * three reasons to stop: the tab is hidden, the canvas is out of view, or the
+ * reader asked for reduced motion.
  *
  * No content depends on this file. Without JavaScript the poster image covers
  * the viewport; if this module fails to load, the CSS gradient remains. Without
@@ -18,9 +19,9 @@ import {
   createBirdLayer,
   createScene,
   frameLayout,
-  renderFrame,
   transitionMix,
 } from "./sky-core.mjs";
+import { createCpuRenderer } from "./sky-renderer.mjs";
 
 // A visit gets its own sky, and its own flock. Both seeds are chosen once
 // per page load, so the field and the birds stay put across internal
@@ -40,32 +41,33 @@ const sky = document.querySelector(".sky");
 /** @type {HTMLCanvasElement | null} */
 const canvas = document.querySelector(".sky-canvas");
 
-if (sky && canvas) {
+/** Pick the renderer for this page load. The CPU adapter is the only one. */
+function selectRenderer() {
   const context =
     typeof canvas.getContext === "function"
       ? canvas.getContext("2d", { alpha: true })
       : null;
+  return context === null ? null : createCpuRenderer({ config, context });
+}
 
-  if (context === null) {
+const renderer = sky && canvas ? selectRenderer() : null;
+
+if (sky && canvas) {
+  if (renderer === null) {
     // No 2D context: show the poster over the gradient. The page is otherwise
     // untouched.
     sky.classList.add("sky--fallback");
   } else {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    let field = null;
-    let starLayer = null;
-    let birdLayer = null;
+    let scene = null;
     let dark = isDark(document.documentElement.dataset.theme);
     // The mix the sky has reached, and the crossing in flight, if any. A
     // crossing is interrupted by taking the current mix as its new origin, so
     // toggling mid-dusk continues from where the sky is.
     let mix = dark ? 1 : 0;
     let flight = null;
-    let image = null;
-    let pixels = null;
     let cellPx = 4;
-    let offsetY = 0;
     let offset = 0;
     let elapsed = 0;
     let lastTime = 0;
@@ -102,19 +104,12 @@ if (sky && canvas) {
     }
 
     function draw(now = performance.now()) {
-      if (!field) return;
-      renderFrame({
-        field,
-        out: pixels,
-        config,
+      if (!scene) return;
+      renderer.render({
         time: elapsed,
         offset,
-        offsetY,
         mix: mixNow(now),
-        starLayer,
-        birdLayer,
       });
-      context.putImageData(image, 0, 0);
     }
 
     function resize() {
@@ -137,35 +132,34 @@ if (sky && canvas) {
       // Keep the drift continuous across a resize. A mobile URL bar collapsing
       // only changes the height, so the field is unchanged; zeroing here would
       // snap the whole sheet back to the start.
-      if (field && cellPx !== previousCellPx) {
+      if (scene && cellPx !== previousCellPx) {
         offset *= previousCellPx / cellPx;
       }
 
-      const scene = createScene({
+      scene = createScene({
         config,
         cols: layout.cols,
         rows: layout.rows,
         cellPx,
       });
-      field = scene.field;
-      starLayer = scene.starLayer;
-      birdLayer = scene.birdLayer;
-      offsetY = scene.offsetY;
-      image = context.createImageData(layout.cols, layout.rows);
-      pixels = image.data;
+      renderer.setScene(scene);
       draw();
     }
 
     // A bird lever resizes or reseeds only the flock. The noise field, the
-    // star layer, the offsets and the canvas image keep their identities, so
-    // tuning a bird never re-rolls the clouds or the stars.
+    // star layer, the offsets and the renderer's surface keep their identities,
+    // so tuning a bird never re-rolls the clouds or the stars.
     function rebuildBirds() {
-      birdLayer = createBirdLayer({
-        cols: canvas.width,
-        rows: canvas.height,
-        cellPx,
-        config,
-      });
+      scene = {
+        ...scene,
+        birdLayer: createBirdLayer({
+          cols: canvas.width,
+          rows: canvas.height,
+          cellPx,
+          config,
+        }),
+      };
+      renderer.setScene(scene);
       draw();
     }
 

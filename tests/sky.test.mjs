@@ -34,6 +34,7 @@ import { build as buildField } from "../assets/sky-field.mjs";
 import { build as buildFlock } from "../assets/sky-flock.mjs";
 import { defaultsText } from "../assets/sky-levers.mjs";
 import { build as buildStar } from "../assets/sky-stars.mjs";
+import { createCpuRenderer } from "../assets/sky-renderer.mjs";
 import { TURN_MS } from "../assets/wheel-core.mjs";
 
 function rawToneIndex(value, bandThresholds, dither, bayer) {
@@ -669,6 +670,45 @@ test("createScene lifts by the config and carries the pannable margin", () => {
   assert.equal(field.scale, config.scale);
   assert.equal(field.seed, config.seed);
   assert.equal(field.evolveScale, config.evolveScale);
+});
+
+test("the CPU renderer paints a sky scene onto the surface it owns", () => {
+  const config = { ...SKY_DEFAULTS, seed: 12, birdSeed: 34 };
+  const scene = createScene({ config, cols: 24, rows: 12, cellPx: 2 });
+  const renderer = createCpuRenderer({ config, scene });
+  const surface = renderer.surface;
+
+  assert.equal(surface.cols, scene.field.cols);
+  assert.equal(surface.rows, scene.field.rows);
+  assert.equal(surface.pixels.length, scene.field.cols * scene.field.rows * 4);
+
+  const state = { time: 3, offset: 5, offsetY: scene.offsetY, mix: 0.35 };
+  renderer.render(state);
+
+  assert.deepEqual(
+    [...surface.pixels],
+    [
+      ...renderFrame({
+        field: scene.field,
+        config,
+        starLayer: scene.starLayer,
+        birdLayer: scene.birdLayer,
+        ...state,
+      }),
+    ],
+    "the adapter paints the reference frame",
+  );
+
+  const painted = surface.pixels;
+  renderer.render({ ...state, mix: 0.9 });
+  assert.equal(renderer.surface.pixels, painted, "a frame reuses the surface");
+
+  const nextScene = createScene({ config, cols: 10, rows: 8, cellPx: 2 });
+  renderer.setScene(nextScene);
+  assert.equal(renderer.surface.pixels.length, 10 * 8 * 4);
+  assert.notEqual(renderer.surface.pixels, painted, "a new grid reallocates");
+  assert.equal(renderer.surface.cols, 10);
+  assert.equal(renderer.surface.rows, 8);
 });
 
 const starConfig = {
