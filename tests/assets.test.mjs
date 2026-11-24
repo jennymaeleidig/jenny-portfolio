@@ -76,7 +76,7 @@ test("the sky sits behind the sheet with its poster and gradient fallbacks", () 
   }
 });
 
-test("the sky's levers are a development tool, not a shipped one", () => {
+test("the sky's levers are development-only, never emitted", () => {
   const home = readFileSync(join(output, "index.html"), "utf8");
   const sky = readFileSync(join(output, "assets", "sky.js"), "utf8");
 
@@ -223,7 +223,7 @@ test("the share card is the poster, unwrapped for a link preview", () => {
   assert.deepEqual(
     card,
     Buffer.from(base64, "base64"),
-    "the card is the poster's own pixels, not a re-render",
+    "the card equals the poster's embedded PNG",
   );
 
   const width = card.readUInt32BE(16);

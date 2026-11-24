@@ -14,11 +14,10 @@
  * tinting and wing stamping are reproduced here, because they are per frame.
  *
  * The surface keeps the seam's shape (`cols`, `rows`, `pixels`, `present()`,
- * `readFrame()`), but a framebuffer cannot expose a CPU-readable `pixels`
- * array without a stall. `pixels` is therefore not the frame: it is allocated
- * and left untouched until `readFrame()` is called, which does one
- * `readPixels` after the frame and flips it to top-down order. `readFrame()` is
- * part of the surface contract for a test, never for the frame loop.
+ * `readFrame()`), but the GPU surface cannot expose a CPU-readable `pixels`
+ * array without a stall. `pixels` is allocated and left untouched until
+ * `readFrame()` is called, which does one `readPixels` after the frame and
+ * flips it to top-down order. The frame loop never calls it.
  *
  * There is no gains-texture fallback for twinkle chatter: the stateless sines
  * through the dithered star thresholds carry the anti-chatter duty alone.
@@ -407,7 +406,7 @@ function uniform(gl, program, name) {
  * to WebGL2 and cannot become a 2D surface.
  *
  * @param {object} [options]
- * @param {HTMLCanvasElement} [options.canvas]
+ * @param {HTMLCanvasElement | { getContext?: Function }} [options.canvas]
  * @param {import("./sky-config.mjs").SkyConfig} [options.config]
  */
 export function createWebglRenderer({ canvas, config = SKY_DEFAULTS } = {}) {
@@ -856,8 +855,10 @@ export function createWebglRenderer({ canvas, config = SKY_DEFAULTS } = {}) {
     locations = null;
   }
 
-  canvas.addEventListener("webglcontextlost", onLost);
-  canvas.addEventListener("webglcontextrestored", onRestored);
+  // A canvas that yielded a WebGL2 context is a real canvas element.
+  const element = /** @type {HTMLCanvasElement} */ (canvas);
+  element.addEventListener("webglcontextlost", onLost);
+  element.addEventListener("webglcontextrestored", onRestored);
 
   return {
     setScene,

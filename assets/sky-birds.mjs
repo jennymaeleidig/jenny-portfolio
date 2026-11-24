@@ -15,8 +15,8 @@ import { hash } from "./sky-field.mjs";
 import { BAYER4, clamp01, lerpColour } from "./sky-tone.mjs";
 
 /**
- * The birds' ink: the light theme's ink token, flat in both layers. Depth
- * reads through scale, speed and occlusion, never through tone.
+ * The birds' ink: the light theme's ink token, the same in both layers. Depth
+ * reads through scale, speed and occlusion; the tone stays flat.
  */
 export const BIRD_INK = Object.freeze([20, 20, 15]); // #14140f
 
@@ -78,8 +78,8 @@ export function build({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
     if (params.count === 0) continue;
     const wingBase = Math.max(2, params.scale / cellPx);
     const speedBase = params.speed / cellPx;
-    // A layer is depth, not altitude: every bird in either layer may start
-    // at any height on the sheet, and keeps that height as it flies.
+    // The layer index sets depth; every bird in either layer may start at any
+    // height on the sheet, and keeps that height as it flies.
     const yCentre = rows / 2 + (params.y / 100) * rows;
 
     for (let i = 0; i < params.count; i += 1) {
@@ -107,7 +107,7 @@ export function build({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
         ),
         phase,
         // Per-bird beat variance: no two birds flap at the same rate, so the
-        // bird layer never falls into a shared rhythm even mid-flight.
+        // bird layer never falls into a shared rhythm.
         flapVariance: 1 + (flapRoll - 0.5) * 2 * params.flapJitter,
         span,
         // Where this bird sits in its own pass, as a distance along the span.

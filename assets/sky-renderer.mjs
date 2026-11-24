@@ -19,10 +19,8 @@
  *                     { cols, rows, pixels, present(), readFrame() }.
  *                     On the CPU surface `pixels` is the frame buffer: a
  *                     Uint8ClampedArray of cols × rows RGBA blocks. On the
- *                     GPU surface `pixels` is not the frame; the frame is
- *                     read back through `readFrame()`. `readFrame()` is part
- *                     of the surface contract but exists for a test, never
- *                     for the frame loop.
+ *                     GPU surface the frame is read back through
+ *                     `readFrame()`, which the frame loop never calls.
  *
  * A renderer is created once per page load. The CPU adapter below is the
  * canonical reference for the sky's look; it composes the layers through

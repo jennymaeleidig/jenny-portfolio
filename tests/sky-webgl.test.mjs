@@ -1,5 +1,5 @@
-// The WebGL2 adapter's creation seam, exercised without a GL context: a page
-// only falls back to the CPU adapter when there is no context to be had.
+// The WebGL2 adapter's creation seam, exercised without a GL context: when
+// there is no context to be had, the page falls back to the CPU adapter.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 

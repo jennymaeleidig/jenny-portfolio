@@ -10,7 +10,9 @@
  * The optional star layer paints its own tints and twinkle over the clear
  * band, and the optional bird layer stamps its own birds over the sheet.
  *
- * The browser layer (assets/sky.js) is the only part that touches the DOM.
+ * In a production tree the browser layer (assets/sky.js) is the only part
+ * that touches the DOM; the dev-only levers panel also writes to it on a
+ * levers build.
  *
  * Source (visual reference only, no code copied):
  *   Paper, "Paper Shaders: ultra-fast zero-dependency shaders",
@@ -179,7 +181,7 @@ export function renderFrame({
   // only on clear-sky blocks, so the cloud bands occlude them the same way they
   // occlude the stars; near-layer birds ink over anything. Both positions
   // snap to whole blocks, so a bird advances a block at a time and is
-  // pixel-identical between snaps — the same hold the twinkle uses.
+  // pixel-identical between snaps, the same hold the twinkle uses.
   if (birdLayerState) birdLayerState.paint(frame);
 
   return pixels;

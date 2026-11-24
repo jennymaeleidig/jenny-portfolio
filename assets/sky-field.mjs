@@ -2,12 +2,13 @@
  * The sky's field: the integer hash, value noise, three-octave fBm, the field
  * build, its sampling, and the whole-sheet paint pass.
  *
- * The field is computed once per layout and seed; each frame only re-quantises
- * it. Four properties are load-bearing:
+ * The field is computed once per layout and seed; each frame only
+ * re-quantises it:
  *
  *   1. sampling is interpolated, never rounded;
  *   2. the field is periodic in x, so the drift wraps with no pop;
- *   3. tone bands are dithered, so boundaries dissolve instead of snapping;
+ *   3. tone bands are dithered, so a boundary spreads across neighbouring
+ *      blocks;
  *   4. the cloud quantiser only ever emits indices into the active theme's
  *      ramp.
  */
@@ -137,8 +138,8 @@ export function build({
   }
 
   // The flow is periodic on both axes, so it can drift in y forever without a
-  // seam where the buffer wraps. The price is that it repeats after one buffer
-  // height, as the sky already does after one width.
+  // seam where the buffer wraps. It repeats after one buffer height, as the
+  // sky does after one width.
   const evolvePeriod = Math.max(2, Math.round((width * cellPx) / evolveScale));
   const evolvePeriodY = Math.max(2, Math.round((rows * cellPx) / evolveScale));
   const evolveStepX = evolvePeriod / width;

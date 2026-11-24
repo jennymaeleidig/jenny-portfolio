@@ -82,8 +82,8 @@ export function rampAt(mix) {
 }
 
 /**
- * 4x4 ordered dither, offset 1/32 below zero so thresholds sit between blocks
- * rather than on them.
+ * 4x4 Bayer ordered dither: each entry is the Bayer matrix index over 16,
+ * minus 1/2, so the dither straddles zero around a tone threshold.
  */
 export const BAYER4 = Object.freeze([
   -0.5,

@@ -3,10 +3,11 @@
  * Regenerate assets/sky-poster.svg and assets/sky-poster-dark.svg from the sky
  * core.
  *
- * The posters are static frames at the shipped cell size: the field, the bird
- * layer, tuned values and lift from SKY_DEFAULTS, with the palette chosen by
- * the poster's theme, rendered at time 0. They are embedded as PNG data URIs so
- * the committed files stay text, while costing a fraction of an equivalent
+ * The posters are static frames at the shipped cell size: the field, the star
+ * layer, the bird layer (the light theme only, since the dark crossing drops
+ * the birds), tuned values and lift from SKY_DEFAULTS, with the palette chosen
+ * by the poster's theme, rendered at time 0. They are embedded as PNG data URIs
+ * so the committed files stay text, while costing a fraction of an equivalent
  * vector poster.
  *
  * Each SVG records a hash of the raw frame. tests/assets.test.mjs recomputes

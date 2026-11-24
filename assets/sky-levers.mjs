@@ -9,7 +9,7 @@
  *
  * `assets/sky.js` publishes the live controller as `globalThis.skyLevers` when
  * it sees the attribute. Tuning belongs in `SKY_DEFAULTS` in
- * `assets/sky-core.mjs`: "copy values" puts the current settings on the
+ * `assets/sky-config.mjs`: "copy values" puts the current settings on the
  * clipboard in that shape.
  */
 
@@ -462,8 +462,8 @@ const RUNTIME_SEED_KEYS = new Set(["seed", "birdSeed"]);
  * The config as a SKY_DEFAULTS-shaped object literal. Every shipped key is
  * printed in its shipped order, so the deeper bird layer values that have no
  * slider round-trip with the ones that do. The live visit seeds are pinned
- * to the shipped defaults: a paste should reproduce a tune, not freeze one
- * random visit. Clipboard first, console as fallback in the panel.
+ * to the shipped defaults, so a paste reproduces the tune with the shipped
+ * seeds. Clipboard first, console as fallback in the panel.
  *
  * @param {Record<string, string | number>} config
  */
@@ -478,7 +478,7 @@ export function defaultsText(config) {
       return `  ${key}: ${literal},`;
     })
     .join("\n");
-  return `// paste into SKY_DEFAULTS in assets/sky-core.mjs\n{\n${body}\n}`;
+  return `// paste into SKY_DEFAULTS in assets/sky-config.mjs\n{\n${body}\n}`;
 }
 
 if (controller) {

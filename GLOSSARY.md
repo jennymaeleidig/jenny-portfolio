@@ -116,7 +116,7 @@ _Avoid_: gap, spacing, stride
 
 **Sky**:
 The pixelated, drifting background behind the sheet: clouds in both themes,
-stars in the dark.
+birds in the light, stars in the dark.
 _Avoid_: background, canvas, gradient
 
 **Star layer**:
@@ -139,7 +139,8 @@ _Avoid_: pass, plugin, drawable
 
 **Sky scene**:
 One sky's built state for a layout: the field, the star layer and the bird
-layer, all built from one seed and one config.
+layer, all built from one config. The field and star layer share the sky
+seed; the bird layer mixes it with its own bird seed.
 _Avoid_: world, stage, setup
 
 **Sky renderer**:
@@ -152,7 +153,7 @@ _Avoid_: engine, backend, pipeline
 The buffer a sky renderer paints a frame into: the grid's block count, its
 pixels, and the step that presents them. The CPU surface's `pixels` is the
 frame buffer; the GPU surface's frame is read back only through `readFrame()`,
-for verification.
+which the frame loop never calls.
 _Avoid_: canvas, framebuffer, target
 
 **Frame state**:

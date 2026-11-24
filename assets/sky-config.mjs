@@ -100,7 +100,7 @@ export const SKY_DEFAULTS = Object.freeze({
   evolve: 60,
   evolveSpeed: 30,
   evolveScale: 340, // flow feature size, CSS px
-  evolveTilt: 13, // 0 drifts sideways only, 100 as steeply as it moves across
+  evolveTilt: 13, // 0 drifts sideways only, 100 drifts as steeply as it moves across
   warp: 51,
   warpSpeed: 9,
   dither: 20,

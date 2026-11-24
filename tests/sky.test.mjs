@@ -216,7 +216,7 @@ test("the field is periodic in x, one lattice period apart", () => {
   }
 });
 
-test("sampling the stored field wraps instead of clamping", () => {
+test("sampling the stored field wraps at the period", () => {
   const field = createField(fieldOptions);
 
   assert.equal(
@@ -314,7 +314,7 @@ test("the clamp pulls an over-dithered sample back to one band", () => {
   );
 });
 
-test("dither dissolves a boundary instead of snapping it", () => {
+test("dither spreads a threshold across more than one band", () => {
   const bands = thresholds(SKY_DEFAULTS.tones, SKY_DEFAULTS.stark);
   const value = bands[0] + 0.001;
   const bandsHit = new Set(
@@ -383,7 +383,7 @@ test("the evolution field is periodic on both axes and carries no bias", () => {
   );
 });
 
-test("the masses swell in different places instead of breathing in step", () => {
+test("the masses swell in some places while thinning in others", () => {
   const field = createField({
     cols: 240,
     rows: 140,

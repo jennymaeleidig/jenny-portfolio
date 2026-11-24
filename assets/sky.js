@@ -1,10 +1,11 @@
 /**
  * The pixelated sky: the browser half.
  *
- * Pure maths lives in /assets/sky-core.mjs, the renderer seam in
- * /assets/sky-renderer.mjs and the GPU adapter in /assets/sky-webgl.mjs. This
- * file owns the canvas, the frame loop, and the three reasons to stop: the tab
- * is hidden, the canvas is out of view, or the reader asked for reduced motion.
+ * The pure maths lives in the sky's own modules: /assets/sky-core.mjs
+ * composes them, /assets/sky-renderer.mjs is the renderer seam and
+ * /assets/sky-webgl.mjs is the GPU adapter. This file owns the canvas, the
+ * frame loop, and the reasons to stop: the tab hidden, the canvas out of
+ * view, reduced motion, or the GPU context lost.
  *
  * No content depends on this file. Without JavaScript the poster image covers
  * the viewport; if this module fails to load, the CSS gradient remains. Without
