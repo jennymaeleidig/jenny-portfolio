@@ -32,6 +32,7 @@ import {
 } from "../assets/sky-core.mjs";
 import { build as buildField } from "../assets/sky-field.mjs";
 import { defaultsText } from "../assets/sky-levers.mjs";
+import { build as buildStar } from "../assets/sky-stars.mjs";
 import { TURN_MS } from "../assets/wheel-core.mjs";
 
 function rawToneIndex(value, bandThresholds, dither, bayer) {
@@ -698,6 +699,44 @@ test("the star layer is deterministic for a seed", () => {
   assert.deepEqual([...first.tint], [...second.tint]);
   assert.deepEqual([...first.owner], [...second.owner]);
   assert.deepEqual(first.stars, second.stars);
+});
+
+test("the star layer builds from a config and paints its own twinkle", () => {
+  const layer = buildStar(starLayout);
+  const legacy = createStarLayer(starLayout);
+
+  assert.equal(typeof layer.paint, "function");
+  assert.deepEqual([...layer.peak], [...legacy.peak]);
+  assert.deepEqual([...layer.tint], [...legacy.tint]);
+  assert.deepEqual([...layer.owner], [...legacy.owner]);
+  assert.deepEqual(layer.stars, legacy.stars);
+
+  const config = {
+    ...starConfig,
+    starBright: 100,
+    starDither: 0,
+    starTwinkle: 100,
+    starTwinkleSize: 1,
+  };
+  const field = createField({
+    cols: starLayout.cols,
+    rows: starLayout.rows,
+    cellPx: starLayout.cellPx,
+    scale: 150,
+    seed: 12,
+  });
+  const twinkling = buildStar({ ...starLayout, config });
+  assert.equal(
+    twinkling.stars.every((star) => star.gain === 1),
+    true,
+    "stars rest at full brightness",
+  );
+
+  renderFrame({ field, config, dark: true, starLayer: twinkling, time: 3 });
+  assert.ok(
+    twinkling.stars.some((star) => star.gain < 1),
+    "painting advances the twinkle without a caller update",
+  );
 });
 
 test("a different seed gives a different star layer", () => {
