@@ -53,9 +53,6 @@ jobs:
       - name: Build
         run: make build
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
       - name: Test
         run: make test
 

@@ -8,9 +8,8 @@ settles, before either is written for the GPU, which of them owns the truth.
 The pure core is the canonical reference. The GLSL kernel is a deliberate,
 minimal duplicate of the per-frame pass only.
 
-The plan behind this decision is recorded in
-`docs/research/sky-webgl-notes.md`, and rests on the baseline measured in
-Chrome DevTools on the built site: a full frame costs 7.0–7.1 ms of
+The plan behind this decision rests on the baseline measured in Chrome
+DevTools on the built site: a full frame costs 7.0–7.1 ms of
 main-thread JavaScript at the 480×270 grid (the field re-quantise is ~6.8 ms
 of that), ~30 ms per frame under a 4× CPU throttle, with the scene build ~30 ms
 once. A WebGL2 adapter removes that cost by uploading the CPU-built field,
@@ -77,7 +76,7 @@ because it is an upload, not a readback.
 - **Make the GLSL kernel canonical.** The tests, the poster and the fallback
   cannot run a shader, so the core would keep existing anyway, only demoted.
 - **Bit-match the kernel to the core.** Cross-GPU determinism is unattainable,
-  so the harness would pin one desktop GPU and call it the truth.
+  so a comparison would pin one desktop GPU and call it the truth.
 - **Port everything to the shader.** The integer hash, the field build and the
   layouts are exactly the parts where GPU floats drift; keeping them on the
   CPU preserves the determinism the poster hash and the tests rely on.

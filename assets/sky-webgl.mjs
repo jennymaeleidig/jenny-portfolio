@@ -18,13 +18,12 @@
  * array without a stall. `pixels` is therefore not the frame: it is allocated
  * and left untouched until `readFrame()` is called, which does one
  * `readPixels` after the frame and flips it to top-down order. `readFrame()` is
- * part of the surface contract for a harness or a test, never for the frame
- * loop.
+ * part of the surface contract for a test, never for the frame loop.
  *
  * There is no gains-texture fallback for twinkle chatter. The stateless sine
  * through the dithered star thresholds is the crossing recorded for this
- * adapter, and the harness measures its frame-to-frame level changes against
- * the CPU's held steps.
+ * adapter, with the CPU's held steps as the reference. The CPU-side gains
+ * texture named in the record is the remedy if chatter shows.
  *
  * No shader code is copied. The port is from this repository's own core.
  */
@@ -408,6 +407,10 @@ function uniform(gl, program, name) {
  * Returns null when the canvas cannot give a WebGL2 context; a shader that
  * fails to compile or link throws, because the canvas has already committed
  * to WebGL2 and cannot become a 2D surface.
+ *
+ * @param {object} [options]
+ * @param {HTMLCanvasElement} [options.canvas]
+ * @param {import("./sky-config.mjs").SkyConfig} [options.config]
  */
 export function createWebglRenderer({ canvas, config = SKY_DEFAULTS } = {}) {
   if (!canvas || typeof canvas.getContext !== "function") return null;
