@@ -1,6 +1,6 @@
 ---
 year: 2024
-status: wip
+status: archived
 category: games
 cover: /assets/projects/pico-dragoon/cover.jpg
 tags:
