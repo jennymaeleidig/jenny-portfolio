@@ -28,7 +28,7 @@
  */
 
 import { SKY_DEFAULTS } from "./sky-config.mjs";
-import { BIRD_INK } from "./sky-flock.mjs";
+import { BIRD_INK, birdLayer } from "./sky-flock.mjs";
 import { STAR_DIM, STAR_THRESHOLDS, STAR_TINTS } from "./sky-stars.mjs";
 import { BAYER4, RAMP, clamp01, rampAt, thresholds } from "./sky-tone.mjs";
 
@@ -775,7 +775,7 @@ export function createWebglRenderer({ canvas, config = SKY_DEFAULTS } = {}) {
 
     if (flock && visible > 0) {
       const field = current.field;
-      const params = [birdShape(config, 0), birdShape(config, 1)];
+      const params = [birdLayer(config, 0), birdLayer(config, 1)];
       layerShape.set([
         params[0].body,
         params[0].spread,
@@ -867,13 +867,4 @@ export function createWebglRenderer({ canvas, config = SKY_DEFAULTS } = {}) {
 
 function flapHz(birdFlap) {
   return Math.max(0, birdFlap) / 60;
-}
-
-/** The shaping values a layer contributes to the in-shader wing stamp. */
-function birdShape(config, layerIndex) {
-  const prefix = layerIndex === 0 ? "l1" : "l2";
-  return {
-    body: config[`${prefix}Body`],
-    spread: config[`${prefix}Spread`],
-  };
 }
