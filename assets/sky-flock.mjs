@@ -69,9 +69,11 @@ export function build({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
   if (config.birds <= 0) return null;
   const seed = (config.seed ^ config.birdSeed ^ 0x51ed270b) >>> 0;
   const birds = [];
+  const paramsByLayer = [];
 
   for (let layerIndex = 0; layerIndex < 2; layerIndex += 1) {
     const params = birdLayer(config, layerIndex);
+    paramsByLayer[layerIndex] = params;
     if (params.count === 0) continue;
     const wingBase = Math.max(2, params.scale / cellPx);
     const speedBase = params.speed / cellPx;
@@ -118,7 +120,20 @@ export function build({ cols, rows, cellPx, config = SKY_DEFAULTS }) {
     }
   }
 
-  const layer = { birds };
+  const stamps = [];
+  let stampBytes = 0;
+  for (const bird of birds) {
+    const stamp = bakeStamps(bird, paramsByLayer[bird.layer], config);
+    stamps.push(stamp);
+    stampBytes += stamp.bytes;
+  }
+
+  const layer = {
+    birds,
+    stamps,
+    shaping: paramsByLayer.map((params) => stampShaping(params, config)),
+    stampBytes,
+  };
 
   layer.paint = (frame) => paintFlock(layer, frame);
 
@@ -151,6 +166,158 @@ function wingSlope(u, droop, body, spread, maxSlope) {
 }
 
 /**
+ * The coverage samples that land on one block, given its offset from the
+ * bird's centre. Coverage depends only on that offset, the wing shape and the
+ * droop, so a whole silhouette can be baked once and translated intact.
+ */
+function coverageAt(dx, dy, wing, droop, body, spread, tol, maxSlope, n, invN) {
+  let hits = 0;
+  for (let sy = 0; sy < n; sy += 1) {
+    for (let sx = 0; sx < n; sx += 1) {
+      const u = (dx + (sx + 0.5) * invN) / wing;
+      // Screen rows grow downward; the wing's own y grows upward.
+      const v = -(dy + (sy + 0.5) * invN) / wing;
+      if (Math.abs(u) > 1) continue;
+      const slope = wingSlope(u, droop, body, spread, maxSlope);
+      const width = tol * Math.sqrt(1 + slope * slope);
+      const wingY = wingHeight(u, droop, body, spread);
+      if (Math.abs(v - wingY) < width) hits += 1;
+    }
+  }
+  return hits;
+}
+
+/** The shape inputs a stamp bakes, so a paint can tell whether it still fits. */
+function stampShaping(params, config) {
+  return {
+    thickness: config.birdThickness,
+    covSteps: Math.max(1, Math.round(config.birdCovSteps)),
+    maxSlope: config.birdMaxSlope,
+    steps: Math.max(1, Math.round(params.flapSteps)),
+    droopMax: params.droopMax,
+    droopMin: params.droopMin,
+    body: params.body,
+    spread: params.spread,
+  };
+}
+
+function sameShaping(a, b) {
+  return (
+    !!a &&
+    !!b &&
+    a.thickness === b.thickness &&
+    a.covSteps === b.covSteps &&
+    a.maxSlope === b.maxSlope &&
+    a.steps === b.steps &&
+    a.droopMax === b.droopMax &&
+    a.droopMin === b.droopMin &&
+    a.body === b.body &&
+    a.spread === b.spread
+  );
+}
+
+/**
+ * Bake one bird's wing silhouettes, one per quantised flap step. Each grid
+ * holds coverage (`hits`) per block offset from the bird's centre; the ordered
+ * dither stays out because it depends on where the block lands on screen.
+ */
+function bakeStamps(bird, params, config) {
+  const shaping = stampShaping(params, config);
+  const wing = bird.wing;
+  const tol = shaping.thickness;
+  const n = shaping.covSteps;
+  const invN = 1 / n;
+  const yMax = wing * (params.body * Math.sqrt(params.spread) + tol * 2);
+  const dxLo = Math.floor(-wing);
+  const dxHi = Math.ceil(wing);
+  const dyLo = Math.floor(-yMax);
+  const dyHi = Math.ceil(yMax);
+  const width = dxHi - dxLo + 1;
+  const height = dyHi - dyLo + 1;
+  const denom = n * n;
+  const Store = denom <= 255 ? Uint8Array : Uint16Array;
+  const grids = [];
+
+  for (let step = 0; step <= shaping.steps; step += 1) {
+    const droop =
+      params.droopMax +
+      (params.droopMin - params.droopMax) * (step / shaping.steps);
+    const grid = new Store(width * height);
+    for (let j = 0; j < height; j += 1) {
+      for (let i = 0; i < width; i += 1) {
+        grid[j * width + i] = coverageAt(
+          dxLo + i,
+          dyLo + j,
+          wing,
+          droop,
+          params.body,
+          params.spread,
+          tol,
+          shaping.maxSlope,
+          n,
+          invN,
+        );
+      }
+    }
+    grids.push(grid);
+  }
+
+  return {
+    shapes: shaping,
+    dxLo,
+    dxHi,
+    dyLo,
+    dyHi,
+    width,
+    height,
+    grids,
+    bytes: width * height * Store.BYTES_PER_ELEMENT * grids.length,
+  };
+}
+
+/** Blend the bird ink over one painted block. */
+function inkBlock(pixels, p, visible) {
+  const ink = lerpColour(
+    [pixels[p], pixels[p + 1], pixels[p + 2]],
+    BIRD_INK,
+    visible,
+  );
+  pixels[p] = ink[0];
+  pixels[p + 1] = ink[1];
+  pixels[p + 2] = ink[2];
+}
+
+/**
+ * Translate one baked stamp by whole blocks and threshold it onto the sheet.
+ * The dither stays at blit time because it depends on the block's screen
+ * position, not on the wing; the far layer's cloud occlusion does too.
+ */
+function blitStamp(stamp, step, bx, by, back, frame, visible, denom) {
+  const { pixels, bands, cols, rows, config } = frame;
+  const dither = config.birdDither;
+  const grid = stamp.grids[step];
+  const xLo = Math.max(0, bx + stamp.dxLo);
+  const xHi = Math.min(cols - 1, bx + stamp.dxHi);
+  const yLo = Math.max(0, by + stamp.dyLo);
+  const yHi = Math.min(rows - 1, by + stamp.dyHi);
+
+  for (let y = yLo; y <= yHi; y += 1) {
+    const ditherRow = (y & 3) * 4;
+    const rowBase = (y - by - stamp.dyLo) * stamp.width;
+    for (let x = xLo; x <= xHi; x += 1) {
+      // The cloud bands cover the far flock, exactly as they cover stars.
+      if (back && bands[y * cols + x] > 0) continue;
+
+      const hits = grid[rowBase + (x - bx - stamp.dxLo)];
+      const bayer = BAYER4[ditherRow + (x & 3)];
+      if (hits / denom + dither * bayer < 0.5) continue;
+
+      inkBlock(pixels, (y * cols + x) * 4, visible);
+    }
+  }
+}
+
+/**
  * Stamp the flock onto the painted sheet. One shared phase per bird drives
  * both the droop and the bob, so they cannot drift apart; the bob amplitude
  * is derived from the wing (a bigger wing lifts more) and rides the power
@@ -170,8 +337,13 @@ function paintFlock(flock, frame) {
   const snap = config.birdSnap >= 0.5;
   const TAU = Math.PI * 2;
   const params = [birdLayer(config, 0), birdLayer(config, 1)];
+  const shaping = params.map((layer) => stampShaping(layer, config));
+  const stamped = shaping.map(
+    (shape, index) => snap && sameShaping(shape, flock.shaping[index]),
+  );
 
-  for (const bird of flock.birds) {
+  for (let index = 0; index < flock.birds.length; index += 1) {
+    const bird = flock.birds[index];
     const layer = params[bird.layer];
     const back = bird.layer === 1;
     const wing = bird.wing;
@@ -190,8 +362,8 @@ function paintFlock(flock, frame) {
     flap = Math.pow(flap, layer.flapEase);
     if (layer.invert >= 0.5) flap = 1 - flap;
     const steps = Math.max(1, Math.round(layer.flapSteps));
-    flap = Math.round(flap * steps) / steps;
-    const droop = layer.droopMax + (layer.droopMin - layer.droopMax) * flap;
+    const stepIndex = Math.round(flap * steps);
+    flap = stepIndex / steps;
 
     // The derived bob: amplitude follows the wing, sign follows the beat.
     let by = bird.row - (layer.lift / 100) * wing * flap;
@@ -204,6 +376,23 @@ function paintFlock(flock, frame) {
       by = Math.round(by);
     }
 
+    if (stamped[bird.layer]) {
+      blitStamp(
+        flock.stamps[index],
+        stepIndex,
+        bx,
+        by,
+        back,
+        frame,
+        visible,
+        denom,
+      );
+      continue;
+    }
+
+    // A continuous or retuned flock has no stamp to blit, so it re-cuts each
+    // block from the wing maths.
+    const droop = layer.droopMax + (layer.droopMin - layer.droopMax) * flap;
     const tol = thickness;
     const yMax = wing * (layer.body * Math.sqrt(layer.spread) + tol * 2);
     const yLo = Math.max(0, Math.floor(by - yMax));
@@ -240,15 +429,7 @@ function paintFlock(flock, frame) {
         const bayer = BAYER4[ditherRow + (x & 3)];
         if (hits / denom + dither * bayer < 0.5) continue;
 
-        const p = (y * cols + x) * 4;
-        const ink = lerpColour(
-          [pixels[p], pixels[p + 1], pixels[p + 2]],
-          BIRD_INK,
-          visible,
-        );
-        pixels[p] = ink[0];
-        pixels[p + 1] = ink[1];
-        pixels[p + 2] = ink[2];
+        inkBlock(pixels, (y * cols + x) * 4, visible);
       }
     }
   }

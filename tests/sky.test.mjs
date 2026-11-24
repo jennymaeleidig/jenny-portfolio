@@ -1475,6 +1475,29 @@ test("the flock builds and paints through the shared layer interface", () => {
   );
 });
 
+test("the flock's stamp cache stays inside its memory bound", () => {
+  const defaults = createBirdLayer({
+    cols: 480,
+    rows: 270,
+    cellPx: 4,
+    config: SKY_DEFAULTS,
+  });
+  assert.ok(defaults.stampBytes > 0, "the flock bakes stamps");
+  assert.ok(
+    defaults.stampBytes <= 200 * 1024,
+    `the shipped flock's stamps take ${defaults.stampBytes} bytes`,
+  );
+
+  const stress = createBirdLayer({
+    ...birdLayout,
+    config: { ...birdConfig, l1Count: 30, l2Count: 30 },
+  });
+  assert.ok(
+    stress.stampBytes <= 200 * 1024,
+    `a crowded flock's stamps take ${stress.stampBytes} bytes`,
+  );
+});
+
 test("a bird-only rebuild swaps the flock and leaves the rest of the scene", () => {
   const scene = createScene({
     config: birdConfig,
