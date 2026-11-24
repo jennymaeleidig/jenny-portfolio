@@ -31,6 +31,7 @@ import {
   updateStarGains,
 } from "../assets/sky-core.mjs";
 import { build as buildField } from "../assets/sky-field.mjs";
+import { build as buildFlock } from "../assets/sky-flock.mjs";
 import { defaultsText } from "../assets/sky-levers.mjs";
 import { build as buildStar } from "../assets/sky-stars.mjs";
 import { TURN_MS } from "../assets/wheel-core.mjs";
@@ -1434,6 +1435,44 @@ test("back-band birds are hidden by the cloud bands", () => {
   for (const block of ink) {
     assert.equal(bands[block], 0, `block ${block} is a bird behind a cloud`);
   }
+});
+
+test("the flock builds and paints through the shared layer interface", () => {
+  // Only the far layer flies, so the band record gates every painted block.
+  const config = { ...birdConfig, l1Count: 0, l2Count: 3 };
+  const layer = buildFlock({ ...birdLayout, config });
+
+  assert.deepEqual(
+    layer.birds,
+    createBirdLayer({ ...birdLayout, config }).birds,
+    "the stable name builds the same flock",
+  );
+
+  const paint = (bands) => {
+    const pixels = new Uint8ClampedArray(birdLayout.cols * birdLayout.rows * 4);
+    layer.paint({
+      pixels,
+      cols: birdLayout.cols,
+      rows: birdLayout.rows,
+      bands,
+      config,
+      time: 6,
+      blend: 0,
+    });
+    return inkBlocks(pixels, birdLayout.cols, birdLayout.rows);
+  };
+
+  const clear = paint(new Uint8Array(birdLayout.cols * birdLayout.rows));
+  assert.ok(clear.length > 0, "the flock paints into the shared pixels");
+
+  const covered = paint(
+    new Uint8Array(birdLayout.cols * birdLayout.rows).fill(1),
+  );
+  assert.equal(
+    covered.length,
+    0,
+    "the flock's own paint honours the shared bands",
+  );
 });
 
 test("a bird-only rebuild swaps the flock and leaves the rest of the scene", () => {
