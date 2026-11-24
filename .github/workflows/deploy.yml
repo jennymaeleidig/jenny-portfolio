@@ -30,6 +30,9 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      - name: Lint
+        run: npm run lint
+
       - name: Install the markdown parser
         run: |
           sudo apt-get update

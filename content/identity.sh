@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+# shellcheck disable=SC2034 # the build reads these through identity_value
 # The identity block. Every page reads this file, so changing an address here
 # changes it everywhere it appears.
 FULL_NAME="Jenny Mae Leidig"

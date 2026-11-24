@@ -1,3 +1,10 @@
 {
-  "ignore": ["vendor/"]
+  "ignore": [
+    "dist/",
+    "node_modules/",
+    "vendor/",
+    "tmp/",
+    ".playwright-mcp/",
+    ".pi/"
+  ]
 }

@@ -6,16 +6,25 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "prepare": "husky",
     "test": "make test",
     "build": "make build"
   },
   "lint-staged": {
-    "*.{md,css,js,mjs,json,yml,yaml,html}": "prettier --write"
+    "*.{js,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{md,css,json,yml,yaml,html}": "prettier --write"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.6",
     "bash-language-server": "^5.8.1",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.10.0",

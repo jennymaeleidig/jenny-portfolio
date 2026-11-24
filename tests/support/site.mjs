@@ -265,7 +265,7 @@ export async function sharedSite() {
     build(staging);
     try {
       renameSync(staging, dir);
-    } catch (error) {
+    } catch {
       // Another file finished first and built the same tree.
       rmSync(staging, { recursive: true, force: true });
     }

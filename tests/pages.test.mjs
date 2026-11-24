@@ -16,7 +16,7 @@ import {
   writeProject,
 } from "./support/site.mjs";
 
-const { output, htmlFiles, siteCss } = await sharedSite();
+const { output, htmlFiles } = await sharedSite();
 
 test("the build emits a project page at its route", () => {
   const content = mkdtempSync(join(tmpdir(), "portfolio-routed-"));

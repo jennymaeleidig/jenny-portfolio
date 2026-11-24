@@ -20,3 +20,7 @@ node_modules/
 
 # LSP probes
 tmp/
+
+# Share this repo's editor settings
+!.vscode/
+!.vscode/*

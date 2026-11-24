@@ -139,7 +139,9 @@ route_address() {
       return 0
     fi
   done < <(layout_route_records address layout argument)
-  echo "error: no route for layout '$layout'${argument:+ with argument '$argument'}" >&2
+  local suffix=''
+  [[ -n $argument ]] && suffix=" with argument '$argument'"
+  echo "error: no route for layout '$layout'$suffix" >&2
   return 1
 }
 

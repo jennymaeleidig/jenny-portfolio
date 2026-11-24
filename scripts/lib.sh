@@ -75,6 +75,7 @@ is_http_url() {
 # the command as a string, so the build exports it from this array; the
 # layouts and the staging step call render_markdown and never spell it.
 MARKDOWN=(cmark-gfm --extension table --extension autolink)
+# shellcheck disable=SC2034 # exported by scripts/build.sh
 MARKDOWN_COMMAND="${MARKDOWN[*]}"
 
 # Render markdown from stdin.

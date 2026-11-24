@@ -1576,12 +1576,12 @@ test("copy values renders every shipped key, the bird layer's included", () => {
   );
 
   for (const key of Object.keys(SKY_DEFAULTS)) {
-    assert.match(text, new RegExp(`^  ${key}: `, "m"), `${key} is copied`);
+    assert.match(text, new RegExp(`^ {2}${key}: `, "m"), `${key} is copied`);
   }
-  assert.match(text, /^  birds: 0,$/m);
-  assert.match(text, /^  l1Count: 5,$/m);
-  assert.match(text, /^  l2Spread: 0.64,$/m);
-  assert.match(text, /^  mode: "frame",$/m);
+  assert.match(text, /^ {2}birds: 0,$/m);
+  assert.match(text, /^ {2}l1Count: 5,$/m);
+  assert.match(text, /^ {2}l2Spread: 0.64,$/m);
+  assert.match(text, /^ {2}mode: "frame",$/m);
 });
 
 test("copy values pins the shipped seeds, not the live visit", () => {
@@ -1589,7 +1589,7 @@ test("copy values pins the shipped seeds, not the live visit", () => {
     Object.freeze({ ...SKY_DEFAULTS, seed: 987654, birdSeed: 123456 }),
   );
 
-  assert.match(text, /^  seed: 12,$/m);
-  assert.match(text, /^  birdSeed: 19,$/m);
+  assert.match(text, /^ {2}seed: 12,$/m);
+  assert.match(text, /^ {2}birdSeed: 19,$/m);
   assert.doesNotMatch(text, /987654|123456/, "the live seeds do not leak");
 });

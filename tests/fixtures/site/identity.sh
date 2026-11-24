@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+# shellcheck disable=SC2034 # the build reads these through identity_value
 # The identity block the tests build against. Same shape as content/identity.sh,
 # with example values so no test depends on the real content.
 FULL_NAME="Example Name"

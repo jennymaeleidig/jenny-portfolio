@@ -33,12 +33,12 @@ career_file_list() {
 career_records() {
   local dir=$1 reader=$2
   shift 2
-  local file row first second third start fourth fifth rows
+  local file row start rows
   rows=$(
     while IFS= read -r file; do
       row=$("$reader" "$file" "$@") || exit 1
       # Every section keeps its start date in the fourth field.
-      IFS=$'\037' read -r first second third start fourth fifth <<< "$row"
+      IFS=$'\037' read -r _ _ _ start _ _ <<< "$row"
       printf '%s\t%s\t%s\n' "${start:-0000}" "$file" "$row"
     done < <(career_file_list "$dir")
   ) || return 1
